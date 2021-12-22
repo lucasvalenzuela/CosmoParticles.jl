@@ -182,7 +182,7 @@ using Unitful
             @test pc.mass[ind] == p.mass[1]
 
             pc = sort(p, :mass; affect=(:pos,), alg=RadixSort)
-            @test issorted(pc.mass)
+            @test issorted(pc.mass)#
             @test haskey(pc, :pos)
             @test !haskey(pc, :id)
 
