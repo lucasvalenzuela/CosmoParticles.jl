@@ -5,8 +5,9 @@ using StatsBase
 using Test
 using Unitful
 
+const CP = CosmoParticles
+
 @testset "CosmoParticles.jl" begin
-    const CP = CosmoParticles
 
     @testset "Particles" begin
         p = Particles(:dm)
