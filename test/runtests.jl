@@ -6,7 +6,7 @@ using Test
 using Unitful
 
 @testset "CosmoParticles.jl" begin
-    CP = CosmoParticles
+    const CP = CosmoParticles
 
     @testset "Particles" begin
         p = Particles(:dm)
