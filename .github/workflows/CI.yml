@@ -37,7 +37,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - run: |
-          julia -e 'using Pkg; Pkg.@pkg_str("registry add https://github.com/lucasvalenzuela/CosmoSimsRegistry")'
+          julia -e "using Pkg; pkg\"registry add https://github.com/lucasvalenzuela/CosmoSimsRegistry\""
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
