@@ -1,6 +1,8 @@
 using CosmoParticles
+using Rotations
 using StatsBase
 using Test
+using Unitful
 
 @testset "CosmoParticles.jl" begin
     CP = CosmoParticles
@@ -73,5 +75,94 @@ using Test
         io = IOBuffer()
         CP.show_properties(io, "text/plain", p)
         @test String(take!(io)) == "100 Particles\n id pos"
+    end
+
+
+    @testset "Transformations" begin
+        @testset "Rotation" begin
+            rotmat = rand(RotMatrix{3})
+            a = rand(3, 100)
+            au = a * u"m"
+
+            arot = rotmat * a
+            aurot = rotmat * au
+
+            @test CP.matrix_rotate(a, rotmat) == arot
+            @test CP.matrix_rotate(au, rotmat) == aurot
+
+            ac = copy(a)
+            CP.matrix_rotate!(ac, rotmat)
+            @test ac == arot
+
+            auc = copy(au)
+            CP.matrix_rotate!(auc, rotmat)
+            @test auc == aurot
+
+
+            p = Particles(:dm)
+            p.pos = copy(au)
+            p.vel = copy(a)
+
+            pc = rotate(p, rotmat, :pos)
+            @test p.pos == au
+            @test pc.pos == aurot
+            @test p.vel === pc.vel == a
+
+            pc = rotate(p, rotmat)
+            @test p.pos == au
+            @test pc.pos == aurot
+            @test p.vel == a
+            @test pc.vel == arot
+
+
+            pc = deepcopy(p)
+            rotate!(pc, rotmat, :vel)
+            @test pc.pos == au
+            @test pc.vel == arot
+
+            pc = deepcopy(p)
+            rotate!(pc, rotmat)
+            @test pc.pos == aurot
+            @test pc.vel == arot
+        end
+
+        @testset "Translations" begin
+            da = rand(3)
+            dau = rand(3) * u"m"
+            a = rand(3, 100)
+            au = a * u"m"
+
+            atrans = a .+ da
+            autrans = au .+ dau
+
+            p = Particles(:dm)
+            p.pos = copy(au)
+            p.vel = copy(a)
+
+            pc = translate(p, dau)
+            @test p.pos == au
+            @test pc.pos == autrans
+            @test p.vel === pc.vel == a
+
+            pc = translate(p, da, :vel)
+            @test p.pos === pc.pos == au
+            @test p.vel == a
+            @test pc.vel == atrans
+
+            pc = deepcopy(p)
+            translate!(pc, dau)
+            @test pc.pos == autrans
+            @test pc.vel == a
+
+            pc = deepcopy(p)
+            translate!(pc, da, :vel)
+            @test pc.pos == au
+            @test pc.vel == atrans
+        end
+    end
+
+
+    @testset "Misc Operations" begin
+
     end
 end
