@@ -11,4 +11,6 @@ include("particles.jl")
 
 include("utils.jl")
 include("transformations.jl")
+include("miscoperations.jl")
+
 end

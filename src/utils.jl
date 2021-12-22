@@ -1,16 +1,16 @@
-_applyind(a::Number, _::Vector) = a
-_applyind(a::Vector, ind::Vector) = a[ind]
-_applyind(a::Matrix, ind::Vector) = a[:, ind]
+_applyind(a::Number, _::AbstractVector) = a
+_applyind(a::Vector, ind::AbstractVector) = a[ind]
+_applyind(a::Matrix, ind::AbstractVector) = a[:, ind]
 
-function _applyind!(p::AbstractParticles, ind::Vector)
+function _applyind!(p::AbstractParticles, ind::AbstractVector)
     for key in keys(p)
-        p[key] = p[key][ind]
+        p[key] = _applyind(p[key], ind)
     end
 
     return p
 end
 
-function _applyind_to_copy(p::AbstractParticles, ind::Vector, affect=())
+function _applyind_to_copy(p::AbstractParticles, ind::AbstractVector; affect=())
     # TODO: create Dict only for affected props instead of copying full Dict
     p = copy(p)
 
@@ -31,17 +31,17 @@ function _applyind_to_copy(p::AbstractParticles, ind::Vector, affect=())
     return p
 end
 
-function ind_of_a_in_set(a::AbstractVector, set::AbstractVector)
+function findall_in(a::AbstractVector, set::AbstractVector)
     if (issorted(a) && issorted(set))
-        return ind_of_a_in_set_sorted(a, set)
+        return findall_in_sorted(a, set)
     else
-        return ind_of_a_in_set(a, Set(set))
+        return findall_in(a, Set(set))
     end
 end
 
-ind_of_a_in_set(a::AbstractVector, set::AbstractSet) = findall(in.(a, (set,)))
+findall_in(a::AbstractVector, set::AbstractSet) = findall(in.(a, (set,)))
 
-function ind_of_a_in_set_sorted(a::AbstractVector, set::AbstractVector)
+function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     if isempty(a) || isempty(set)
         return Int64[]
     end

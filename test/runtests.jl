@@ -1,5 +1,6 @@
 using CosmoParticles
 using Rotations
+using SortingAlgorithms
 using StatsBase
 using Test
 using Unitful
@@ -163,6 +164,87 @@ using Unitful
 
 
     @testset "Misc Operations" begin
+        ids = sample(1:1000, 100; replace=false)
+        a = rand(3, 100)
+        bu = rand(100) * u"kg"
 
+        p = Particles(:dm)
+        p.id = ids
+        p.pos = copy(a)
+        p.mass = copy(bu)
+
+        @testset "Sorting" begin
+            pc = sort(p, :id)
+            @test issorted(pc.id)
+            @test p.id == ids
+            ind = searchsortedfirst(pc.id, p.id[1])
+            @test pc.pos[:, ind] == p.pos[:, 1]
+            @test pc.mass[ind] == p.mass[1]
+
+            pc = sort(p, :mass; affect=(:pos,), alg=RadixSort)
+            @test issorted(pc.mass)
+            @test haskey(pc, :pos)
+            @test !haskey(pc, :id)
+
+            pc = deepcopy(p)
+            sort!(pc, :id; alg=RadixSort)
+            @test issorted(pc.id)
+            ind = searchsortedfirst(pc.id, p.id[1])
+            @test pc.pos[:, ind] == p.pos[:, 1]
+            @test pc.mass[ind] == p.mass[1]
+        end
+
+        @testset "Filtering" begin
+            massmin = 0.5u"kg"
+            pc = filter(p -> p.mass .> massmin, p)
+            @test all(pc.mass .> massmin)
+            @test p.mass == bu
+            ind = findfirst(>(massmin), p.mass)
+            @test pc.pos[:, 1] == p.pos[:, ind]
+            @test pc.id[1] == p.id[ind]
+
+            @test filter(p -> findall(p.mass .> massmin), p) == pc
+
+            pc = filter(p -> p.mass .> massmin, p; affect=(:id, :mass))
+            @test all(pc.mass .> massmin)
+            @test haskey(pc, :id)
+            @test !haskey(pc, :pos)
+
+            pc = deepcopy(p)
+            filter!(p -> p.mass .> massmin, pc)
+            @test all(pc.mass .> massmin)
+            @test p.mass == bu
+            ind = findfirst(>(massmin), p.mass)
+            @test pc.pos[:, 1] == p.pos[:, ind]
+            @test pc.id[1] == p.id[ind]
+
+
+            ids_wanted = sample(1:1000, 100; replace=false)
+
+            pc = filter(p, ids=ids_wanted)
+            @test all(in.(pc.id, (ids_wanted,)))
+            @test !any(in.(setdiff(ids, pc.id), (ids_wanted,)))
+            ind = findfirst(in(ids_wanted), p.id)
+            @test pc.pos[:, 1] == p.pos[:, ind]
+            @test pc.mass[1] == p.mass[ind]
+
+            @test filter(p; ids=Set(ids_wanted)) == pc
+
+            pc = filter(p, ids=ids_wanted; affect=(:id, :mass))
+            @test all(in.(pc.id, (ids_wanted,)))
+            @test !any(in.(setdiff(ids, pc.id), (ids_wanted,)))
+            @test haskey(pc, :mass)
+            @test !haskey(pc, :pos)
+
+            pc = deepcopy(p)
+            filter!(pc; ids=ids_wanted)
+            @test all(in.(pc.id, (ids_wanted,)))
+            @test !any(in.(setdiff(ids, pc.id), (ids_wanted,)))
+            ind = findfirst(in(ids_wanted), p.id)
+            @test pc.pos[:, 1] == p.pos[:, ind]
+            @test pc.mass[1] == p.mass[ind]
+
+            @test filter!(deepcopy(p); ids=Set(ids_wanted)) == pc
+        end
     end
 end
