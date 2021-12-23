@@ -23,7 +23,8 @@ If the struct has additional fields, these can also be accessed by `p.field`, bu
 - `:vel`: ``2×N`` or ``3×N`` `Matrix` with velocities
 
 # Methods
-The methods `Base.keys`, `Base.values`, and `Base.haskey` are forwarded to the property `Dict`.
+The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, and `Base.isempty`
+are forwarded to the property `Dict`.
 
 Concrete types of `AbstractParticles` should have the following methods implemented
 (also see the implementation of [`Particles`](@ref)):
@@ -67,17 +68,10 @@ Base.keys(p::AbstractParticles) = keys(get_props(p))
 Base.haskey(p::AbstractParticles, key) = key in keys(p)
 Base.values(p::AbstractParticles) = values(get_props(p))
 Base.propertynames(p::AbstractParticles) = keys(p) |> collect
+Base.empty!(p::AbstractParticles) = (empty!(get_props(p)); p)
+Base.isempty(p::AbstractParticles) = isempty(get_props(p))
 
 Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
-
-"""
-    Base.empty!(p::AbstractParticles)
-
-Remove all elements from the property `Dict`.
-"""
-Base.empty!(p::AbstractParticles) = (empty!(get_props(p)); p)
-
-Base.isempty(p::AbstractParticles) = isempty(get_props(p))
 
 # to implement:
 # Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))
