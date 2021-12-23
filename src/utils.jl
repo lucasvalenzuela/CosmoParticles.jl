@@ -53,8 +53,18 @@ function _applyind(p::AbstractParticles, ind::AbstractVector; affect=())
     return p
 end
 
+"""
+    findall_in(a::AbstractVector, set)
+
+Return all indices of `a` that are in `set`.
+
+If both `a` and `set` are sorted `AbstractVector`s, then the optimized [`findall_in_sorted`](@ref) is called.
+Otherwise, a `Set` is constructed from the `Vector` to perform the checks with `in`.
+
+This is not exported.
+"""
 function findall_in(a::AbstractVector, set::AbstractVector)
-    if (issorted(a) && issorted(set))
+    if issorted(a) && issorted(set)
         return findall_in_sorted(a, set)
     else
         return findall_in(a, Set(set))
@@ -63,6 +73,15 @@ end
 
 findall_in(a::AbstractVector, set::AbstractSet) = findall(in.(a, (set,)))
 
+"""
+    findall_in_sorted(a::AbstractVector, set::AbstractVector)
+
+Return all indices of `a` that are in `set`, where both `a` and `set` are assumed to be sorted.
+
+This uses an optimized algorithm that is faster than creating a `Set` from `set` and performing checks with `in`.
+
+This is not exported.
+"""
 function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     if isempty(a) || isempty(set)
         return Int64[]

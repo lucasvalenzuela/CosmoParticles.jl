@@ -119,6 +119,26 @@ const CP = CosmoParticles
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass
         end
+
+        @testset "Find all in" begin
+            a = sample(1:10000, 6000; replace=false)
+            set = sample(1:10000, 100; replace=false)
+            inboth = intersect(a, set)
+
+            ind = CP.findall_in(a, set)
+            @test length(ind) == length(inboth)
+            @test issetequal(a[ind], inboth)
+            @test CP.findall_in(a, Set(set)) == ind
+
+
+            sort!(a)
+            sort!(set)
+            ind = CP.findall_in(a, set)
+            @test length(ind) == length(inboth)
+            @test issetequal(a[ind], inboth)
+            @test CP.findall_in(a, Set(set)) == ind
+            @test CP.findall_in_sorted(a, set) == ind
+        end
     end
 
 
