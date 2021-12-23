@@ -11,6 +11,11 @@ rotate
 LinearAlgebra.rotate!
 translate
 translate!
+```
+
+## Further Operations
+
+```@docs
 Base.sort
 Base.sort!
 Base.filter
