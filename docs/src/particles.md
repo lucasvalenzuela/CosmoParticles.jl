@@ -11,8 +11,9 @@ In the context of cosmological simulations, this applies to particle and galaxy 
 For an example implementation of a concrete subtype of `AbstractParticles`, see the source code of [`Particles`](@ref).
 
 ```@docs
-CosmoParticles.AbstractParticles
-CosmoParticles.Particles
+AbstractParticles
+Particles
+Particles(type[, pairs::Pair...])
 CosmoParticles.get_props
 CosmoParticles.particle_name
 CosmoParticles.particle_number
