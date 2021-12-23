@@ -34,8 +34,6 @@ const CP = CosmoParticles
         @test isempty(pc.props)
         @test isempty(pc)
 
-        @test !isempty(p)
-
         @test CP.particle_name(p) == "Particles"
         @test issetequal(propertynames(p), [:type, :id, :pos])
         @test issetequal(propertynames(p; private=true), [:type, :props, :id, :pos])
@@ -77,9 +75,21 @@ const CP = CosmoParticles
 
         @test issetequal(propertynames(p), [:type, :id, :pos])
 
+        # test default implementations for AbstractParticles
+        @test issetequal(Base.@invoke(propertynames(p::AbstractParticles)), [:id, :pos])
+
+        pc = deepcopy(p)
+        empty!(pc)
+        @test isempty(pc.props)
+        @test isempty(pc)
+
+        @test !isempty(p)
+
         @test CP.particle_number(p) == 100
         @test CP.particle_number(Particles(:gas)) == 0
         @test CP.particle_number(Particles(:gas, Dict{Symbol,Any}(:mass => 3))) == 0
+
+        @test isnothing(Base.@invoke(CP.particle_name(p::AbstractParticles)))
 
         io = IOBuffer()
         CP.show_properties(io, "text/plain", p)
@@ -139,7 +149,6 @@ const CP = CosmoParticles
             @test issetequal(a[ind], inboth)
             @test CP.findall_in(a, Set(set)) == ind
 
-
             sort!(a)
             sort!(set)
             ind = CP.findall_in(a, set)
@@ -147,6 +156,15 @@ const CP = CosmoParticles
             @test issetequal(a[ind], inboth)
             @test CP.findall_in(a, Set(set)) == ind
             @test CP.findall_in_sorted(a, set) == ind
+
+            # test empty arrays
+            @test CP.findall_in_sorted([], []) |> isempty
+            @test CP.findall_in_sorted(a, []) |> isempty
+            @test CP.findall_in_sorted([], set) |> isempty
+
+            @test CP.findall_in([], Set([])) |> isempty
+            @test CP.findall_in(a, Set([])) |> isempty
+            @test CP.findall_in([], Set(set)) |> isempty
         end
     end
 
