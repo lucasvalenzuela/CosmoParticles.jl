@@ -1,5 +1,5 @@
 """
-    AbstractParticles
+    abstract type AbstractParticles end
 
 Abstract supertype for storing particle data efficiently in arrays.
 
@@ -43,6 +43,8 @@ abstract type AbstractParticles end
 Return the property `Dict` belonging to the particles.
 
 This returns `p.props` by default if not overridden.
+
+This is not exported.
 """
 get_props(p::AbstractParticles) = p.props
 
@@ -83,6 +85,8 @@ Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
 
 Returns the name of the particle type, which is used when printing an object of this type via
 `Base.show`.
+
+This is not exported.
 """
 function particle_name(::AbstractParticles) end
 
@@ -90,6 +94,8 @@ function particle_name(::AbstractParticles) end
     CosmoParticles.particle_number(p::AbstractParticles)
 
 Returns the number of particles by determining the length of one of the property arrays.
+
+This is not exported.
 """
 function particle_number(p::AbstractParticles)
     for val in values(p)
@@ -107,6 +113,8 @@ Prints the number of particles, the name of the type, and the property names.
 
 Should be used internally when overriding `Base.show` for concrete implementations of
 `AbstractParticles`.
+
+This is not exported.
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticles) = show_properties(io, MIME(mime), p)
 

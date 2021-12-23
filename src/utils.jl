@@ -1,5 +1,5 @@
 """
-    CosmoParticles.applyind(a, ind::AbstractVector)
+    CosmoParticles._applyind(a, ind::AbstractVector)
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
 
@@ -10,9 +10,9 @@ The following indexing is applied:
 
 This is not exported.
 """
-applyind(a::Number, _::AbstractVector) = a
-applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
-applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
+_applyind(a::Number, _::AbstractVector) = a
+_applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
+_applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
 
 """
     CosmoParticles.applyind!(p::AbstractParticles, ind::AbstractVector)
@@ -23,7 +23,7 @@ This is not exported.
 """
 function applyind!(p::AbstractParticles, ind::AbstractVector)
     for key in keys(p)
-        p[key] = applyind(p[key], ind)
+        p[key] = _applyind(p[key], ind)
     end
 
     return p
@@ -44,7 +44,7 @@ function applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     pnew = empty(p)
 
     for key in affect
-        pnew[key] = applyind(p[key], ind)
+        pnew[key] = _applyind(p[key], ind)
     end
 
     return pnew

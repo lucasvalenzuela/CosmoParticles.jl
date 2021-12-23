@@ -107,14 +107,14 @@ const CP = CosmoParticles
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
-            @test CP.applyind(3, mask) == 3
-            @test CP.applyind(p.mass, mask) == p.mass
-            @test CP.applyind(p.id, mask) == p.id[mask]
-            @test CP.applyind(p.pos, mask) == p.pos[:, mask]
-            @test CP.applyind(3, ind) == 3
-            @test CP.applyind(p.mass, ind) == p.mass
-            @test CP.applyind(p.id, ind) == p.id[ind]
-            @test CP.applyind(p.pos, ind) == p.pos[:, ind]
+            @test CP._applyind(3, mask) == 3
+            @test CP._applyind(p.mass, mask) == p.mass
+            @test CP._applyind(p.id, mask) == p.id[mask]
+            @test CP._applyind(p.pos, mask) == p.pos[:, mask]
+            @test CP._applyind(3, ind) == 3
+            @test CP._applyind(p.mass, ind) == p.mass
+            @test CP._applyind(p.id, ind) == p.id[ind]
+            @test CP._applyind(p.pos, ind) == p.pos[:, ind]
 
             pc = CP.applyind(p, mask)
             @test pc.id == p.id[mask]
