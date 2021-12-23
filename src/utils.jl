@@ -1,5 +1,5 @@
 """
-    applyind(a, ind::AbstractVector)
+    CosmoParticles.applyind(a, ind::AbstractVector)
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
 
@@ -14,6 +14,13 @@ applyind(a::Number, _::AbstractVector) = a
 applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
 applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
 
+"""
+    CosmoParticles.applyind!(p::AbstractParticles, ind::AbstractVector)
+
+In-place application of indices or mask to all particle properties.
+
+This is not exported.
+"""
 function applyind!(p::AbstractParticles, ind::AbstractVector)
     for key in keys(p)
         p[key] = applyind(p[key], ind)
@@ -23,7 +30,7 @@ function applyind!(p::AbstractParticles, ind::AbstractVector)
 end
 
 """
-    applyind(p::AbstractParticles, ind::AbstractVector; affect())
+    CosmoParticles.applyind(p::AbstractParticles, ind::AbstractVector; affect())
 
 Create new particles with the given indices or mask applied to all particle properties.
 
@@ -55,7 +62,7 @@ function applyind(p::AbstractParticles, ind::AbstractVector; affect=())
 end
 
 """
-    findall_in(a::AbstractVector, set)
+    CosmoParticles.findall_in(a::AbstractVector, set)
 
 Return all indices of `a` that are in `set`.
 
@@ -75,7 +82,7 @@ end
 findall_in(a::AbstractVector, set::AbstractSet) = findall(in.(a, (set,)))
 
 """
-    findall_in_sorted(a::AbstractVector, set::AbstractVector)
+    CosmoParticles.findall_in_sorted(a::AbstractVector, set::AbstractVector)
 
 Return all indices of `a` that are in `set`, where both `a` and `set` are assumed to be sorted.
 
