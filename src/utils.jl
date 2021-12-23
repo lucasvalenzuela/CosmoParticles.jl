@@ -30,7 +30,7 @@ function applyind!(p::AbstractParticles, ind::AbstractVector)
 end
 
 """
-    CosmoParticles.applyind(p::AbstractParticles, ind::AbstractVector; affect())
+    CosmoParticles.applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
 
 Create new particles with the given indices or mask applied to all particle properties.
 
@@ -40,25 +40,14 @@ added to the newly created particles object.
 
 This is not exported.
 """
-function applyind(p::AbstractParticles, ind::AbstractVector; affect=())
-    # TODO: create Dict only for affected props instead of copying full Dict
-    p = copy(p)
-
-    if length(affect) == 0
-        affect = keys(p)
-    end
+function applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+    pnew = empty(p)
 
     for key in affect
-        p[key] = applyind(p[key], ind)
+        pnew[key] = applyind(p[key], ind)
     end
 
-    # remove keys in new Dict that weren't sorted
-    # TODO: won't need this when Dict only created for affected
-    for key in setdiff(keys(p), affect)
-        delete!(get_props(p), key)
-    end
-
-    return p
+    return pnew
 end
 
 """

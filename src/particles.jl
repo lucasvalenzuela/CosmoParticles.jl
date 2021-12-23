@@ -24,6 +24,7 @@ Particles(type, pairs::Pair...) = Particles(type, Dict{Symbol,Any}(pairs...))
 
 
 Base.copy(p::Particles) = Particles(p.type, copy(p.props))
+Base.empty(p::Particles) = Particles(p.type, empty(p.props))
 Base.:(==)(p1::Particles, p2::Particles) = p1.type == p2.type && p1.props == p2.props
 particle_name(::Particles) = "Particles"
 

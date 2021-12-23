@@ -27,7 +27,8 @@ The methods `Base.keys`, `Base.values`, and `Base.haskey` are forwarded to the p
 
 Concrete types of `AbstractParticles` should have the following methods implemented
 (also see the implementation of [`Particles`](@ref)):
-- `Base.copy`: returns new object containing a copy of the Dict
+- `Base.copy`: returns new object containing a copy of the `Dict`
+- `Base.empty`: returns an identical object, but with an empty `Dict`
 - `Base.:(==)`
 - [`CosmoParticles.particle_name`](@ref): returns the name of the struct to be printed via `Base.show`
 - `Base.propertynames`: implement this if there are additional struct fields
@@ -69,9 +70,20 @@ Base.propertynames(p::AbstractParticles) = keys(p) |> collect
 
 Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
 
+"""
+    Base.empty!(p::AbstractParticles)
+
+Remove all elements from the property `Dict`.
+"""
+Base.empty!(p::AbstractParticles) = (empty!(get_props(p)); p)
+
+Base.isempty(p::AbstractParticles) = isempty(get_props(p))
+
 # to implement:
 # Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))
+# Base.empty(p::AbstractParticles) = AbstractParticles(empty(p.props))
 # Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = p1.props == p2.props
+
 """
     CosmoParticles.particle_name(::AbstractParticles)
 

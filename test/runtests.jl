@@ -29,6 +29,13 @@ const CP = CosmoParticles
         @test pc.props == p.props
         @test pc.props !== p.props
 
+        pc = empty(p)
+        @test pc.type === :dm
+        @test isempty(pc.props)
+        @test isempty(pc)
+
+        @test !isempty(p)
+
         @test CP.particle_name(p) == "Particles"
         @test issetequal(propertynames(p), [:type, :id, :pos])
         @test issetequal(propertynames(p; private=true), [:type, :props, :id, :pos])
@@ -41,7 +48,7 @@ const CP = CosmoParticles
         @test CP.get_props(p) === p.props
 
         @test getproperty(p, :id) === p.props[:id]
-        @test getproperty(p, :type) === p.type
+        @test getproperty(p, :type) === p.type === :dm
         @test getproperty(p, :props) === p.props
         @test p.id === p.props[:id]
 

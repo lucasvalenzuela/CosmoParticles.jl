@@ -15,7 +15,7 @@ function Base.sort!(p::AbstractParticles, prop::Symbol; kwargs...)
 end
 
 """
-    Base.sort(p::AbstractParticles, prop::Symbol; affect=(), kwargs...)
+    Base.sort(p::AbstractParticles, prop::Symbol; affect=keys(p), kwargs...)
 
 Create new particles with the particles sorted according to the specified property.
 
@@ -27,9 +27,9 @@ The other keyword arguments are passed on to [`Base.sortperm`](https://docs.juli
 The sorting algorithm for unitful properties may also be `RadixSort` from
 [SortingAlgorithms.jl](https://github.com/JuliaCollections/SortingAlgorithms.jl).
 """
-function Base.sort(p::AbstractParticles, prop::Symbol; affect=(), kwargs...)
+function Base.sort(p::AbstractParticles, prop::Symbol; affect=keys(p), kwargs...)
     ind = usortperm(p[prop]; kwargs...)
-    return applyind(p, ind; affect=ifelse(isempty(affect), (), union(affect, (prop,))))
+    return applyind(p, ind; affect=union(affect, (prop,)))
 end
 
 
@@ -47,7 +47,7 @@ function Base.filter!(f, p::AbstractParticles)
 end
 
 """
-    Base.filter(f, p::AbstractParticles; affect=())
+    Base.filter(f, p::AbstractParticles; affect=keys(p))
 
 Create new particles with them filtered by a mask returned by the function `f`.
 
@@ -56,7 +56,7 @@ number of particles or an array of indices.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
-function Base.filter(f, p::AbstractParticles; affect=())
+function Base.filter(f, p::AbstractParticles; affect=keys(p))
     ind = f(p)
     return applyind(p, ind; affect)
 end
@@ -73,14 +73,14 @@ function Base.filter!(p::AbstractParticles; ids)
 end
 
 """
-    Base.filter(p::AbstractParticles, ids; affect=())
+    Base.filter(p::AbstractParticles, ids; affect=keys(p))
 
 Create new particles with them filtered by keeping only those with the given IDs.
 
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
-function Base.filter(p::AbstractParticles; ids, affect=())
+function Base.filter(p::AbstractParticles; ids, affect=keys(p))
     ind = findall_in(p.id, ids)
     return applyind(p, ind; affect)
 end
