@@ -80,6 +80,48 @@ const CP = CosmoParticles
     end
 
 
+    @testset "Utils" begin
+        @testset "Index particles" begin
+            p = Particles(:dm)
+            p.id = sample(1:1000, 100; replace=false)
+            p.pos = rand(3, 100)
+            p.mass = 4u"kg"
+
+            mask = rand(100) .> 0.5
+            ind = findall(mask)
+
+            @test CP._applyind(3, mask) == 3
+            @test CP._applyind(p.mass, mask) == p.mass
+            @test CP._applyind(p.id, mask) == p.id[mask]
+            @test CP._applyind(p.pos, mask) == p.pos[:, mask]
+            @test CP._applyind(3, ind) == 3
+            @test CP._applyind(p.mass, ind) == p.mass
+            @test CP._applyind(p.id, ind) == p.id[ind]
+            @test CP._applyind(p.pos, ind) == p.pos[:, ind]
+
+            pc = CP._applyind(p, mask)
+            @test pc.id == p.id[mask]
+            @test pc.pos == p.pos[:, mask]
+            @test pc.mass == p.mass
+
+            @test CP._applyind(p, ind) == pc
+
+            pcc = deepcopy(p)
+            CP._applyind!(pcc, mask)
+            @test pcc == pc
+
+            pcc = deepcopy(p)
+            CP._applyind!(pcc, ind)
+            @test pcc == pc
+
+            pc = CP._applyind(p, mask; affect=(:pos, :mass))
+            @test !haskey(pc, :id)
+            @test pc.pos == p.pos[:, mask]
+            @test pc.mass == p.mass
+        end
+    end
+
+
     @testset "Transformations" begin
         @testset "Rotation" begin
             rotmat = rand(RotMatrix{3})

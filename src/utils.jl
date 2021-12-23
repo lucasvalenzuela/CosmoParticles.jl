@@ -1,6 +1,18 @@
+"""
+    _applyind(a, ind::AbstractVector)
+
+Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
+
+The following indexing is applied:
+- `a::Number`: `a` is returned directly.
+- `a::Vector`: `a[ind]` is returned.
+- `a::Matrix`: `a[:, ind]` is returned.
+
+This is not exported.
+"""
 _applyind(a::Number, _::AbstractVector) = a
-_applyind(a::Vector, ind::AbstractVector) = a[ind]
-_applyind(a::Matrix, ind::AbstractVector) = a[:, ind]
+_applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
+_applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
 
 function _applyind!(p::AbstractParticles, ind::AbstractVector)
     for key in keys(p)
@@ -10,7 +22,17 @@ function _applyind!(p::AbstractParticles, ind::AbstractVector)
     return p
 end
 
-function _applyind_to_copy(p::AbstractParticles, ind::AbstractVector; affect=())
+"""
+    _applyind(p::AbstractParticles, ind::AbstractVector)
+
+Create new particles with the given indices or mask applied to all particle properties.
+
+If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are indexed into and
+added to the newly created particles object.
+
+This is not exported.
+"""
+function _applyind(p::AbstractParticles, ind::AbstractVector; affect=())
     # TODO: create Dict only for affected props instead of copying full Dict
     p = copy(p)
 
@@ -55,14 +77,14 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     # iind = 0
     # iset = 1
     # for ia in 1:na
-        # while a[ia] > set[iset] && iset < nset
-            # iset += 1
-        # end
-        # if a[ia] == set[iset]
-            # iind += 1
-            # iset += 1
-            # ind_all[iind] = ia
-        # end
+    # while a[ia] > set[iset] && iset < nset
+    # iset += 1
+    # end
+    # if a[ia] == set[iset]
+    # iind += 1
+    # iset += 1
+    # ind_all[iind] = ia
+    # end
     # end
 
     iind = 0
@@ -86,6 +108,6 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
             end
         end
     end
-    
+
     return resize!(ind_all, iind)
 end

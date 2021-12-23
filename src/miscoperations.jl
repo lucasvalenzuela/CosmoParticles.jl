@@ -29,7 +29,7 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 """
 function Base.sort(p::AbstractParticles, prop::Symbol; affect=(), kwargs...)
     ind = usortperm(p[prop]; kwargs...)
-    return _applyind_to_copy(p, ind; affect=ifelse(isempty(affect), (), union(affect, (prop,))))
+    return _applyind(p, ind; affect=ifelse(isempty(affect), (), union(affect, (prop,))))
 end
 
 
@@ -58,7 +58,7 @@ to the newly created particles object.
 """
 function Base.filter(f, p::AbstractParticles; affect=())
     ind = f(p)
-    return _applyind_to_copy(p, ind; affect)
+    return _applyind(p, ind; affect)
 end
 
 
@@ -82,5 +82,5 @@ to the newly created particles object.
 """
 function Base.filter(p::AbstractParticles; ids, affect=())
     ind = findall_in(p.id, ids)
-    return _applyind_to_copy(p, ind; affect)
+    return _applyind(p, ind; affect)
 end
