@@ -90,31 +90,33 @@ const CP = CosmoParticles
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
-            @test CP._applyind(3, mask) == 3
-            @test CP._applyind(p.mass, mask) == p.mass
-            @test CP._applyind(p.id, mask) == p.id[mask]
-            @test CP._applyind(p.pos, mask) == p.pos[:, mask]
-            @test CP._applyind(3, ind) == 3
-            @test CP._applyind(p.mass, ind) == p.mass
-            @test CP._applyind(p.id, ind) == p.id[ind]
-            @test CP._applyind(p.pos, ind) == p.pos[:, ind]
+            @test CP.applyind(3, mask) == 3
+            @test CP.applyind(p.mass, mask) == p.mass
+            @test CP.applyind(p.id, mask) == p.id[mask]
+            @test CP.applyind(p.pos, mask) == p.pos[:, mask]
+            @test CP.applyind(3, ind) == 3
+            @test CP.applyind(p.mass, ind) == p.mass
+            @test CP.applyind(p.id, ind) == p.id[ind]
+            @test CP.applyind(p.pos, ind) == p.pos[:, ind]
 
-            pc = CP._applyind(p, mask)
+            pc = CP.applyind(p, mask)
             @test pc.id == p.id[mask]
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass
 
-            @test CP._applyind(p, ind) == pc
+            @test CP.applyind(p, ind) == pc
+            @test p[ind] == pc
+            @test p[mask] == pc
 
             pcc = deepcopy(p)
-            CP._applyind!(pcc, mask)
+            CP.applyind!(pcc, mask)
             @test pcc == pc
 
             pcc = deepcopy(p)
-            CP._applyind!(pcc, ind)
+            CP.applyind!(pcc, ind)
             @test pcc == pc
 
-            pc = CP._applyind(p, mask; affect=(:pos, :mass))
+            pc = CP.applyind(p, mask; affect=(:pos, :mass))
             @test !haskey(pc, :id)
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass

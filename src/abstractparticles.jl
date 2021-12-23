@@ -67,6 +67,8 @@ Base.haskey(p::AbstractParticles, key) = key in keys(p)
 Base.values(p::AbstractParticles) = values(get_props(p))
 Base.propertynames(p::AbstractParticles) = keys(p) |> collect
 
+Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
+
 # to implement:
 # Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))
 # Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = p1.props == p2.props

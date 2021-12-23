@@ -11,7 +11,7 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 """
 function Base.sort!(p::AbstractParticles, prop::Symbol; kwargs...)
     ind = usortperm(p[prop]; kwargs...)
-    return _applyind!(p, ind)
+    return applyind!(p, ind)
 end
 
 """
@@ -29,7 +29,7 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 """
 function Base.sort(p::AbstractParticles, prop::Symbol; affect=(), kwargs...)
     ind = usortperm(p[prop]; kwargs...)
-    return _applyind(p, ind; affect=ifelse(isempty(affect), (), union(affect, (prop,))))
+    return applyind(p, ind; affect=ifelse(isempty(affect), (), union(affect, (prop,))))
 end
 
 
@@ -43,7 +43,7 @@ number of particles or an array of indices.
 """
 function Base.filter!(f, p::AbstractParticles)
     ind = f(p)
-    return _applyind!(p, ind)
+    return applyind!(p, ind)
 end
 
 """
@@ -58,7 +58,7 @@ to the newly created particles object.
 """
 function Base.filter(f, p::AbstractParticles; affect=())
     ind = f(p)
-    return _applyind(p, ind; affect)
+    return applyind(p, ind; affect)
 end
 
 
@@ -69,7 +69,7 @@ Filter the particles in-place by keeping only those with the given IDs.
 """
 function Base.filter!(p::AbstractParticles; ids)
     ind = findall_in(p.id, ids)
-    return _applyind!(p, ind)
+    return applyind!(p, ind)
 end
 
 """
@@ -82,5 +82,5 @@ to the newly created particles object.
 """
 function Base.filter(p::AbstractParticles; ids, affect=())
     ind = findall_in(p.id, ids)
-    return _applyind(p, ind; affect)
+    return applyind(p, ind; affect)
 end

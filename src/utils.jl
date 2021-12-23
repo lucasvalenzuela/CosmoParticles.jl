@@ -1,5 +1,5 @@
 """
-    _applyind(a, ind::AbstractVector)
+    applyind(a, ind::AbstractVector)
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
 
@@ -10,29 +10,30 @@ The following indexing is applied:
 
 This is not exported.
 """
-_applyind(a::Number, _::AbstractVector) = a
-_applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
-_applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
+applyind(a::Number, _::AbstractVector) = a
+applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
+applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
 
-function _applyind!(p::AbstractParticles, ind::AbstractVector)
+function applyind!(p::AbstractParticles, ind::AbstractVector)
     for key in keys(p)
-        p[key] = _applyind(p[key], ind)
+        p[key] = applyind(p[key], ind)
     end
 
     return p
 end
 
 """
-    _applyind(p::AbstractParticles, ind::AbstractVector)
+    applyind(p::AbstractParticles, ind::AbstractVector; affect())
 
 Create new particles with the given indices or mask applied to all particle properties.
 
+This can also be called by the simple syntax `p[ind]`.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
 
 This is not exported.
 """
-function _applyind(p::AbstractParticles, ind::AbstractVector; affect=())
+function applyind(p::AbstractParticles, ind::AbstractVector; affect=())
     # TODO: create Dict only for affected props instead of copying full Dict
     p = copy(p)
 
@@ -41,7 +42,7 @@ function _applyind(p::AbstractParticles, ind::AbstractVector; affect=())
     end
 
     for key in affect
-        p[key] = _applyind(p[key], ind)
+        p[key] = applyind(p[key], ind)
     end
 
     # remove keys in new Dict that weren't sorted
