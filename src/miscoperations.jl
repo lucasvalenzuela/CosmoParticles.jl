@@ -21,7 +21,7 @@ Create new particles with the particles sorted according to the specified proper
 
 All property arrays of the particles are rearranged according to the property being sorted.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are rearranged and added
-to the newly created particles object (besides the originally sorted property).
+to the newly created particles object.
 The other keyword arguments are passed on to [`Base.sortperm`](https://docs.julialang.org/en/v1/base/sort/#Base.sortperm).
 
 The sorting algorithm for unitful properties may also be `RadixSort` from
@@ -29,7 +29,7 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 """
 function Base.sort(p::AbstractParticles, prop::Symbol; affect=keys(p), kwargs...)
     ind = usortperm(p[prop]; kwargs...)
-    return applyind(p, ind; affect=union(affect, (prop,)))
+    return applyind(p, ind; affect)
 end
 
 

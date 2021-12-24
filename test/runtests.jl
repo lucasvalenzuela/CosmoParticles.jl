@@ -271,10 +271,13 @@ const CP = CosmoParticles
             @test pc.pos[:, ind] == p.pos[:, 1]
             @test pc.mass[ind] == p.mass[1]
 
-            pc = sort(p, :mass; affect=(:pos,), alg=RadixSort)
+            pc = sort(p, :mass; affect=(:mass, :pos), alg=RadixSort)
             @test issorted(pc.mass)#
             @test haskey(pc, :pos)
             @test !haskey(pc, :id)
+
+            pc = sort(p, :mass; affect=(:pos,), alg=RadixSort)
+            @test !haskey(pc, :mass)
 
             pc = deepcopy(p)
             sort!(pc, :id; alg=RadixSort)
