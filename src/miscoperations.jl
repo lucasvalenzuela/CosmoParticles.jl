@@ -86,24 +86,27 @@ function Base.filter(p::AbstractParticles; ids, affect=keys(p))
 end
 
 """
-    Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry; affect=keys(p))
+    Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
 
 Create new particles with them filtered by keeping only those inside the given geometry.
 
+The filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
-function Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry; affect=keys(p))
-    ind = mask_in(p.pos, geo)
+function Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
+    ind = mask_in(p[prop], geo)
     return applyind(p, ind; affect)
 end
 
 """
-    Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry)
+    Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
 
 Filter the particles in-place by keeping only those inside the given geometry.
+
+The filter is applied to the property specified.
 """
-function Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry)
-    ind = mask_in(p.pos, geo)
+function Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
+    ind = mask_in(p[prop], geo)
     return applyind!(p, ind)
 end
