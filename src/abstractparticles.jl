@@ -81,7 +81,7 @@ Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
 # Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = p1.props == p2.props
 
 """
-    CosmoParticles.particle_name(::AbstractParticles)
+    CosmoParticles.particle_name(p::AbstractParticles)
 
 Returns the name of the particle type, which is used when printing an object of this type via
 `Base.show`.
