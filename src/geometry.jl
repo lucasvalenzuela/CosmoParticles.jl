@@ -138,7 +138,7 @@ end
 geometry_enclosing_corners(rectangle::CosmoHyperrectangle) = rectangle.lowerleft, rectangle.upperright
 
 function geometry_enclosing_center(rectangle::CosmoHyperrectangle)
-    return 1 // 2 .* rectangle.lowerleft .+ rectangle.upperright
+    return 1 // 2 .* (rectangle.lowerleft .+ rectangle.upperright)
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoCuboid{T}) where {T}
@@ -185,12 +185,6 @@ struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
     end
 end
 
-function CosmoHypersphere(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
-    T1 === T2 && return CosmoHypersphere{T1,length(center)}(center, radius)
-    T = promote_type(T1, T2)
-    return CosmoHypersphere{T,length(center)}(convert(Vector{T}, center), convert(T, radius))
-end
-
 """
     CosmoSphere
 
@@ -198,29 +192,12 @@ Alias for a 2D [`CosmoHypersphere`](@ref).
 """
 const CosmoSphere{T} = CosmoHypersphere{T,3} where {T<:Number}
 
-function CosmoSphere(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
-    T1 === T2 && return CosmoHypersphere{T1,3}(center, radius)
-    T = promote_type(T1, T2)
-    return CosmoHypersphere{T,3}(center, radius)
-end
-
 """
     CosmoCircle
 
 Alias for a 2D [`CosmoHypersphere`](@ref).
 """
 const CosmoCircle{T} = CosmoHypersphere{T,2} where {T<:Number}
-
-function CosmoCircle(center::Vector{<:T1}, radius::T2) where {T1<:Number,T2<:Number}
-    T1 === T2 && return CosmoHypersphere{T1,2}(center, radius)
-    T = promote_type(T1, T2)
-    return CosmoHypersphere{T,2}(center, radius)
-end
-
-function geometry_enclosing_corners(sphere::CosmoHypersphere)
-    return sphere.center .- sphere.radius, sphere.center .+ sphere.radius
-end
-
 
 for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(center)), 3, 2])
     quote
@@ -232,6 +209,15 @@ for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(
     end |> eval
 end
 
+
+function Base.:(==)(s1::CosmoHypersphere, s2::CosmoHypersphere)
+    return s1.center == s2.center && s1.radius == s2.radius
+end
+
+
+function geometry_enclosing_corners(sphere::CosmoHypersphere)
+    return sphere.center .- sphere.radius, sphere.center .+ sphere.radius
+end
 
 geometry_enclosing_center(sphere::CosmoHypersphere) = sphere.center
 
@@ -285,12 +271,17 @@ struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
     end
 end
 
+function Base.:(==)(c1::CosmoCylinder, c2::CosmoCylinder)
+    return c1.startpos == c2.startpos && c1.endpos == c2.endpos && c1.radius == c2.radius
+end
+
+
 function geometry_enclosing_corners(cylinder::CosmoCylinder)
     min.(cylinder.startpos, cylinder.endpos) .- cylinder.radius,
     max.(cylinder.startpos, cylinder.endpos) .+ cylinder.radius
 end
 
-geometry_enclosing_center(cylinder::CosmoCylinder) = 1 // 2 .* cylinder.startpos .+ cylinder.endpos
+geometry_enclosing_center(cylinder::CosmoCylinder) = 1 // 2 .* (cylinder.startpos .+ cylinder.endpos)
 
 function mask_in(pos::AbstractMatrix{<:Number}, cylinder::CosmoCylinder)
     # https://stackoverflow.com/questions/47932955/how-to-check-if-a-3d-point-is-inside-a-cylinder
@@ -342,9 +333,22 @@ struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
     end
 end
 
+function Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoStandingCylinder)
+    return c1.center == c2.center && c1.height == c2.height && c1.radius == c2.radius
+end
+
+function Base.:(==)(c1::CosmoCylinder, c2::CosmoStandingCylinder)
+    return geometry_enclosing_center(c1) == geometry_enclosing_center(c2) &&
+           abs.(c1.startpos[3] - c1.endpos[3]) == c2.height &&
+           c1.radius == c2.radius &&
+           @views c1.startpos[1:2] == c1.endpos[1:2] # c1 is actually standing
+end
+Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoCylinder) = ==(c2, c1)
+
+
 function geometry_enclosing_corners(cylinder::CosmoStandingCylinder)
-    cylinder.center .- [cylinder.radius, cylinder.radius, cylinder.height],
-    cylinder.center .+ [cylinder.radius, cylinder.radius, cylinder.height]
+    cylinder.center .- [cylinder.radius, cylinder.radius, 1 // 2 * cylinder.height],
+    cylinder.center .+ [cylinder.radius, cylinder.radius, 1 // 2 * cylinder.height]
 end
 
 geometry_enclosing_center(cylinder::CosmoStandingCylinder) = cylinder.center
