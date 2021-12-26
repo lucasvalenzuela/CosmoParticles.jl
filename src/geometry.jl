@@ -35,10 +35,11 @@ The dimensions of space are given by `N`.
 struct CosmoHyperrectangle{T,N} <: AbstractCosmoGeometry where {T<:Number}
     lowerleft::Vector{T}
     upperright::Vector{T}
-end
 
-function CosmoHyperrectangle(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number}
-    return CosmoHyperrectangle{T,length(lowerleft)}(lowerleft, upperright)
+    function CosmoHyperrectangle{T,N}(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number,N}
+        @assert length(lowerleft) == length(upperright) == N
+        new{T,N}(lowerleft, upperright)
+    end
 end
 
 """
@@ -54,6 +55,10 @@ function CosmoHyperrectangle(center::Vector{<:Number}, sidelengths::Number...)
     return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
 end
 
+function Base.:(==)(r1::CosmoHyperrectangle, r2::CosmoHyperrectangle)
+    return r1.lowerleft == r2.lowerleft && r1.upperright == r2.upperright
+end
+
 
 """
     CosmoCuboid
@@ -63,13 +68,13 @@ Alias for a 3D [`CosmoHyperrectangle`](@ref).
 const CosmoCuboid{T} = CosmoHyperrectangle{T,3} where {T<:Number}
 
 function CosmoCuboid(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number}
-    return CosmoHyperrectangle(lowerleft, upperright)
+    return CosmoCuboid{T}(lowerleft, upperright)
 end
 
 function CosmoCuboid(center::Vector{<:Number}, x::Number, y::Number, z::Number)
     halflengths = [x, y, z]
     halflengths *= 1 // 2
-    return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
+    return CosmoCuboid(center .- halflengths, center .+ halflengths)
 end
 
 
@@ -81,13 +86,13 @@ Alias for a 2D [`CosmoHyperrectangle`](@ref).
 const CosmoRectangle{T} = CosmoHyperrectangle{T,2} where {T<:Number}
 
 function CosmoRectangle(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number}
-    return CosmoHyperrectangle(lowerleft, upperright)
+    return CosmoRectangle{T}(lowerleft, upperright)
 end
 
 function CosmoRectangle(center::Vector{<:Number}, x::Number, y::Number)
     halflengths = [x, y]
     halflengths *= 1 // 2
-    return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
+    return CosmoRectangle(center .- halflengths, center .+ halflengths)
 end
 
 
@@ -106,7 +111,7 @@ end
 Return a cubic `CosmoCuboid` centered around `center`, with equal sidelengths.
 """
 function CosmoCube(center::Vector{<:Number}, radius::Number)
-    return CosmoHyperrectangle(center .- radius, center .+ radius)
+    return CosmoCuboid(center .- radius, center .+ radius)
 end
 
 """
@@ -115,13 +120,26 @@ end
 Return a square `CosmoRectangle` centered around `center`, with equal sidelengths.
 """
 function CosmoSquare(center::Vector{<:Number}, radius::Number)
-    return CosmoHyperrectangle(center .- radius, center .+ radius)
+    return CosmoRectangle(center .- radius, center .+ radius)
+end
+
+
+for (name, N) in zip([:CosmoHyperrectangle, :CosmoCuboid, :CosmoRectangle], [:(length(lowerleft)), 3, 2])
+    quote
+        function $name(lowerleft::Vector{T1}, upperright::Vector{T2}) where {T1<:Number,T2<:Number}
+            T1 === T2 && return CosmoHyperrectangle{T1,$N}(lowerleft, upperright)
+            T = promote_type(T1, T2)
+            return CosmoHyperrectangle{T,$N}(convert(Vector{T}, lowerleft), convert(Vector{T}, upperright))
+        end
+    end |> eval
 end
 
 
 geometry_enclosing_corners(rectangle::CosmoHyperrectangle) = rectangle.lowerleft, rectangle.upperright
-geometry_enclosing_center(rectangle::CosmoHyperrectangle) =
-    1 // 2 .* rectangle.lowerleft .+ rectangle.upperright
+
+function geometry_enclosing_center(rectangle::CosmoHyperrectangle)
+    return 1 // 2 .* rectangle.lowerleft .+ rectangle.upperright
+end
 
 function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoCuboid{T}) where {T}
     @inbounds @views @. (
@@ -136,6 +154,14 @@ function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoRectangle{T}) wh
         (rectangle.lowerleft[1] ≤ pos[1, :] ≤ rectangle.upperright[1]) &
         (rectangle.lowerleft[2] ≤ pos[2, :] ≤ rectangle.upperright[2])
     )
+end
+
+function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoHyperrectangle{T,N}) where {T,N}
+    mask = @inbounds @views @. rectangle.lowerleft[1] ≤ pos[1, :] ≤ rectangle.upperright[1]
+    for i in 2:N
+        mask .&= @inbounds @views @. rectangle.lowerleft[i] ≤ pos[i, :] ≤ rectangle.upperright[i]
+    end
+    return mask
 end
 
 
@@ -153,11 +179,16 @@ struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
     center::Vector{T}
     radius::T
 
-    function CosmoHypersphere(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
-        T1 === T2 && return new{T1,length(center)}(center, radius)
-        T = promote_type(T1, T2)
-        return new{T,length(center)}(convert(Vector{T}, center), convert(T, radius))
+    function CosmoHypersphere{T,N}(center::Vector{T}, radius::T) where {T<:Number,N}
+        @assert length(center) == N
+        new{T,N}(center, radius)
     end
+end
+
+function CosmoHypersphere(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
+    T1 === T2 && return CosmoHypersphere{T1,length(center)}(center, radius)
+    T = promote_type(T1, T2)
+    return CosmoHypersphere{T,length(center)}(convert(Vector{T}, center), convert(T, radius))
 end
 
 """
@@ -167,8 +198,10 @@ Alias for a 2D [`CosmoHypersphere`](@ref).
 """
 const CosmoSphere{T} = CosmoHypersphere{T,3} where {T<:Number}
 
-function CosmoSphere(center::Vector{<:Number}, radius::Number)
-    return CosmoHypersphere(center, radius)
+function CosmoSphere(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
+    T1 === T2 && return CosmoHypersphere{T1,3}(center, radius)
+    T = promote_type(T1, T2)
+    return CosmoHypersphere{T,3}(center, radius)
 end
 
 """
@@ -178,13 +211,27 @@ Alias for a 2D [`CosmoHypersphere`](@ref).
 """
 const CosmoCircle{T} = CosmoHypersphere{T,2} where {T<:Number}
 
-function CosmoCircle(center::Vector{<:Number}, radius::Number)
-    return CosmoHypersphere(center, radius)
+function CosmoCircle(center::Vector{<:T1}, radius::T2) where {T1<:Number,T2<:Number}
+    T1 === T2 && return CosmoHypersphere{T1,2}(center, radius)
+    T = promote_type(T1, T2)
+    return CosmoHypersphere{T,2}(center, radius)
 end
 
 function geometry_enclosing_corners(sphere::CosmoHypersphere)
     return sphere.center .- sphere.radius, sphere.center .+ sphere.radius
 end
+
+
+for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(center)), 3, 2])
+    quote
+        function $name(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
+            T1 === T2 && return CosmoHypersphere{T1,$N}(center, radius)
+            T = promote_type(T1, T2)
+            return CosmoHypersphere{T,$N}(convert(Vector{T}, center), convert(T, radius))
+        end
+    end |> eval
+end
+
 
 geometry_enclosing_center(sphere::CosmoHypersphere) = sphere.center
 
@@ -198,6 +245,20 @@ end
 function mask_in(pos::AbstractMatrix{<:Number}, circle::CosmoCircle)
     r² = circle.radius^2
     @inbounds @views @. (pos[1, :] - circle.center[1])^2 + (pos[2, :] - circle.center[2])^2 ≤ r²
+end
+
+function mask_in(pos::AbstractMatrix{<:Number}, sphere::CosmoHypersphere{T,N}) where {T,N}
+    r² = sphere.radius^2
+    center = sphere.center
+    mask = BitArray(undef, size(pos, 2))
+    @inbounds for i in eachindex(mask)
+        s = (pos[1, i] - center[1])^2
+        for j in 2:length(center)
+            s += (pos[j, i] - center[j])^2
+        end
+        mask[i] = s ≤ r²
+    end
+    return mask
 end
 
 
