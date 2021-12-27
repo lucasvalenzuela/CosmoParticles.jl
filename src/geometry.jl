@@ -67,10 +67,6 @@ Alias for a 3D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoCuboid{T} = CosmoHyperrectangle{T,3} where {T<:Number}
 
-function CosmoCuboid(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number}
-    return CosmoCuboid{T}(lowerleft, upperright)
-end
-
 function CosmoCuboid(center::Vector{<:Number}, x::Number, y::Number, z::Number)
     halflengths = [x, y, z]
     halflengths *= 1 // 2
@@ -84,10 +80,6 @@ end
 Alias for a 2D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoRectangle{T} = CosmoHyperrectangle{T,2} where {T<:Number}
-
-function CosmoRectangle(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number}
-    return CosmoRectangle{T}(lowerleft, upperright)
-end
 
 function CosmoRectangle(center::Vector{<:Number}, x::Number, y::Number)
     halflengths = [x, y]
@@ -142,6 +134,7 @@ function geometry_enclosing_center(rectangle::CosmoHyperrectangle)
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoCuboid{T}) where {T}
+    @assert size(pos, 1) == 3
     @inbounds @views @. (
         (rectangle.lowerleft[1] ≤ pos[1, :] ≤ rectangle.upperright[1]) &
         (rectangle.lowerleft[2] ≤ pos[2, :] ≤ rectangle.upperright[2]) &
@@ -150,6 +143,7 @@ function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoCuboid{T}) where
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoRectangle{T}) where {T}
+    @assert size(pos, 1) == 2
     @inbounds @views @. (
         (rectangle.lowerleft[1] ≤ pos[1, :] ≤ rectangle.upperright[1]) &
         (rectangle.lowerleft[2] ≤ pos[2, :] ≤ rectangle.upperright[2])
@@ -157,6 +151,7 @@ function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoRectangle{T}) wh
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, rectangle::CosmoHyperrectangle{T,N}) where {T,N}
+    @assert size(pos, 1) == N
     mask = @inbounds @views @. rectangle.lowerleft[1] ≤ pos[1, :] ≤ rectangle.upperright[1]
     for i in 2:N
         mask .&= @inbounds @views @. rectangle.lowerleft[i] ≤ pos[i, :] ≤ rectangle.upperright[i]
@@ -222,6 +217,7 @@ end
 geometry_enclosing_center(sphere::CosmoHypersphere) = sphere.center
 
 function mask_in(pos::AbstractMatrix{<:Number}, sphere::CosmoSphere)
+    @assert size(pos, 1) == 3
     r² = sphere.radius^2
     @inbounds @views @. (pos[1, :] - sphere.center[1])^2 +
                         (pos[2, :] - sphere.center[2])^2 +
@@ -229,11 +225,13 @@ function mask_in(pos::AbstractMatrix{<:Number}, sphere::CosmoSphere)
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, circle::CosmoCircle)
+    @assert size(pos, 1) == 2
     r² = circle.radius^2
     @inbounds @views @. (pos[1, :] - circle.center[1])^2 + (pos[2, :] - circle.center[2])^2 ≤ r²
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, sphere::CosmoHypersphere{T,N}) where {T,N}
+    @assert size(pos, 1) == N
     r² = sphere.radius^2
     center = sphere.center
     mask = BitArray(undef, size(pos, 2))
@@ -285,6 +283,7 @@ geometry_enclosing_center(cylinder::CosmoCylinder) = 1 // 2 .* (cylinder.startpo
 
 function mask_in(pos::AbstractMatrix{<:Number}, cylinder::CosmoCylinder)
     # https://stackoverflow.com/questions/47932955/how-to-check-if-a-3d-point-is-inside-a-cylinder
+    @assert size(pos, 1) == 3
     pos1 = @view pos[1, :]
     pos2 = @view pos[2, :]
     pos3 = @view pos[3, :]
@@ -354,6 +353,7 @@ end
 geometry_enclosing_center(cylinder::CosmoStandingCylinder) = cylinder.center
 
 function mask_in(pos::AbstractMatrix{<:Number}, cylinder::CosmoStandingCylinder)
+    @assert size(pos, 1) == 3
     r² = cylinder.radius^2
     halfheight = 1 // 2 * cylinder.height
     @inbounds @views @. ((pos[1, :] - cylinder.center[1])^2 + (pos[2, :] - cylinder.center[2])^2 ≤ r²) &
