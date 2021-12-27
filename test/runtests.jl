@@ -340,4 +340,203 @@ const CP = CosmoParticles
             @test filter!(deepcopy(p); ids=Set(ids_wanted)) == pc
         end
     end
+
+    @testset "Geometry" begin
+        # create square/cube/hypercube of positions between 0 and 1
+        pos2 = reshape(Iterators.product(0:0.1:1, 0:0.1:1) |> collect, :)
+        pos2 = reduce(hcat, getindex.(pos2, i) for i in eachindex(pos2[1]))'
+
+        pos3 = reshape(Iterators.product(0:0.1:1, 0:0.1:1, 0:0.1:1) |> collect, :)
+        pos3 = reduce(hcat, getindex.(pos3, i) for i in eachindex(pos3[1]))'
+
+        pos4 = reshape(Iterators.product(0:0.1:1, 0:0.1:1, 0:0.1:1, 0:0.1:1) |> collect, :)
+        pos4 = reduce(hcat, getindex.(pos4, i) for i in eachindex(pos4[1]))'
+
+        @testset "Hyperrectangle" begin
+            hrect = CosmoHyperrectangle(0.5rand(4), 0.5(1 .+ rand(4)))
+            @test hrect isa CosmoHyperrectangle{Float64,4}
+
+            # abstract functions do nothing
+            @test isnothing(Base.@invoke CP.geometry_enclosing_corners(hrect::AbstractCosmoGeometry))
+            @test isnothing(Base.@invoke CP.geometry_enclosing_center(hrect::AbstractCosmoGeometry))
+            @test isnothing(
+                Base.@invoke CP.mask_in(pos2::AbstractMatrix{<:Number}, hrect::AbstractCosmoGeometry)
+            )
+
+            hrect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
+            @test hrect isa CosmoHyperrectangle{Rational{Int},3}
+            @test hrect isa CosmoCuboid{Rational{Int}}
+
+            # construct hyperrectangle from center and three side lengths
+            @test CosmoHyperrectangle([75, 125, 100] .// 1000, ([15, 25, 20] .// 100)...) == hrect
+
+            # test constructors
+            @test CosmoHyperrectangle([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test CosmoHyperrectangle{Float64,3}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test_throws AssertionError CosmoHyperrectangle{Float64,4}([0, 0, 0.0], [0.15, 0.25, 0.20])
+            @test CosmoCuboid([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test_throws AssertionError CosmoCuboid([0, 0], [0.15, 0.25])
+            @test CosmoRectangle([0, 0], [0.25, 0.20]) isa CosmoRectangle{Float64}
+            @test_throws AssertionError CosmoRectangle([0, 0, 0], [0.15, 0.25, 0.20])
+            @test_throws AssertionError CosmoRectangle([0, 0], [0.15, 0.25, 0.20])
+            @test CosmoCuboid{Float64}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test CosmoRectangle{Float64}([0, 0.0], [0.25, 0.20]) isa CosmoRectangle{Float64}
+
+            @test CosmoHyperrectangle([0, 0], 0.15, 0.25) isa CosmoRectangle{Float64}
+            @test CosmoHyperrectangle([0, 0, 0], 0.15, 0.25, 0.20) isa CosmoCuboid{Float64}
+            @test CosmoHyperrectangle([0, 0, 0, 0], 0.15, 0.25, 0.20, 0.54) isa CosmoHyperrectangle{Float64,4}
+            @test_throws Exception CosmoHyperrectangle([0, 0], 0.15, 0.25, 0.54)
+
+            r = 5 // 2
+            @test CosmoHypercube([0, 0, 0, 0], r) == CosmoHyperrectangle([-r, -r, -r, -r], [r, r, r, r])
+            @test CosmoCube([0, 0, 0], r) == CosmoCuboid([-r, -r, -r], [r, r, r])
+            @test CosmoSquare([0, 0], r) == CosmoRectangle([-r, -r], [r, r])
+
+
+            cuboid = CosmoCuboid([0, 0, 0] .// 100, [15, 25, 19] .// 100)
+            @test CP.geometry_enclosing_center(cuboid) == [15, 25, 19] .// 200
+            @test CP.geometry_enclosing_center(CosmoCube(zeros(Int, 3), 4 // 1)) == zeros(3)
+            @test CP.geometry_enclosing_corners(cuboid) == (zeros(3), [15, 25, 19] .// 100)
+
+            pos3in = pos3[:, CP.mask_in(pos3, cuboid)]
+            @test all(0 .≤ pos3in[1, :] .≤ 0.15) &&
+                  all(0 .≤ pos3in[2, :] .≤ 0.25) &&
+                  all(0 .≤ pos3in[3, :] .≤ 0.19)
+
+            rect = CosmoRectangle([0, 0] .// 100, [25, 19] .// 100)
+            pos2in = pos2[:, CP.mask_in(pos2, rect)]
+            @test all(0 .≤ pos2in[1, :] .≤ 0.25) && all(0 .≤ pos2in[2, :] .≤ 0.19)
+
+            hrect = CosmoHyperrectangle([0, 0, 0, 0] .// 100, [15, 25, 19, 35] .// 100)
+            pos4in = pos4[:, CP.mask_in(pos4, hrect)]
+            @test all(0 .≤ pos4in[1, :] .≤ 0.15) &&
+                  all(0 .≤ pos4in[2, :] .≤ 0.25) &&
+                  all(0 .≤ pos4in[3, :] .≤ 0.19) &&
+                  all(0 .≤ pos4in[4, :] .≤ 0.35)
+
+            @test_throws AssertionError CP.mask_in(pos3, hrect)
+        end
+
+        @testset "Hypersphere" begin
+            hsphere = CosmoHypersphere(0.5rand(4), 0.5)
+            @test hsphere isa CosmoHypersphere{Float64,4}
+
+            hsphere = CosmoHypersphere([0, 0, 0] .// 100, 15 // 100)
+            @test hsphere isa CosmoHypersphere{Rational{Int},3}
+            @test hsphere isa CosmoSphere{Rational{Int}}
+
+            @test hsphere == CosmoHypersphere([0, 0, 0], 15 // 100)
+
+            # test constructors
+            @test CosmoHypersphere([0.15, 0.25, 0.20], 2) isa CosmoSphere{Float64}
+            @test CosmoHypersphere{Float64,3}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
+            @test_throws AssertionError CosmoHypersphere{Float64,4}([0.15, 0.25, 0.20], 0.2)
+            @test CosmoSphere([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
+            @test_throws AssertionError CosmoSphere([0.15, 0.25], 0.3)
+            @test CosmoCircle([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
+            @test_throws AssertionError CosmoCircle([0.15, 0.25, 0.20], 0.2)
+            @test CosmoSphere{Float64}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
+            @test CosmoCircle{Float64}([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
+
+            r = 12 // 100
+
+            center = [10, 20, 30] .// 100
+            sphere = CosmoSphere(center, r)
+            @test CP.geometry_enclosing_center(sphere) == center
+            @test CP.geometry_enclosing_corners(sphere) == ([-2, 8, 18] .// 100, [22, 32, 42] .// 100)
+
+            pos3in = pos3[:, CP.mask_in(pos3, sphere)]
+            @test all(sum(abs2, pos3in .- center; dims=1) .≤ r^2)
+            pos3notin = pos3[:, .~CP.mask_in(pos3, sphere)]
+            @test all(sum(abs2, pos3notin .- center; dims=1) .> r^2)
+
+            center = [20, 30] .// 100
+            circle = CosmoCircle(center, r)
+            pos2in = pos2[:, CP.mask_in(pos2, circle)]
+            @test all(sum(abs2, pos2in .- center; dims=1) .≤ r^2)
+
+            center = [10, 20, 30, 40] .// 100
+            hsphere = CosmoHypersphere(center, r)
+            pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
+            @test all(sum(abs2, pos4in .- center; dims=1) .≤ r^2)
+
+            @test_throws AssertionError CP.mask_in(pos3, hsphere)
+        end
+
+        @testset "Cylinder" begin
+            scyl = CosmoStandingCylinder(0.5rand(3), 0.5, 0.5)
+            @test scyl isa CosmoStandingCylinder{Float64}
+
+            scyl = CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
+            @test scyl isa CosmoStandingCylinder{Rational{Int}}
+
+            @test CosmoStandingCylinder(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float64}
+            @test_throws AssertionError CosmoStandingCylinder(rand(4), 1, 1 // 10)
+
+            center = [1, 2, 3] .// 10
+            h = 24 // 100
+            r = 15 // 100
+            scyl = CosmoStandingCylinder(center, h, r)
+
+            @test CP.geometry_enclosing_center(scyl) == center
+            @test CP.geometry_enclosing_corners(scyl) == ([-5, 5, 18] .// 100, [25, 35, 42] .// 100)
+
+            pos3in = pos3[:, CP.mask_in(pos3, scyl)]
+            @test @views all(sum(abs2, pos3in[1:2, :] .- center[1:2]; dims=1) .≤ r^2)
+            @test @views all(18 // 100 .≤ pos3in[3, :] .≤ 42 // 100)
+            pos3notin = pos3[:, .~CP.mask_in(pos3, scyl)]
+            @test @views all(
+                vec(sum(abs2, pos3notin[1:2, :] .- center[1:2]; dims=1) .> r^2) .|
+                (18 // 100 .> pos3notin[3, :]) .|
+                (pos3notin[3, :] .> 42 // 100),
+            )
+            @test_throws AssertionError CP.mask_in(pos2, scyl)
+
+
+            cyl = CosmoCylinder(0.5rand(3), 0.5rand(3), 0.5)
+            @test cyl isa CosmoCylinder{Float64}
+
+            cyl = CosmoCylinder([1, 2, 3] .// 10, [2, 3, 4] .// 10, 1 // 10)
+            @test cyl isa CosmoCylinder{Rational{Int}}
+
+            @test CosmoCylinder(rand(3), rand(3), 1 // 10) isa CosmoCylinder{Float64}
+            @test_throws AssertionError CosmoCylinder(rand(4), rand(3), 0.1)
+            @test_throws AssertionError CosmoCylinder(rand(3), rand(2), 0.1)
+
+            center = center
+            startpos = [10, 20, 18] .// 100
+            endpos = [10, 20, 42] .// 100
+            r = r
+            cyl = CosmoCylinder(startpos, endpos, r)
+
+            @test CP.geometry_enclosing_center(cyl) == center
+            @test all(CP.geometry_enclosing_corners(cyl) .≈ ([-5, 5, 18] .// 100, [25, 35, 42] .// 100))
+
+            # right mask for standing cylinder
+            @test scyl == cyl
+            @test CP.mask_in(pos3, scyl) == CP.mask_in(pos3, cyl)
+            @test_throws AssertionError CP.mask_in(pos2, cyl)
+
+            @test CosmoStandingCylinder(cyl) == scyl
+            @test CosmoCylinder(scyl) == cyl
+
+            # same result switching random start and end points of the cylinder
+            p1 = rand(3)
+            p2 = rand(3)
+            r = 0.15
+            c1 = CosmoCylinder(p1, p2, r)
+            c2 = CosmoCylinder(p2, p1, r)
+            @test CP.geometry_enclosing_center(c1) == CP.geometry_enclosing_center(c2)
+            @test CP.geometry_enclosing_corners(c1) == CP.geometry_enclosing_corners(c2)
+            @test CP.mask_in(pos3, c1) == CP.mask_in(pos3, c2)
+
+            @test_throws AssertionError CosmoStandingCylinder(c1)
+
+
+            scyl = CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
+            @test scyl == CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
+            @test scyl == CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10)
+            @test CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10) == scyl
+        end
+    end
 end
