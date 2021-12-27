@@ -274,9 +274,12 @@ function Base.:(==)(c1::CosmoCylinder, c2::CosmoCylinder)
 end
 
 
-function geometry_enclosing_corners(cylinder::CosmoCylinder)
-    min.(cylinder.startpos, cylinder.endpos) .- cylinder.radius,
-    max.(cylinder.startpos, cylinder.endpos) .+ cylinder.radius
+function geometry_enclosing_corners(c::CosmoCylinder)
+    # https://iquilezles.org/www/articles/diskbbox/diskbbox.htm
+    a = c.endpos .- c.startpos
+    @inbounds a² = a[1]^2 + a[2]^2 + a[3]^2
+    e = @. c.radius * sqrt(1 - a^2 / a²)
+    return (min.(c.startpos .- e, c.endpos .- e), max.(c.startpos .+ e, c.endpos .+ e))
 end
 
 geometry_enclosing_center(cylinder::CosmoCylinder) = 1 // 2 .* (cylinder.startpos .+ cylinder.endpos)
