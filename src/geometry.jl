@@ -1,16 +1,32 @@
+"""
+    abstract type AbstractCosmoGeometry end
+
+Abstract type for (multi-dimensional) geometry volumes, particularly for filtering with [`filter`](@ref).
+
+Any subtypes of `AbstractCosmoGeometry` have to implement the following methods:
+- [`CosmoParticles.geometry_enclosing_corners`](@ref)
+- [`CosmoParticles.geometry_enclosing_center`](@ref)
+- [`CosmoParticles.mask_in`](@ref)
+"""
 abstract type AbstractCosmoGeometry end
 
 """
     geometry_enclosing_corners(geo::AbstractCosmoGeometry)
 
-Return the lower left and upper right corners of the enclosing box of the geometry.
+Return the lower left and upper right corners of the enclosing box of the geometry as a tuple of vectors.
+
+The enclosing box is not necessarily the tightest fitting box.
+
+This is not exported.
 """
 function geometry_enclosing_corners(::AbstractCosmoGeometry) end
 
 """
     geometry_enclosing_center(geo::AbstractCosmoGeometry)
 
-Return the center of the enclosing box of the geometry.
+Return the center of the enclosing box of the geometry as a vector.
+
+This is not exported.
 """
 function geometry_enclosing_center(::AbstractCosmoGeometry) end
 
@@ -18,6 +34,8 @@ function geometry_enclosing_center(::AbstractCosmoGeometry) end
     mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 
 Return the `BitArray` mask of the positions (``\mathrm{dims} \times N``) located within the geometry.
+
+This is not exported.
 """
 function mask_in(::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
 
@@ -121,7 +139,10 @@ end
 
 for (name, N) in zip([:CosmoHyperrectangle, :CosmoCuboid, :CosmoRectangle], [:(length(lowerleft)), 3, 2])
     quote
-        function $name(lowerleft::AbstractVector{T1}, upperright::AbstractVector{T2}) where {T1<:Number,T2<:Number}
+        function $name(
+            lowerleft::AbstractVector{T1},
+            upperright::AbstractVector{T2},
+        ) where {T1<:Number,T2<:Number}
             T = promote_type(T1, T2)
             return CosmoHyperrectangle{T,$N}(lowerleft, upperright)
         end
@@ -332,11 +353,7 @@ struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
     height::T
     radius::T
 
-    function CosmoStandingCylinder{T}(
-        center::AbstractVector,
-        height,
-        radius,
-    ) where {T<:Number}
+    function CosmoStandingCylinder{T}(center::AbstractVector, height, radius) where {T<:Number}
         @assert length(center) == 3
         return new{T}(convert(Vector{T}, center), convert(T, height), convert(T, radius))
     end
@@ -371,6 +388,11 @@ function mask_in(pos::AbstractMatrix{<:Number}, c::CosmoStandingCylinder)
 end
 
 
+"""
+    CosmoCylinder(c::CosmoStandingCylinder)
+
+Create a cylinder from a standing cylinder.
+"""
 function CosmoCylinder(c::CosmoStandingCylinder)
     halfheight = 1 // 2 * c.height
     startpos = [c.center[1], c.center[2], c.center[3] - halfheight]
@@ -378,6 +400,13 @@ function CosmoCylinder(c::CosmoStandingCylinder)
     return CosmoCylinder(startpos, endpos, c.radius)
 end
 
+"""
+    CosmoStandingCylinder(c::CosmoCylinder)
+
+Create a standing cylinder from a cylinder.
+
+The end positions of the cylinder have to have the same x and y coordinates.
+"""
 function CosmoStandingCylinder(c::CosmoCylinder)
     @assert c.startpos[1] == c.endpos[1] && c.startpos[2] == c.endpos[2]
     center = geometry_enclosing_center(c)

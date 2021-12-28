@@ -88,7 +88,7 @@ end
 """
     Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
 
-Create new particles with them filtered by keeping only those inside the given geometry.
+Create new particles with them filtered by keeping only those inside the given [`AbstractCosmoGeometry`](@ref).
 
 The filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
@@ -102,7 +102,7 @@ end
 """
     Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
 
-Filter the particles in-place by keeping only those inside the given geometry.
+Filter the particles in-place by keeping only those inside the given [`AbstractCosmoGeometry`](@ref).
 
 The filter is applied to the property specified.
 """

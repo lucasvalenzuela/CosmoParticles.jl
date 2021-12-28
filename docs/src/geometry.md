@@ -1,0 +1,33 @@
+```@meta
+CurrentModule = CosmoParticles
+```
+
+# Geometry
+
+To filter particles in a particular volume, such as a cube, a sphere, or a cylinder, geometries can be used.
+This package provides a variety of different geometries for multiple dimensions, including the following:
+- [Hyperrectangle](https://en.wikipedia.org/wiki/Hyperrectangle)
+  * [3D Rectangular Cuboid](https://en.wikipedia.org/wiki/Cuboid#Rectangular_cuboid)
+  * [2D Rectangle](https://en.wikipedia.org/wiki/Rectangle)
+- [Hypersphere](https://en.wikipedia.org/wiki/N-sphere)
+  * [3D Sphere](https://en.wikipedia.org/wiki/Sphere)
+  * [2D Circle](https://en.wikipedia.org/wiki/Circle)
+- [Cylinder](https://en.wikipedia.org/wiki/Cylinder) (standing cylinder aligned with the z axis and arbitrary
+  orientation)
+
+```@docs
+AbstractCosmoGeometry
+CosmoParticles.geometry_enclosing_corners
+CosmoParticles.geometry_enclosing_center
+CosmoParticles.mask_in
+CosmoHyperrectangle
+CosmoCuboid
+CosmoCube
+CosmoRectangle
+CosmoSquare
+CosmoHypersphere
+CosmoSphere
+CosmoCircle
+CosmoCylinder
+CosmoStandingCylinder
+```
