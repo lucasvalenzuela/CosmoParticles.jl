@@ -36,9 +36,12 @@ struct CosmoHyperrectangle{T,N} <: AbstractCosmoGeometry where {T<:Number}
     lowerleft::Vector{T}
     upperright::Vector{T}
 
-    function CosmoHyperrectangle{T,N}(lowerleft::Vector{T}, upperright::Vector{T}) where {T<:Number,N}
+    function CosmoHyperrectangle{T,N}(
+        lowerleft::AbstractVector{<:Number},
+        upperright::AbstractVector{<:Number},
+    ) where {T<:Number,N}
         @assert length(lowerleft) == length(upperright) == N
-        new{T,N}(lowerleft, upperright)
+        new{T,N}(convert(Vector{T}, lowerleft), convert(Vector{T}, upperright))
     end
 end
 
@@ -49,7 +52,7 @@ Return a `CosmoHyperrectangle` centered around `center`, with the given `sidelen
 
 The side lengths are given in order of the axes, i.e., x, y or x, y, z for 2D and 3D, respectively.
 """
-function CosmoHyperrectangle(center::Vector{<:Number}, sidelengths::Number...)
+function CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelengths::Number...)
     halflengths = [sidelengths...]
     halflengths *= 1 // 2
     return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
@@ -67,7 +70,7 @@ Alias for a 3D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoCuboid{T} = CosmoHyperrectangle{T,3} where {T<:Number}
 
-function CosmoCuboid(center::Vector{<:Number}, x::Number, y::Number, z::Number)
+function CosmoCuboid(center::AbstractVector{<:Number}, x::Number, y::Number, z::Number)
     halflengths = [x, y, z]
     halflengths *= 1 // 2
     return CosmoCuboid(center .- halflengths, center .+ halflengths)
@@ -81,7 +84,7 @@ Alias for a 2D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoRectangle{T} = CosmoHyperrectangle{T,2} where {T<:Number}
 
-function CosmoRectangle(center::Vector{<:Number}, x::Number, y::Number)
+function CosmoRectangle(center::AbstractVector{<:Number}, x::Number, y::Number)
     halflengths = [x, y]
     halflengths *= 1 // 2
     return CosmoRectangle(center .- halflengths, center .+ halflengths)
@@ -93,7 +96,7 @@ end
 
 Return a cubic `CosmoCuboid` centered around `center`, with equal sidelengths.
 """
-function CosmoHypercube(center::Vector{<:Number}, radius::Number)
+function CosmoHypercube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoHyperrectangle(center .- radius, center .+ radius)
 end
 
@@ -102,7 +105,7 @@ end
 
 Return a cubic `CosmoCuboid` centered around `center`, with equal sidelengths.
 """
-function CosmoCube(center::Vector{<:Number}, radius::Number)
+function CosmoCube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoCuboid(center .- radius, center .+ radius)
 end
 
@@ -111,17 +114,16 @@ end
 
 Return a square `CosmoRectangle` centered around `center`, with equal sidelengths.
 """
-function CosmoSquare(center::Vector{<:Number}, radius::Number)
+function CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
     return CosmoRectangle(center .- radius, center .+ radius)
 end
 
 
 for (name, N) in zip([:CosmoHyperrectangle, :CosmoCuboid, :CosmoRectangle], [:(length(lowerleft)), 3, 2])
     quote
-        function $name(lowerleft::Vector{T1}, upperright::Vector{T2}) where {T1<:Number,T2<:Number}
-            T1 === T2 && return CosmoHyperrectangle{T1,$N}(lowerleft, upperright)
+        function $name(lowerleft::AbstractVector{T1}, upperright::AbstractVector{T2}) where {T1<:Number,T2<:Number}
             T = promote_type(T1, T2)
-            return CosmoHyperrectangle{T,$N}(convert(Vector{T}, lowerleft), convert(Vector{T}, upperright))
+            return CosmoHyperrectangle{T,$N}(lowerleft, upperright)
         end
     end |> eval
 end
@@ -173,9 +175,9 @@ struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
     center::Vector{T}
     radius::T
 
-    function CosmoHypersphere{T,N}(center::Vector{T}, radius::T) where {T<:Number,N}
+    function CosmoHypersphere{T,N}(center::AbstractVector{<:Number}, radius::Number) where {T<:Number,N}
         @assert length(center) == N
-        new{T,N}(center, radius)
+        new{T,N}(convert(Vector{T}, center), convert(T, radius))
     end
 end
 
@@ -195,10 +197,9 @@ const CosmoCircle{T} = CosmoHypersphere{T,2} where {T<:Number}
 
 for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(center)), 3, 2])
     quote
-        function $name(center::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
-            T1 === T2 && return CosmoHypersphere{T1,$N}(center, radius)
+        function $name(center::AbstractVector{T1}, radius::T2) where {T1<:Number,T2<:Number}
             T = promote_type(T1, T2)
-            return CosmoHypersphere{T,$N}(convert(Vector{T}, center), convert(T, radius))
+            return CosmoHypersphere{T,$N}(center, radius)
         end
     end |> eval
 end
@@ -261,12 +262,19 @@ struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
     endpos::Vector{T}
     radius::T
 
-    function CosmoCylinder(startpos::Vector{T1}, endpos::Vector{T1}, radius::T2) where {T1<:Number,T2<:Number}
+    function CosmoCylinder{T}(startpos::AbstractVector, endpos::AbstractVector, radius) where {T<:Number}
         @assert length(startpos) == 3 && length(endpos) == 3
-        T1 === T2 && return new{T1}(startpos, endpos, radius)
-        T = promote_type(T1, T2)
         return new{T}(convert(Vector{T}, startpos), convert(Vector{T}, endpos), convert(T, radius))
     end
+end
+
+function CosmoCylinder(
+    startpos::AbstractVector{T1},
+    endpos::AbstractVector{T2},
+    radius::T3,
+) where {T1<:Number,T2<:Number,T3<:Number}
+    T = promote_type(T1, T2, T3)
+    return CosmoCylinder{T}(startpos, endpos, radius)
 end
 
 function Base.:(==)(c1::CosmoCylinder, c2::CosmoCylinder)
@@ -324,16 +332,23 @@ struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
     height::T
     radius::T
 
-    function CosmoStandingCylinder(
-        center::Vector{T1},
-        height::T2,
-        radius::T3,
-    ) where {T1<:Number,T2<:Number,T3<:Number}
+    function CosmoStandingCylinder{T}(
+        center::AbstractVector,
+        height,
+        radius,
+    ) where {T<:Number}
         @assert length(center) == 3
-        T1 === T2 === T3 && return new{T1}(center, height, radius)
-        T = promote_type(T1, T2, T3)
         return new{T}(convert(Vector{T}, center), convert(T, height), convert(T, radius))
     end
+end
+
+function CosmoStandingCylinder(
+    center::AbstractVector{T1},
+    height::T2,
+    radius::T3,
+) where {T1<:Number,T2<:Number,T3<:Number}
+    T = promote_type(T1, T2, T3)
+    return CosmoStandingCylinder{T}(center, height, radius)
 end
 
 function Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoStandingCylinder)

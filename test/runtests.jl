@@ -376,6 +376,7 @@ const CP = CosmoParticles
             # test constructors
             @test CosmoHyperrectangle([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoHyperrectangle{Float64,3}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test CosmoHyperrectangle{Float64,3}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float64}
             @test_throws AssertionError CosmoHyperrectangle{Float64,4}([0, 0, 0.0], [0.15, 0.25, 0.20])
             @test CosmoCuboid([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test_throws AssertionError CosmoCuboid([0, 0], [0.15, 0.25])
@@ -383,7 +384,9 @@ const CP = CosmoParticles
             @test_throws AssertionError CosmoRectangle([0, 0, 0], [0.15, 0.25, 0.20])
             @test_throws AssertionError CosmoRectangle([0, 0], [0.15, 0.25, 0.20])
             @test CosmoCuboid{Float64}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
+            @test CosmoCuboid{Float32}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float32}
             @test CosmoRectangle{Float64}([0, 0.0], [0.25, 0.20]) isa CosmoRectangle{Float64}
+            @test CosmoRectangle{Float64}([0, 0], [0.25, 0.20]) isa CosmoRectangle{Float64}
 
             @test CosmoHyperrectangle([0, 0], 0.15, 0.25) isa CosmoRectangle{Float64}
             @test CosmoHyperrectangle([0, 0, 0], 0.15, 0.25, 0.20) isa CosmoCuboid{Float64}
@@ -433,12 +436,14 @@ const CP = CosmoParticles
             # test constructors
             @test CosmoHypersphere([0.15, 0.25, 0.20], 2) isa CosmoSphere{Float64}
             @test CosmoHypersphere{Float64,3}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
+            @test CosmoHypersphere{Float32,3}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float32}
             @test_throws AssertionError CosmoHypersphere{Float64,4}([0.15, 0.25, 0.20], 0.2)
             @test CosmoSphere([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
             @test_throws AssertionError CosmoSphere([0.15, 0.25], 0.3)
             @test CosmoCircle([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
             @test_throws AssertionError CosmoCircle([0.15, 0.25, 0.20], 0.2)
             @test CosmoSphere{Float64}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
+            @test CosmoSphere{Float32}([0.15, 0.25, 0.20], 1) isa CosmoSphere{Float32}
             @test CosmoCircle{Float64}([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
 
             r = 12 // 100
@@ -474,6 +479,7 @@ const CP = CosmoParticles
             @test scyl isa CosmoStandingCylinder{Rational{Int}}
 
             @test CosmoStandingCylinder(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float64}
+            @test CosmoStandingCylinder{Float32}(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float32}
             @test_throws AssertionError CosmoStandingCylinder(rand(4), 1, 1 // 10)
 
             center = [1, 2, 3] .// 10
@@ -503,6 +509,8 @@ const CP = CosmoParticles
             @test cyl isa CosmoCylinder{Rational{Int}}
 
             @test CosmoCylinder(rand(3), rand(3), 1 // 10) isa CosmoCylinder{Float64}
+            @test CosmoCylinder(rand(3), [0, 0, 0], 1 // 10) isa CosmoCylinder{Float64}
+            @test CosmoCylinder{Float32}(rand(3), [0, 0, 0], 1 // 10) isa CosmoCylinder{Float32}
             @test_throws AssertionError CosmoCylinder(rand(4), rand(3), 0.1)
             @test_throws AssertionError CosmoCylinder(rand(3), rand(2), 0.1)
 
