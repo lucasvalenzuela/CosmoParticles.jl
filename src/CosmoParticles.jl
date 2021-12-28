@@ -4,8 +4,15 @@ using FastUnitfulOperations
 using LinearAlgebra
 import LinearAlgebra.rotate!
 
-export AbstractParticles,
+export
+    # types
+    AbstractParticles,
     Particles,
+    AbstractParticleCollection,
+    ParticleCollection,
+    RedshiftParticleCollection,
+
+    # geometry
     AbstractCosmoGeometry,
     CosmoHyperrectangle,
     CosmoCuboid,
@@ -18,6 +25,11 @@ export AbstractParticles,
     CosmoCircle,
     CosmoCylinder,
     CosmoStandingCylinder,
+
+    # getters
+    redshift,
+
+    # transformations
     rotate,
     rotate!,
     translate,
@@ -25,6 +37,8 @@ export AbstractParticles,
 
 include("abstractparticles.jl")
 include("particles.jl")
+include("abstractparticlecollection.jl")
+include("particlecollection.jl")
 include("geometry.jl")
 
 include("utils.jl")
