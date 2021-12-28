@@ -6,6 +6,13 @@
 
 Particles of a certain type (typically something like `:dm` or `:gas` in the cosmological
 context) with their properties.
+
+The following naming convention is to be used for specific properties:
+- `:id`: vector of IDs
+- `:pos`: ``2×N`` or ``3×N`` matrix with positions
+- `:vel`: ``2×N`` or ``3×N`` matrix with velocities
+- `:mass`: vector of masses or a scalar if all particles have the same mass
+- `:temp`: vector of temperatures
 """
 struct Particles <: AbstractParticles
     type::Symbol

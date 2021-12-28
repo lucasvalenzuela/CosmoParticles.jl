@@ -18,9 +18,11 @@ If the struct has additional fields, these can also be accessed by `p.field`, bu
 `p[:field]`. The latter syntax can only be used to access the particle properties.
 
 # Property keys
-- `:id`: `Vector` of IDs
-- `:pos`: ``2×N`` or ``3×N`` `Matrix` with positions
-- `:vel`: ``2×N`` or ``3×N`` `Matrix` with velocities
+- `:id`: vector of IDs
+- `:pos`: ``2×N`` or ``3×N`` matrix with positions
+- `:vel`: ``2×N`` or ``3×N`` matrix with velocities
+
+Any arrays may be of the type `AbstractArray`, provided the arrays are 1-indexed.
 
 # Methods
 The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, and `Base.isempty`
