@@ -82,7 +82,7 @@ end
 
 
 """
-    CosmoCuboid
+    CosmoCuboid{T} = CosmoHyperrectangle{T,3}
 
 Alias for a 3D [`CosmoHyperrectangle`](@ref).
 """
@@ -96,7 +96,7 @@ end
 
 
 """
-    CosmoRectangle
+    CosmoRectangle{T} = CosmoHyperrectangle{T,2}
 
 Alias for a 2D [`CosmoHyperrectangle`](@ref).
 """
@@ -203,14 +203,14 @@ struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
 end
 
 """
-    CosmoSphere
+    CosmoSphere{T} = CosmoHypersphere{T,3}
 
 Alias for a 2D [`CosmoHypersphere`](@ref).
 """
 const CosmoSphere{T} = CosmoHypersphere{T,3} where {T<:Number}
 
 """
-    CosmoCircle
+    CosmoCircle{T} = CosmoHypersphere{T,2}
 
 Alias for a 2D [`CosmoHypersphere`](@ref).
 """
