@@ -367,8 +367,11 @@ const CP = CosmoParticles
             @test hrect isa CosmoHyperrectangle{Rational{Int},3}
             @test hrect isa CosmoCuboid{Rational{Int}}
 
-            # construct hyperrectangle from center and three side lengths
+            # construct hyperrectangles from center and side lengths
             @test CosmoHyperrectangle([75, 125, 100] .// 1000, ([15, 25, 20] .// 100)...) == hrect
+            @test CosmoCuboid([75, 125, 100] .// 1000, ([15, 25, 20] .// 100)...) == hrect
+            @test CosmoRectangle([75, 125] .// 1000, ([15, 25] .// 100)...) ==
+                  CosmoRectangle([0, 0] .// 100, [15, 25] .// 100)
 
             # test constructors
             @test CosmoHyperrectangle([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
@@ -538,5 +541,30 @@ const CP = CosmoParticles
             @test scyl == CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10)
             @test CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10) == scyl
         end
+
+
+        p = Particles(:dm)
+        p.pos = pos3
+        p.mass = rand(size(pos3, 2))
+        
+        pu = Particles(:dm)
+        pu.pos = pos3 .* u"m"
+        pu.mass = rand(size(pos3, 2))
+
+        center = rand(3)
+        sph = CosmoSphere(center, 0.2)
+        sphu = CosmoSphere(center * u"m", 0.2u"m")
+        mask = CP.mask_in(pos3, sph)
+
+        @test filter(p, sph) == p[mask]
+        @test filter(pu, sphu) == pu[mask]
+
+        pc = filter(p, sph; affect=(:pos,))
+        @test pc.pos == p.pos[:,mask]
+        @test !haskey(pc, :mass)
+
+        pc = deepcopy(p)
+        filter!(pc, sph)
+        @test pc == p[mask]
     end
 end
