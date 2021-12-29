@@ -47,8 +47,34 @@ end
 rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rotate(p, rotmat, (prop,))
 
 @doc raw"""
+    rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop)
+    rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+
+Rotates the specified properties `props` of the particles in the collection by the rotation matrix `rotmat`.
+
+Creates a copy of the particle collection with only new pointers to the rotated particles
+(by default position and velocity).The properties should be given as a single `Symbol`, or an array or tuple of
+`Symbol`s.
+"""
+function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    pc = copy(pc)
+
+    for ptype in keys(pc)
+        pc[ptype] = rotate(pc[ptype], rotmat, props)
+    end
+
+    return pc
+end
+
+function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop::Symbol)
+    rotate(pc, rotmat, (prop,))
+end
+
+@doc raw"""
     LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
     LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
+    LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop)
 
 In-place version of [`rotate`](@ref).
 
@@ -63,7 +89,19 @@ function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Re
     return p
 end
 
-LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rotate!(p, rotmat, (prop,))
+LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) =
+    rotate!(p, rotmat, (prop,))
+
+function rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    for ptype in keys(pc)
+        rotate!(pc[ptype], rotmat, props)
+    end
+
+    return pc
+end
+
+LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop::Symbol) =
+    rotate!(pc, rotmat, (prop,))
 
 
 """
@@ -85,7 +123,26 @@ function translate(p::AbstractParticles, Δx::AbstractVector{<:Number}, prop::Sy
 end
 
 """
+    translate(pc::AbstractParticleCollection, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+
+Translates the specified property of the particles in the collection `pc` by `Δx`.
+
+Creates a copy of the particle collection with only new pointers to the translated properties for the particles.
+Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
+"""
+function translate(pc::AbstractParticleCollection, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+    pc = copy(pc)
+
+    for ptype in keys(pc)
+        pc[ptype] = translate(pc[ptype], Δx, prop)
+    end
+
+    return pc
+end
+
+"""
     translate!(p::AbstractParticles, Δx, prop::Symbol=:pos)
+    translate!(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
 
 In-place version of [`translate`](@ref).
 """
@@ -95,4 +152,12 @@ function translate!(p::AbstractParticles, Δx::AbstractVector{<:Number}, prop::S
     end
 
     return p
+end
+
+function translate!(pc::AbstractParticleCollection, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+    for ptype in keys(pc)
+        translate!(pc[ptype], Δx, prop)
+    end
+
+    return pc
 end
