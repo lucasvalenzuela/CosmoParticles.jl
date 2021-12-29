@@ -127,3 +127,29 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
 
     return resize!(ind_all, iind)
 end
+
+"""
+    product_preserve_type(arr::AbstractArray{T}, b::Real) where {T}
+
+Multiply an array with a scalar while preserving the element type of the array.
+
+For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+"""
+product_preserve_type(arr::AbstractArray{T}, b::Real) where {T<:Real} = arr .* convert(T, b)
+product_preserve_type(arr::AbstractArray{Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
+
+"""
+    product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
+
+Multiply an array with a scalar in-place while preserving the element type of the array.
+
+By converting the scalar factor to the array element type, this can be more performant than a normal
+broadcasted product.
+For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+"""
+function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
+    arr .*= convert(T, b)
+end
+function product_preserve_type!(arr::AbstractArray{Quantity{T}}, b::Real) where {T<:Real}
+    arr .*= convert(T, b)
+end
