@@ -657,6 +657,44 @@ const CP = CosmoParticles
             rpc = RedshiftParticleCollection(z, dm, gas)
             @test rpc != pc && pc != rpc
         end
-        # test AbstractParticleCollection with basic implementation Particles
+
+        @testset "AbstractParticleCollection" begin
+            pc = ParticleCollection(dm, gas)
+
+            @test CP.get_particles(pc) === pc.particles
+
+            @test getproperty(pc, :dm) === pc.particles[:dm]
+            @test getproperty(pc, :particles) === pc.particles
+            @test pc.dm === pc.particles[:dm]
+            @test pc[:dm] === pc.particles[:dm]
+
+            @test_throws ErrorException("setfield!: immutable struct of type ParticleCollection cannot be changed") pc.particles =
+                Dict{Symbol,Particles}()
+            pc.dm = gas
+            @test pc[:dm] === gas
+
+            pc[:dm] = dm
+            @test pc.dm === dm
+
+            @test keys(pc) == keys(pc.particles)
+            @test haskey(pc, :dm)
+            @test !haskey(pc, :stars)
+            @test !haskey(pc, :particles)
+
+            @test values(pc) == values(pc.particles)
+
+            @test issetequal(propertynames(pc), [:dm, :gas])
+
+            pcc = deepcopy(pc)
+            empty!(pcc)
+            @test isempty(pcc.particles)
+            @test isempty(pcc)
+
+            @test !isempty(pc)
+
+            io = IOBuffer()
+            CP.show_properties(io, "text/plain", pc)
+            @test String(take!(io)) == "dm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+        end
     end
 end
