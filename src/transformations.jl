@@ -226,11 +226,11 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             return p
         end
 
-        function $(Symbol(name))(pc::AbstractParticleCollection; props=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name))(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
             pc = copy(pc)
 
             for ptype in keys(pc)
-                pc[ptype] = to_comoving(pc[ptype], redshift(pc); props)
+                pc[ptype] = to_comoving(pc[ptype], redshift(pc); propexp)
             end
 
             return pc
@@ -247,9 +247,9 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             return p
         end
 
-        function $(Symbol(name, "!"))(pc::AbstractParticleCollection; props=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name, "!"))(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
             for ptype in keys(pc)
-                to_comoving!(pc[ptype], redshift(pc); props)
+                to_comoving!(pc[ptype], redshift(pc); propexp)
             end
 
             return pc

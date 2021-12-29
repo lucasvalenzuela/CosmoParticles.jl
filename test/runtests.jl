@@ -542,6 +542,27 @@ const CP = CosmoParticles
                 to_physical!(pcc, z; propexp)
                 @test pcc == pc
             end
+
+            @testset "Particle Collection Comoving" begin
+                dm = Particles(:dm)
+                dm.pos = copy(au)
+                dm.n = copy(n)
+                dm.mass = copy(m)
+                gas = Particles(:gas)
+                gas.pos = copy(a)
+                gas.n = copy(nu)
+                gas.mass = copy(m)
+
+                pc = RedshiftParticleCollection(z, dm, gas)
+
+                pcc = to_comoving(pc; propexp)
+                @test pcc.dm == to_comoving(dm, z; propexp)
+                @test pcc.gas == to_comoving(gas, z; propexp)
+
+                pccc = deepcopy(pc)
+                to_comoving!(pccc; propexp)
+                @test pccc == pcc
+            end
         end
     end
 
