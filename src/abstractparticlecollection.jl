@@ -1,7 +1,48 @@
+"""
+    abstract type AbstractParticleCollection{AP} end
+
+Abstract supertype for storing data of multiple particle types.
+
+The particles are expected to be stored in a `Dict{Symbol,<:AbstractParticles}`.
+
+The inbuilt functionality of `AbstractParticleCollection` includes accessing and setting properties
+via the following syntax:
+```julia
+P<:AbstractParticles
+pc::<:AbstractParticleCollection{P}
+p::<:P
+pc.dm = p
+pc[:dm] === p
+```
+
+If the struct has additional fields, these can also be accessed by `p.field`, but not by
+`p[:field]`. The latter syntax can only be used to access the particles.
+
+# Methods
+The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, and `Base.isempty`
+are forwarded to the property `Dict`.
+
+Concrete types of `AbstractParticleCollection` should have the following methods implemented
+(also see the implementation of [`ParticleCollection`](@ref)):
+- `Base.copy`: returns new object containing a copy of the `Dict`
+- `Base.empty`: returns an identical object, but with an empty `Dict`
+- `Base.:(==)`
+- [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
+- `Base.propertynames`: implement this if there are additional struct fields
+- `Base.show(io, mime, pc)`
+"""
 abstract type AbstractParticleCollection{AP} end
 
-get_particles(pc::AbstractParticleCollection) = pc.particles
+"""
+    get_particles(pc::AbstractParticleCollection)
 
+Return the particles `Dict` belonging to the particle collection.
+
+This returns `pc.particles` by default if not overridden.
+
+This is not exported.
+"""
+get_particles(pc::AbstractParticleCollection) = pc.particles
 
 function Base.getproperty(pc::APC, sym::Symbol) where {APC<:AbstractParticleCollection}
     if sym in fieldnames(APC)

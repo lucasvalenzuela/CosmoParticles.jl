@@ -554,7 +554,7 @@ const CP = CosmoParticles
         p = Particles(:dm)
         p.pos = pos3
         p.mass = rand(size(pos3, 2))
-        
+
         pu = Particles(:dm)
         pu.pos = pos3 .* u"m"
         pu.mass = rand(size(pos3, 2))
@@ -568,11 +568,95 @@ const CP = CosmoParticles
         @test filter(pu, sphu) == pu[mask]
 
         pc = filter(p, sph; affect=(:pos,))
-        @test pc.pos == p.pos[:,mask]
+        @test pc.pos == p.pos[:, mask]
         @test !haskey(pc, :mass)
 
         pc = deepcopy(p)
         filter!(pc, sph)
         @test pc == p[mask]
+    end
+
+    @testset "Particle Collection" begin
+        dm = Particles(:dm)
+        dm.id = sample(1:1000, 100; replace=false)
+        dm.pos = rand(3, 100)
+
+        gas = Particles(:gas)
+        gas.id = sample(1001:2000, 100; replace=false)
+        gas.pos = rand(3, 100)
+
+        @testset "ParticleCollection" begin
+            pc = ParticleCollection()
+            @test pc isa ParticleCollection{Particles}
+            @test pc.particles == Dict{Symbol,Particles}()
+
+            @test ParticleCollection(Particles) == pc
+
+            pc = ParticleCollection(:dm => dm, :gas => gas)
+            @test pc isa ParticleCollection{Particles}
+            @test pc.particles == Dict{Symbol,Particles}(:dm => dm, :gas => gas)
+
+            @test ParticleCollection(dm, gas) == pc
+
+            @test redshift(pc) == 0
+
+            pc = ParticleCollection(dm)
+            pcc = copy(pc)
+            @test pcc.particles[:dm] === pc.particles[:dm]
+            pcc.particles[:dm] = gas
+            @test pcc.particles[:dm] !== pc.particles[:dm]
+
+            @test empty(pc) == ParticleCollection()
+
+            pc = ParticleCollection(dm, gas)
+            io = IOBuffer()
+            show(io, "text/plain", pc)
+            @test String(take!(io)) ==
+                  "ParticleCollection\ndm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+        end
+
+        @testset "RedshiftParticleCollection" begin
+            z = 0.5
+
+            pc = RedshiftParticleCollection(0.5)
+            @test pc isa RedshiftParticleCollection{Particles}
+            @test pc.particles == Dict{Symbol,Particles}()
+            @test pc.z == z
+
+            @test RedshiftParticleCollection(Particles, z) == pc
+
+            pc = RedshiftParticleCollection(z, :dm => dm, :gas => gas)
+            @test pc isa RedshiftParticleCollection{Particles}
+            @test pc.particles == Dict{Symbol,Particles}(:dm => dm, :gas => gas)
+
+            @test RedshiftParticleCollection(z, dm, gas) == pc
+
+            @test redshift(pc) == z
+
+            pc = RedshiftParticleCollection(z, dm)
+            pcc = copy(pc)
+            @test pcc.particles[:dm] === pc.particles[:dm]
+            pcc.particles[:dm] = gas
+            @test pcc.particles[:dm] !== pc.particles[:dm]
+
+            @test empty(pc) == RedshiftParticleCollection(z)
+
+            pc = RedshiftParticleCollection(z, dm, gas)
+            io = IOBuffer()
+            show(io, "text/plain", pc)
+            @test String(take!(io)) ==
+                  "ParticleCollection at z = $z\ndm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+
+            @test issetequal(propertynames(pc), [:z, :dm, :gas])
+            @test issetequal(propertynames(pc; private=true), [:z, :particles, :dm, :gas])
+
+
+            rpc = RedshiftParticleCollection(0, dm, gas)
+            pc = ParticleCollection(dm, gas)
+            @test rpc == pc && pc == rpc
+            rpc = RedshiftParticleCollection(z, dm, gas)
+            @test rpc != pc && pc != rpc
+        end
+        # test AbstractParticleCollection with basic implementation Particles
     end
 end
