@@ -16,6 +16,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Particles" => "particles.md",
+        "Particle Collections" => "particlecollection.md",
         "Operations" => "operations.md",
         "Geometry" => "geometry.md",
     ],
