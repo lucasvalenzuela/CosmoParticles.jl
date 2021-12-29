@@ -43,7 +43,7 @@ This is not exported.
 function applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     pnew = empty(p)
 
-    for key in affect
+    for key in intersect(affect, keys(p))
         pnew[key] = _applyind(p[key], ind)
     end
 
