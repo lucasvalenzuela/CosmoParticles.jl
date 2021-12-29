@@ -85,6 +85,9 @@ const CP = CosmoParticles
 
         @test !isempty(p)
 
+        copy!(pc, p)
+        @test pc !== p && pc == p && !isempty(pc)
+
         @test CP.particle_number(p) == 100
         @test CP.particle_number(Particles(:gas)) == 0
         @test CP.particle_number(Particles(:gas, Dict{Symbol,Any}(:mass => 3))) == 0
@@ -213,6 +216,9 @@ const CP = CosmoParticles
             @test isempty(pcc)
 
             @test !isempty(pc)
+
+            copy!(pcc, pc)
+            @test pcc !== pc && pcc == pc && !isempty(pcc)
 
             io = IOBuffer()
             CP.show_properties(io, "text/plain", pc)
