@@ -22,8 +22,9 @@ CosmoParticles.geometry_enclosing_center
 CosmoParticles.mask_in
 CosmoHyperrectangle
 CosmoCuboid
-CosmoCube
 CosmoRectangle
+CosmoHypercube
+CosmoCube
 CosmoSquare
 CosmoHypersphere
 CosmoSphere

@@ -15,13 +15,13 @@ For an example implementation of a concrete subtype of `AbstractParticleCollecti
 AbstractParticleCollection
 ParticleCollection
 ParticleCollection(::Type{<:AbstractParticles})
-ParticleCollection(pairs::Pair{Symbol,<:AbstractParticles}...)
+ParticleCollection(pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles}
 ParticleCollection(p::Particles, ps::Particles...)
 RedshiftParticleCollection
 RedshiftParticleCollection(::Type{<:AbstractParticles}, z::Real)
-RedshiftParticleCollection(z::Real, pairs::Pair{Symbol,<:AbstractParticles}...)
+RedshiftParticleCollection(z::T, pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles,T<:Real}
 RedshiftParticleCollection(z::Real, p::Particles, ps::Particles...)
 redshift
 CosmoParticles.get_particles
-CosmoParticles.show_properties
+CosmoParticles.show_properties(io::IO, mime::AbstractString, pc::AbstractParticleCollection)
 ```

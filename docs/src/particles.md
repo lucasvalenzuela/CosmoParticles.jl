@@ -13,9 +13,9 @@ For an example implementation of a concrete subtype of `AbstractParticles`, see 
 ```@docs
 AbstractParticles
 Particles
-Particles(type[, pairs::Pair...])
+Particles(type)
 CosmoParticles.get_props
 CosmoParticles.particle_name
 CosmoParticles.particle_number
-CosmoParticles.show_properties
+CosmoParticles.show_properties(io::IO, mime::AbstractString, p::AbstractParticles)
 ```
