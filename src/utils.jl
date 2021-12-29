@@ -136,7 +136,7 @@ Multiply an array with a scalar while preserving the element type of the array.
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
 """
 product_preserve_type(arr::AbstractArray{T}, b::Real) where {T<:Real} = arr .* convert(T, b)
-product_preserve_type(arr::AbstractArray{Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
+product_preserve_type(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
 
 """
     product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
@@ -150,6 +150,6 @@ For unitful arrays, the scalar factor is converted to the number type of the qua
 function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
 end
-function product_preserve_type!(arr::AbstractArray{Quantity{T}}, b::Real) where {T<:Real}
+function product_preserve_type!(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
 end
