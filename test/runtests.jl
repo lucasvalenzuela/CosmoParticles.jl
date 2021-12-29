@@ -291,6 +291,35 @@ const CP = CosmoParticles
             @test CP.findall_in(a, Set([])) |> isempty
             @test CP.findall_in([], Set(set)) |> isempty
         end
+
+        @testset "Unitful operations" begin
+            a = rand(100)
+            au = a * u"m"
+            af = convert(Vector{Float32}, a)
+            afu = af * u"m"
+            b = rand()
+
+            @test CP.product_preserve_type(a, b) == a .* b
+            @test CP.product_preserve_type(au, b) == au .* b
+            @test CP.product_preserve_type(af, b) == af .* convert(Float32, b)
+            @test CP.product_preserve_type(afu, b) == afu .* convert(Float32, b)
+
+            ac = copy(a)
+            CP.product_preserve_type!(ac, b)
+            @test ac == a .* b
+
+            auc = copy(au)
+            CP.product_preserve_type!(auc, b)
+            @test auc == au .* b
+
+            afc = copy(af)
+            CP.product_preserve_type!(afc, b)
+            @test afc == af .* convert(Float32, b)
+
+            afuc = copy(afu)
+            CP.product_preserve_type!(afuc, b)
+            @test afuc == afu .* convert(Float32, b)
+        end
     end
 
 
