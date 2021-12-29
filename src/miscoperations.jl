@@ -53,20 +53,15 @@ Create new particle collection with the particles in the collection sorted by ca
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only the affected properties are kept for the particles.
 The specified affected properties do not have to be available for all particles.
 """
-function Base.sort(pc::AbstractParticleCollection, prop::Symbol; kwargs...)
+function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing, kwargs...)
     pc = copy(pc)
 
     for ptype in keys(pc)
-        pc[ptype] = sort(pc[ptype], prop; kwargs...)
-    end
-
-    return pc
-end
-function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect, kwargs...)
-    pc = copy(pc)
-
-    for ptype in keys(pc)
-        pc[ptype] = sort(pc[ptype], prop; affect, kwargs...)
+        if isnothing(affect)
+            pc[ptype] = sort(pc[ptype], prop; kwargs...)
+        else
+            pc[ptype] = sort(pc[ptype], prop; affect, kwargs...)
+        end
     end
 
     return pc
@@ -127,20 +122,15 @@ number of particles or an array of indices.
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles objects.
 """
-function Base.filter(f, pc::AbstractParticleCollection; affect)
+function Base.filter(f, pc::AbstractParticleCollection; affect=nothing)
     pc = copy(pc)
 
     for ptype in keys(pc)
-        pc[ptype] = filter(f, pc[ptype]; affect)
-    end
-
-    return pc
-end
-function Base.filter(f, pc::AbstractParticleCollection)
-    pc = copy(pc)
-
-    for ptype in keys(pc)
-        pc[ptype] = filter(f, pc[ptype])
+        if isnothing(affect)
+            pc[ptype] = filter(f, pc[ptype])
+        else
+            pc[ptype] = filter(f, pc[ptype]; affect)
+        end
     end
 
     return pc
@@ -191,20 +181,15 @@ Create new particle collection with the particles filtered by keeping only those
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles objects.
 """
-function Base.filter(pc::AbstractParticleCollection; ids, affect)
+function Base.filter(pc::AbstractParticleCollection; ids, affect=nothing)
     pc = copy(pc)
 
     for ptype in keys(pc)
-        pc[ptype] = filter(pc[ptype]; ids, affect)
-    end
-
-    return pc
-end
-function Base.filter(pc::AbstractParticleCollection; ids)
-    pc = copy(pc)
-
-    for ptype in keys(pc)
-        pc[ptype] = filter(pc[ptype]; ids)
+        if isnothing(affect)
+            pc[ptype] = filter(pc[ptype]; ids)
+        else
+            pc[ptype] = filter(pc[ptype]; ids, affect)
+        end
     end
 
     return pc
@@ -233,11 +218,20 @@ Create new particle collection with the particles filtered by keeping only those
 If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
 to the newly created particles objects.
 """
-function Base.filter(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect)
+function Base.filter(
+    pc::AbstractParticleCollection,
+    geo::AbstractCosmoGeometry,
+    prop::Symbol=:pos;
+    affect=nothing,
+)
     pc = copy(pc)
 
     for ptype in keys(pc)
-        pc[ptype] = filter(pc[ptype], geo, prop; affect)
+        if isnothing(affect)
+            pc[ptype] = filter(pc[ptype], geo, prop)
+        else
+            pc[ptype] = filter(pc[ptype], geo, prop; affect)
+        end
     end
 
     return pc
