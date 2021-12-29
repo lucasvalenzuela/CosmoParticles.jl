@@ -473,6 +473,76 @@ const CP = CosmoParticles
                 @test pcc.dm.vel == pcc.dm.vel == atrans
             end
         end
+
+
+        @testset "Comoving" begin
+            z = 1.5
+            a = rand(Float32, 3, 100)
+            au = a * u"m"
+            n = rand(Float32, 100)
+            nu = n * u"m^-3"
+            m = copy(n)
+
+            propexp = ((:pos, 1), (:vel, 1), (:n, -3))
+
+            acom = a .* (1 + z)
+            aucom = au .* (1 + z)
+            ncom = n .* (1 + z)^-3
+            nucom = nu .* (1 + z)^-3
+
+            aphys = a ./ (1 + z)
+            auphys = au ./ (1 + z)
+            nphys = n ./ (1 + z)^-3
+            nuphys = nu ./ (1 + z)^-3
+
+            @testset "Particle Comoving" begin
+                p = Particles(:dm)
+                p.pos = a
+                p.n = n
+                p.mass = m
+
+                pc = to_comoving(p, z; propexp)
+                @test pc.pos ≈ acom
+                @test pc.n ≈ ncom
+                @test pc.mass ≈ m
+
+                pcc = deepcopy(p)
+                to_comoving!(pcc, z; propexp)
+                @test pcc == pc
+
+                pc = to_physical(p, z; propexp)
+                @test pc.pos ≈ aphys
+                @test pc.n ≈ nphys
+                @test pc.mass ≈ m
+
+                pcc = deepcopy(p)
+                to_physical!(pcc, z; propexp)
+                @test pcc == pc
+
+                p = Particles(:dm)
+                p.pos = au
+                p.n = nu
+                p.mass = m
+
+                pc = to_comoving(p, z; propexp)
+                @test pc.pos ≈ aucom
+                @test pc.n ≈ nucom
+                @test pc.mass ≈ m
+
+                pcc = deepcopy(p)
+                to_comoving!(pcc, z; propexp)
+                @test pcc == pc
+
+                pc = to_physical(p, z; propexp)
+                @test pc.pos ≈ auphys
+                @test pc.n ≈ nuphys
+                @test pc.mass ≈ m
+
+                pcc = deepcopy(p)
+                to_physical!(pcc, z; propexp)
+                @test pcc == pc
+            end
+        end
     end
 
 

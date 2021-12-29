@@ -11,6 +11,10 @@ rotate
 LinearAlgebra.rotate!
 translate
 translate!
+to_comoving
+to_comoving!
+to_physical
+to_physical!
 ```
 
 ## Further Operations

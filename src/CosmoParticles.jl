@@ -2,6 +2,8 @@ module CosmoParticles
 
 using FastUnitfulOperations
 using LinearAlgebra
+using Unitful
+
 import LinearAlgebra.rotate!
 
 export
@@ -33,7 +35,12 @@ export
     rotate,
     rotate!,
     translate,
-    translate!
+    translate!,
+    to_comoving,
+    to_comoving!,
+    to_physical,
+    to_physical!
+
 
 include("abstractparticles.jl")
 include("particles.jl")
