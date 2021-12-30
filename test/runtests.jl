@@ -169,6 +169,8 @@ const CP = CosmoParticles
         @test !haskey(pc, :pos)
         @test isa.([pc.id, pc.mass, pc.temp], Array) |> all
 
+        @test Particles(p, (:id, :mass, :temp)) == pc
+
         @test_throws ErrorException empty(p)
         @test_throws ErrorException empty!(p)
 
@@ -194,6 +196,16 @@ const CP = CosmoParticles
         ind = findall(mask)
         @test_throws ErrorException p[mask]
         @test_throws ErrorException p[ind]
+
+
+        # cover case where the dimension is not found from a vector or matrix
+        # and where only one particle subtype exists
+        pos = rand(3, 100)
+        mass = rand()
+        pc = ParticleCollection(Particles(:dm, :pos => pos, :mass => mass))
+        ap = pc.all
+        @test ap.pos == pos
+        @test ap.mass == fill(mass, 100)
     end
 
 

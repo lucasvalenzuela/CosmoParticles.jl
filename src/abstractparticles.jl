@@ -32,7 +32,7 @@ Concrete types of `AbstractParticles` should have the following methods implemen
 (also see the implementation of [`Particles`](@ref)):
 - `Base.copy`: returns new object containing a copy of the `Dict`
 - `Base.empty`: returns an identical object, but with an empty `Dict`
-- `Base.:(==)`
+- `Base.:(==)`: should call `Base.isequal` to prevent obtaining `missing` results for properties with missing values (relevant for [`AllParticles`](@ref))
 - [`CosmoParticles.particle_name`](@ref): returns the name of the struct to be printed via `Base.show`
 - `Base.propertynames`: implement this if there are additional struct fields
 - `Base.show(io, mime, p)`
@@ -81,7 +81,7 @@ Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
 # to implement:
 # Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))
 # Base.empty(p::AbstractParticles) = AbstractParticles(empty(p.props))
-# Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = p1.props == p2.props
+# Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = isequal(p1.props, p2.props)
 
 """
     CosmoParticles.particle_name(p::AbstractParticles)
