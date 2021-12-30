@@ -46,7 +46,7 @@ Return the property `Dict` belonging to the particles.
 
 This returns `p.props` by default if not overridden.
 
-This is not exported.
+This is not exported and should not be used outside of the defining files for particle types.
 """
 get_props(p::AbstractParticles) = p.props
 

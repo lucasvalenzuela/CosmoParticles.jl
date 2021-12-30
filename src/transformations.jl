@@ -20,6 +20,13 @@ function matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<
     return vals
 end
 
+# Without this special method for lazy arrays, matrix multiplication with unitful arrays leads to bizarre errors
+# where only one row or certain diagonal parts of the array or properly rotated.
+function matrix_rotate!(vals::ApplyMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
+    matrix_rotate!.(vals.args, (rotmat,))
+    return vals
+end
+
 @doc raw"""
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))

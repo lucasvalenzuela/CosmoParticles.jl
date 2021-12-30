@@ -1,15 +1,16 @@
 module CosmoParticles
 
 using FastUnitfulOperations
+using FillArrays
+using LazyArrays
 using LinearAlgebra
 using Unitful
-
-import LinearAlgebra.rotate!
 
 export
     # types
     AbstractParticles,
     Particles,
+    AllParticles,
     AbstractParticleCollection,
     ParticleCollection,
     RedshiftParticleCollection,
@@ -46,6 +47,7 @@ include("abstractparticles.jl")
 include("particles.jl")
 include("abstractparticlecollection.jl")
 include("particlecollection.jl")
+include("allparticles.jl")
 include("geometry.jl")
 
 include("utils.jl")

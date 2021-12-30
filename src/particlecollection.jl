@@ -133,9 +133,9 @@ end
 
 function Base.propertynames(pc::RedshiftParticleCollection; private=false)
     if private
-        return [fieldnames(RedshiftParticleCollection) |> collect; keys(pc) |> collect]
+        return [fieldnames(RedshiftParticleCollection) |> collect; :all; keys(pc) |> collect]
     else
-        return [:z; keys(pc) |> collect]
+        return [:z; :all; keys(pc) |> collect]
     end
 end
 

@@ -45,7 +45,9 @@ This is not exported.
 get_particles(pc::AbstractParticleCollection) = pc.particles
 
 function Base.getproperty(pc::APC, sym::Symbol) where {APC<:AbstractParticleCollection}
-    if sym in fieldnames(APC)
+    if sym === :all
+        return AllParticles(pc)
+    elseif sym in fieldnames(APC)
         return getfield(pc, sym)
     else
         return getindex(pc, sym)
@@ -53,7 +55,9 @@ function Base.getproperty(pc::APC, sym::Symbol) where {APC<:AbstractParticleColl
 end
 
 function Base.setproperty!(pc::APC, sym::Symbol, val) where {APC<:AbstractParticleCollection}
-    if sym in fieldnames(APC)
+    if sym === :all
+        error("The property 'all' cannot be set, but only gotten.")
+    elseif sym in fieldnames(APC)
         setfield!(pc, sym, val)
     else
         setindex!(pc, val, sym)
@@ -61,15 +65,19 @@ function Base.setproperty!(pc::APC, sym::Symbol, val) where {APC<:AbstractPartic
 end
 
 Base.getindex(pc::AbstractParticleCollection, sym::Symbol) = getindex(get_particles(pc), sym)
-Base.setindex!(pc::AbstractParticleCollection, val, sym::Symbol) =
+
+function Base.setindex!(pc::AbstractParticleCollection, val, sym::Symbol)
     (setindex!(get_particles(pc), val, sym); pc)
+end
+
 Base.keys(pc::AbstractParticleCollection) = keys(get_particles(pc))
 Base.haskey(pc::AbstractParticleCollection, key) = key in keys(pc)
 Base.values(pc::AbstractParticleCollection) = values(get_particles(pc))
-Base.propertynames(pc::AbstractParticleCollection) = keys(pc) |> collect
+Base.propertynames(pc::AbstractParticleCollection) = [:all; keys(pc) |> collect]
 Base.empty!(pc::AbstractParticleCollection) = (empty!(get_particles(pc)); pc)
 Base.isempty(pc::AbstractParticleCollection) = isempty(get_particles(pc))
-Base.copy!(dst::AbstractParticleCollection, src::AbstractParticleCollection) = (copy!(get_particles(dst), get_particles(src)); dst)
+Base.copy!(dst::AbstractParticleCollection, src::AbstractParticleCollection) =
+    (copy!(get_particles(dst), get_particles(src)); dst)
 
 # to implement:
 # Base.copy(pc::AbstractParticleCollection) = AbstractParticleCollection(copy(pc.particles))
@@ -96,7 +104,8 @@ Should be used internally when overriding `Base.show` for concrete implementatio
 
 This is not exported.
 """
-show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) = show_properties(io, MIME(mime), p)
+show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) =
+    show_properties(io, MIME(mime), p)
 
 function show_properties(io::IO, mime::MIME"text/plain", pc::AbstractParticleCollection)
     if !isempty(pc.particles)

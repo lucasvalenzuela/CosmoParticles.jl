@@ -13,6 +13,29 @@ This is not exported.
 _applyind(a::Number, _::AbstractVector) = a
 _applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
 _applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
+_applyind(a::ApplyVector{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
+    a[mask]
+_applyind(a::ApplyMatrix{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
+    a[:, mask]
+
+function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+    anew = similar(a, length(ind))
+    @inbounds for (i, indi) in enumerate(ind)
+        anew[i] = a[indi]
+    end
+    return anew
+end
+
+function _applyind(a::ApplyMatrix{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+    n = size(a, 1)
+    anew = similar(a, n, length(ind))
+    @inbounds for (i, indi) in enumerate(ind)
+        for j in 1:n
+            anew[j, i] = a[j, indi]
+        end
+    end
+    return anew
+end
 
 """
     CosmoParticles.applyind!(p::AbstractParticles, ind::AbstractVector)
@@ -152,4 +175,11 @@ function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
 end
 function product_preserve_type!(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
+end
+function product_preserve_type!(
+    arr::ApplyArray{<:Any,N,F},
+    b::Real,
+) where {N,F<:Union{typeof(hcat),typeof(vcat)}}
+    product_preserve_type!.(arr.args, b)
+    return arr
 end

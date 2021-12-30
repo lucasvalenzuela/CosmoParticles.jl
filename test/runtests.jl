@@ -1,4 +1,5 @@
 using CosmoParticles
+using LazyArrays
 using Rotations
 using SortingAlgorithms
 using StatsBase
@@ -99,6 +100,102 @@ const CP = CosmoParticles
         @test String(take!(io)) == "100 Particles\n id pos"
     end
 
+    @testset "AllParticles" begin
+        dm = Particles(:dm)
+        dm.id = sample(1:1000, 100; replace=false)
+        dm.pos = rand(3, 100)
+        dm.mass = rand()
+        dm.test = rand()
+
+        gas = Particles(:gas)
+        gas.id = sample(1001:2000, 100; replace=false)
+        gas.pos = rand(3, 100)
+        gas.mass = rand(100)
+        gas.temp = rand(100)
+        gas.zs = rand(2, 100)
+        gas.test = rand(2, 100)
+
+        pcoll = ParticleCollection(dm, gas)
+        p = AllParticles(pcoll)
+
+
+        @test CP.particle_collection(p) === pcoll
+        # @test get_props(p) === p.props # not part of the API
+
+        if p.id[1] == dm.id[1]
+            @test p.id == vcat(dm.id, gas.id)
+            @test p.pos == hcat(dm.pos, gas.pos)
+            @test p.mass == vcat(fill(dm.mass, length(dm.id)), gas.mass)
+            @test isequal.(p.temp, vcat(fill(missing, length(dm.id)), gas.mass)) |> all
+            @test isequal.(p.zs, hcat(fill(missing, 2, length(dm.id)), gas.zs)) |> all
+            @test p.test == hcat(fill(dm.test, 2, length(dm.id)), gas.test)
+        else
+            @test p.id == vcat(gas.id, dm.id)
+            @test p.pos == hcat(gas.pos, dm.pos)
+            @test p.mass == vcat(gas.mass, fill(dm.mass, length(dm.id)))
+            @test isequal.(p.temp, vcat(gas.temp, fill(missing, length(dm.id)))) |> all
+            @test isequal.(p.zs, hcat(gas.zs, fill(missing, 2, length(dm.id)))) |> all
+            @test p.test == hcat(gas.test, fill(dm.test, 2, length(dm.id)))
+        end
+
+        @test_throws ErrorException p.id = rand(100)
+        @test_throws KeyError p.vel
+
+        @test issetequal(keys(p), [:id, :mass, :pos, :temp, :zs, :test])
+        @test keys(p) == keys(AllParticles(pcoll))
+
+        @test haskey(p, :id) && haskey(AllParticles(pcoll), :id)
+        @test !haskey(p, :vel) && !haskey(AllParticles(pcoll), :vel)
+
+        @test all(val === p[key] for (key, val) in zip(keys(p), values(p)))
+        @test all(val === p[key] for (key, val) in pairs(p))
+
+        @test_throws ErrorException copy(p)
+        @test_throws ErrorException copy!(p, AllParticles(pcoll))
+        @test_throws ErrorException copy!(p, dm)
+
+        pc = Particles(:all)
+        copy!(pc, p)
+        collect(values(p)) # materializes properties in Dict
+        @test pc.id == p.id
+        @test pc.mass == p.mass
+        @test pc.pos == p.pos
+        @test all(isequal.(pc.temp, p.temp))
+        @test all(isequal.(pc.zs, p.zs))
+        @test pc.test == p.test
+
+        copy!(pc, p, (:id, :mass, :temp))
+        @test haskey.((pc,), [:id, :mass, :temp]) |> all
+        @test !haskey(pc, :pos)
+        @test isa.([pc.id, pc.mass, pc.temp], Array) |> all
+
+        @test_throws ErrorException empty(p)
+        @test_throws ErrorException empty!(p)
+
+        @test !isempty(p)
+        @test isempty(ParticleCollection() |> AllParticles)
+        @test isempty(ParticleCollection(Particles(:dm), Particles(:gas)) |> AllParticles)
+
+        @test p == AllParticles(pcoll)
+
+        @test CP.particle_name(p) == "Particles"
+        @test CP.particle_number(p) == 200
+
+        list = [:id, :mass, :pos, :temp, :zs, :test]
+        @test issetequal(propertynames(p), list)
+        @test issetequal(propertynames(p; private=true), [fieldnames(AllParticles) |> collect; list])
+
+        io = IOBuffer()
+        show(io, "text/plain", p)
+        @test String(take!(io)) == "all: 200 Particles\n id mass pos temp test zs"
+
+
+        mask = isodd.(p.id)
+        ind = findall(mask)
+        @test_throws ErrorException p[mask]
+        @test_throws ErrorException p[ind]
+    end
+
 
     @testset "Particle Collection" begin
         dm = Particles(:dm)
@@ -171,8 +268,8 @@ const CP = CosmoParticles
             @test String(take!(io)) ==
                   "ParticleCollection at z = $z\ndm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
 
-            @test issetequal(propertynames(pc), [:z, :dm, :gas])
-            @test issetequal(propertynames(pc; private=true), [:z, :particles, :dm, :gas])
+            @test issetequal(propertynames(pc), [:z, :all, :dm, :gas])
+            @test issetequal(propertynames(pc; private=true), [:z, :all, :particles, :dm, :gas])
 
 
             rpc = RedshiftParticleCollection(0, dm, gas)
@@ -201,6 +298,10 @@ const CP = CosmoParticles
             pc[:dm] = dm
             @test pc.dm === dm
 
+            @test pc.all == AllParticles(pc)
+            @test_throws ErrorException pc.all = dm
+            @test_throws KeyError pc[:all]
+
             @test keys(pc) == keys(pc.particles)
             @test haskey(pc, :dm)
             @test !haskey(pc, :stars)
@@ -208,7 +309,7 @@ const CP = CosmoParticles
 
             @test values(pc) == values(pc.particles)
 
-            @test issetequal(propertynames(pc), [:dm, :gas])
+            @test issetequal(propertynames(pc), [:all, :dm, :gas])
 
             pcc = deepcopy(pc)
             empty!(pcc)
@@ -246,6 +347,18 @@ const CP = CosmoParticles
             @test CP._applyind(p.id, ind) == p.id[ind]
             @test CP._applyind(p.pos, ind) == p.pos[:, ind]
 
+            a = rand(45)
+            b = rand(55)
+            c = ApplyArray(vcat, a, b)
+            @test CP._applyind(c, mask) == Array(c)[mask]
+            @test CP._applyind(c, ind) == Array(c)[ind]
+
+            a = rand(3, 45)
+            b = rand(3, 55)
+            c = ApplyArray(hcat, a, b)
+            @test CP._applyind(c, mask) == Array(c)[:, mask]
+            @test CP._applyind(c, ind) == Array(c)[:, ind]
+
             pc = CP.applyind(p, mask)
             @test pc.id == p.id[mask]
             @test pc.pos == p.pos[:, mask]
@@ -268,6 +381,14 @@ const CP = CosmoParticles
             @test !haskey(pc, :foo)
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass
+
+
+            pc = ParticleCollection(p)
+            ap = pc.all
+            @test_throws ErrorException CP.applyind(ap, ind)
+            @test_throws ErrorException CP.applyind!(ap, ind)
+            @test_throws ErrorException CP.applyind(ap, mask)
+            @test_throws ErrorException CP.applyind!(ap, mask)
         end
 
         @testset "Find all in" begin
@@ -410,6 +531,14 @@ const CP = CosmoParticles
                 rotate!(pcc, rotmat)
                 @test pcc.dm.pos == pcc.gas.pos == aurot
                 @test pcc.dm.vel == pcc.gas.vel == arot
+
+
+                pccc = deepcopy(pc)
+                ap = pccc.all
+                @test_throws ErrorException rotate(ap, rotmat)
+
+                rotate!(ap, rotmat)
+                @test pccc == pcc
             end
         end
 
@@ -477,6 +606,19 @@ const CP = CosmoParticles
                 translate!(pcc, da, :vel)
                 @test pcc.dm.pos == pcc.gas.pos == au
                 @test pcc.dm.vel == pcc.dm.vel == atrans
+
+
+                pccc = deepcopy(pc)
+                ap = pccc.all
+                @test_throws ErrorException translate(ap, da)
+
+                translate!(ap, dau)
+                @test pccc == translate(pc, dau)
+
+                pccc = deepcopy(pc)
+                ap = pccc.all
+                translate!(ap, da, :vel)
+                @test pccc == pcc
             end
         end
 
@@ -568,6 +710,28 @@ const CP = CosmoParticles
                 pccc = deepcopy(pc)
                 to_comoving!(pccc; propexp)
                 @test pccc == pcc
+
+                pcc = to_physical(pc; propexp)
+                @test pcc.dm == to_physical(dm, z; propexp)
+                @test pcc.gas == to_physical(gas, z; propexp)
+
+                pccc = deepcopy(pc)
+                to_physical!(pccc; propexp)
+                @test pccc == pcc
+
+
+                pccc = deepcopy(pc)
+                ap = pccc.all
+                @test_throws ErrorException to_comoving(ap, z; propexp)
+                @test_throws ErrorException to_physical(ap, z; propexp)
+
+                to_comoving!(ap, z; propexp)
+                @test pccc == to_comoving(pc; propexp)
+
+                pccc = deepcopy(pc)
+                ap = pccc.all
+                to_physical!(ap, z; propexp)
+                @test pccc == to_physical(pc; propexp)
             end
         end
     end
@@ -626,6 +790,11 @@ const CP = CosmoParticles
             pcc = deepcopy(pc)
             sort!(pcc, :id; alg=RadixSort)
             @test pcc == sort(pc, :id)
+
+
+            ap = pc.all
+            @test_throws ErrorException sort(ap, :id; affect)
+            @test_throws ErrorException sort!(ap, :id; alg=RadixSort)
         end
 
         @testset "Particle Filtering" begin
@@ -704,7 +873,7 @@ const CP = CosmoParticles
             ids_wanted = sample(1:1000, 100; replace=false)
 
             pcc = filter(pc; ids=ids_wanted)
-            @test pcc.dm == filter(dm, ids=ids_wanted)
+            @test pcc.dm == filter(dm; ids=ids_wanted)
             @test filter(pc; ids=Set(ids_wanted)) == pcc
 
             affect = (:id, :mass)
@@ -716,6 +885,13 @@ const CP = CosmoParticles
             @test pcc == filter(pcc; ids=ids_wanted)
 
             @test filter!(deepcopy(pc); ids=Set(ids_wanted)) == pcc
+
+
+            ap = pc.all
+            @test_throws ErrorException filter(f, ap; affect)
+            @test_throws ErrorException filter!(f, ap)
+            @test_throws ErrorException filter(ap; ids=ids_wanted)
+            @test_throws ErrorException filter!(ap; ids=ids_wanted)
         end
     end
 
@@ -929,44 +1105,51 @@ const CP = CosmoParticles
         end
 
 
-        p = Particles(:dm)
-        p.pos = pos3
-        p.mass = rand(size(pos3, 2))
+        @testset "Filtering" begin
+            p = Particles(:dm)
+            p.pos = pos3
+            p.mass = rand(size(pos3, 2))
 
-        pu = Particles(:dm)
-        pu.pos = pos3 .* u"m"
-        pu.mass = rand(size(pos3, 2))
+            pu = Particles(:dm)
+            pu.pos = pos3 .* u"m"
+            pu.mass = rand(size(pos3, 2))
 
-        center = rand(3)
-        sph = CosmoSphere(center, 0.2)
-        sphu = CosmoSphere(center * u"m", 0.2u"m")
-        mask = CP.mask_in(pos3, sph)
+            center = rand(3)
+            sph = CosmoSphere(center, 0.2)
+            sphu = CosmoSphere(center * u"m", 0.2u"m")
+            mask = CP.mask_in(pos3, sph)
 
-        @test filter(p, sph) == p[mask]
-        @test filter(pu, sphu) == pu[mask]
+            @test filter(p, sph) == p[mask]
+            @test filter(pu, sphu) == pu[mask]
 
-        pc = filter(p, sph; affect=(:pos,))
-        @test pc.pos == p.pos[:, mask]
-        @test !haskey(pc, :mass)
+            pc = filter(p, sph; affect=(:pos,))
+            @test pc.pos == p.pos[:, mask]
+            @test !haskey(pc, :mass)
 
-        pc = deepcopy(p)
-        filter!(pc, sph)
-        @test pc == p[mask]
+            pc = deepcopy(p)
+            filter!(pc, sph)
+            @test pc == p[mask]
 
 
-        # Particle collection
-        dm = p
-        gas = Particles(:gas, p.props)
-        pc = ParticleCollection(dm, gas)
+            # Particle collection
+            dm = p
+            gas = Particles(:gas, p.props)
+            pc = ParticleCollection(dm, gas)
 
-        pcc = filter(pc, sph)
-        @test pcc.dm == dm[mask]
+            pcc = filter(pc, sph)
+            @test pcc.dm == dm[mask]
 
-        pcc = filter(pc, sph; affect=(:pos,))
-        @test pcc.dm == filter(dm, sph; affect=(:pos,))
+            pcc = filter(pc, sph; affect=(:pos,))
+            @test pcc.dm == filter(dm, sph; affect=(:pos,))
 
-        pcc = deepcopy(pc)
-        filter!(pcc, sph)
-        @test pcc == filter(pc, sph)
+            pcc = deepcopy(pc)
+            filter!(pcc, sph)
+            @test pcc == filter(pc, sph)
+
+
+            ap = pc.all
+            @test_throws ErrorException filter(ap, sph)
+            @test_throws ErrorException filter!(ap, sph)
+        end
     end
 end
