@@ -92,7 +92,11 @@ end
 LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) =
     rotate!(p, rotmat, (prop,))
 
-function rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+function LinearAlgebra.rotate!(
+    pc::AbstractParticleCollection,
+    rotmat::AbstractMatrix{<:Real},
+    props=(:pos, :vel),
+)
     for ptype in keys(pc)
         rotate!(pc[ptype], rotmat, props)
     end
@@ -230,7 +234,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             pc = copy(pc)
 
             for ptype in keys(pc)
-                pc[ptype] = to_comoving(pc[ptype], redshift(pc); propexp)
+                pc[ptype] = $(Symbol(name))(pc[ptype], redshift(pc); propexp)
             end
 
             return pc
@@ -249,7 +253,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
 
         function $(Symbol(name, "!"))(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
             for ptype in keys(pc)
-                to_comoving!(pc[ptype], redshift(pc); propexp)
+                $(Symbol(name, "!"))(pc[ptype], redshift(pc); propexp)
             end
 
             return pc
