@@ -126,7 +126,7 @@ const CP = CosmoParticles
             @test p.id == vcat(dm.id, gas.id)
             @test p.pos == hcat(dm.pos, gas.pos)
             @test p.mass == vcat(fill(dm.mass, length(dm.id)), gas.mass)
-            @test isequal.(p.temp, vcat(fill(missing, length(dm.id)), gas.mass)) |> all
+            @test isequal.(p.temp, vcat(fill(missing, length(dm.id)), gas.temp)) |> all
             @test isequal.(p.zs, hcat(fill(missing, 2, length(dm.id)), gas.zs)) |> all
             @test p.test == hcat(fill(dm.test, 2, length(dm.id)), gas.test)
         else
