@@ -14,6 +14,7 @@ For an example implementation of a concrete subtype of `AbstractParticles`, see 
 AbstractParticles
 Particles
 Particles(type)
+Particles(p::AllParticles, props=())
 CosmoParticles.get_props
 CosmoParticles.particle_name
 CosmoParticles.particle_number

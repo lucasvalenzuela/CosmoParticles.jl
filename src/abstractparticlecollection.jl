@@ -15,8 +15,11 @@ pc.dm = p
 pc[:dm] === p
 ```
 
-If the struct has additional fields, these can also be accessed by `p.field`, but not by
-`p[:field]`. The latter syntax can only be used to access the particles.
+In addition, the following syntax is equivalent to creating an [`AllParticles`](@ref) object: `pc.all`.
+The syntax `pc[:all]` is not valid, however.
+
+If the struct has additional fields, these can also be accessed by `pc.field`, but not by
+`pc[:field]`. The latter syntax can only be used to access the particles.
 
 # Methods
 The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, `Base.isempty`, and

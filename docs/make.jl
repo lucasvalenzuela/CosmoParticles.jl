@@ -19,6 +19,7 @@ makedocs(;
         "Particle Collections" => "particlecollection.md",
         "Operations" => "operations.md",
         "Geometry" => "geometry.md",
+        "Utils" => "utils.md",
     ],
 )
 
