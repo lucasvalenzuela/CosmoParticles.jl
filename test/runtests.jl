@@ -1168,54 +1168,112 @@ const CP = CosmoParticles
 
 
     @testset "Properties" begin
-        a2 = rand(2, 100)
-        a3 = rand(3, 100)
-        a4 = rand(4, 100)
+        @testset "Norm" begin
+            a2 = rand(2, 100)
+            a3 = rand(3, 100)
+            a4 = rand(4, 100)
 
-        n2 = norm.(eachcol(a2))
-        n3 = norm.(eachcol(a3))
-        n4 = norm.(eachcol(a4))
+            n2 = norm.(eachcol(a2))
+            n3 = norm.(eachcol(a3))
+            n4 = norm.(eachcol(a4))
 
-        @test colnorm(a2) ≈ n2
-        @test colnorm(a3) ≈ n3
-        @test colnorm(a4) ≈ n4
+            @test colnorm(a2) ≈ n2
+            @test colnorm(a3) ≈ n3
+            @test colnorm(a4) ≈ n4
 
-        @test colnorm(a2 * u"m") ≈ n2 * u"m"
-        @test colnorm(a3 * u"m") ≈ n3 * u"m"
-        @test colnorm(a4 * u"m") ≈ n4 * u"m"
+            @test colnorm(a2 * u"m") ≈ n2 * u"m"
+            @test colnorm(a3 * u"m") ≈ n3 * u"m"
+            @test colnorm(a4 * u"m") ≈ n4 * u"m"
 
-        @test colnorm2(a2) ≈ n2 .^ 2
-        @test colnorm2(a3) ≈ n3 .^ 2
-        @test colnorm2(a4) ≈ n4 .^ 2
+            @test colnorm2(a2) ≈ n2 .^ 2
+            @test colnorm2(a3) ≈ n3 .^ 2
+            @test colnorm2(a4) ≈ n4 .^ 2
 
-        @test colnorm2(a2 * u"m") ≈ (n2 * u"m") .^ 2
-        @test colnorm2(a3 * u"m") ≈ (n3 * u"m") .^ 2
-        @test colnorm2(a4 * u"m") ≈ (n4 * u"m") .^ 2
+            @test colnorm2(a2 * u"m") ≈ (n2 * u"m") .^ 2
+            @test colnorm2(a3 * u"m") ≈ (n3 * u"m") .^ 2
+            @test colnorm2(a4 * u"m") ≈ (n4 * u"m") .^ 2
 
-        am2 = similar(a2, Union{Float64,Missing})
-        am3 = similar(a3, Union{Float64,Missing})
-        am4 = similar(a4, Union{Float64,Missing})
-        am2 .= a2
-        am3 .= a3
-        am4 .= a4
-        am2[:, 1] .= missing
-        am3[:, 1] .= missing
-        am4[:, 1] .= missing
+            am2 = similar(a2, Union{Float64,Missing})
+            am3 = similar(a3, Union{Float64,Missing})
+            am4 = similar(a4, Union{Float64,Missing})
+            am2 .= a2
+            am3 .= a3
+            am4 .= a4
+            am2[:, 1] .= missing
+            am3[:, 1] .= missing
+            am4[:, 1] .= missing
 
-        @test all(colnorm(am2) .≈ n2) |> ismissing
-        @test all(colnorm(am3) .≈ n3) |> ismissing
-        @test all(colnorm(am4) .≈ n4) |> ismissing
+            @test all(colnorm(am2) .≈ n2) |> ismissing
+            @test all(colnorm(am3) .≈ n3) |> ismissing
+            @test all(colnorm(am4) .≈ n4) |> ismissing
 
-        @test all(colnorm(am2 * u"m") .≈ n2 * u"m") |> ismissing
-        @test all(colnorm(am3 * u"m") .≈ n3 * u"m") |> ismissing
-        @test all(colnorm(am4 * u"m") .≈ n4 * u"m") |> ismissing
+            @test all(colnorm(am2 * u"m") .≈ n2 * u"m") |> ismissing
+            @test all(colnorm(am3 * u"m") .≈ n3 * u"m") |> ismissing
+            @test all(colnorm(am4 * u"m") .≈ n4 * u"m") |> ismissing
 
-        @test all(colnorm2(am2) .≈ n2 .^ 2) |> ismissing
-        @test all(colnorm2(am3) .≈ n3 .^ 2) |> ismissing
-        @test all(colnorm2(am4) .≈ n4 .^ 2) |> ismissing
+            @test all(colnorm2(am2) .≈ n2 .^ 2) |> ismissing
+            @test all(colnorm2(am3) .≈ n3 .^ 2) |> ismissing
+            @test all(colnorm2(am4) .≈ n4 .^ 2) |> ismissing
 
-        @test all(colnorm2(am2 * u"m") .≈ (n2 * u"m") .^ 2) |> ismissing
-        @test all(colnorm2(am3 * u"m") .≈ (n3 * u"m") .^ 2) |> ismissing
-        @test all(colnorm2(am4 * u"m") .≈ (n4 * u"m") .^ 2) |> ismissing
+            @test all(colnorm2(am2 * u"m") .≈ (n2 * u"m") .^ 2) |> ismissing
+            @test all(colnorm2(am3 * u"m") .≈ (n3 * u"m") .^ 2) |> ismissing
+            @test all(colnorm2(am4 * u"m") .≈ (n4 * u"m") .^ 2) |> ismissing
+        end
+
+        @testset "Norm around Origin" begin
+            a2 = rand(2, 100)
+            a3 = rand(3, 100)
+            a4 = rand(4, 100)
+
+            o2 = rand(2)
+            o3 = rand(3)
+            o4 = rand(4)
+
+            n2 = norm.(eachcol(a2 .- o2))
+            n3 = norm.(eachcol(a3 .- o3))
+            n4 = norm.(eachcol(a4 .- o4))
+
+            @test colnorm(a2, o2) ≈ n2
+            @test colnorm(a3, o3) ≈ n3
+            @test colnorm(a4, o4) ≈ n4
+
+            @test colnorm(a2 * u"m", o2 * u"m") ≈ n2 * u"m"
+            @test colnorm(a3 * u"m", o3 * u"m") ≈ n3 * u"m"
+            @test colnorm(a4 * u"m", o4 * u"m") ≈ n4 * u"m"
+
+            @test colnorm2(a2, o2) ≈ n2 .^ 2
+            @test colnorm2(a3, o3) ≈ n3 .^ 2
+            @test colnorm2(a4, o4) ≈ n4 .^ 2
+
+            @test colnorm2(a2 * u"m", o2 * u"m") ≈ (n2 * u"m") .^ 2
+            @test colnorm2(a3 * u"m", o3 * u"m") ≈ (n3 * u"m") .^ 2
+            @test colnorm2(a4 * u"m", o4 * u"m") ≈ (n4 * u"m") .^ 2
+
+            am2 = similar(a2, Union{Float64,Missing})
+            am3 = similar(a3, Union{Float64,Missing})
+            am4 = similar(a4, Union{Float64,Missing})
+            am2 .= a2
+            am3 .= a3
+            am4 .= a4
+            am2[:, 1] .= missing
+            am3[:, 1] .= missing
+            am4[:, 1] .= missing
+
+            @test all(colnorm(am2, o2) .≈ n2) |> ismissing
+            @test all(colnorm(am3, o3) .≈ n3) |> ismissing
+            @test all(colnorm(am4, o4) .≈ n4) |> ismissing
+
+            @test all(colnorm(am2 * u"m", o2 * u"m") .≈ n2 * u"m") |> ismissing
+            @test all(colnorm(am3 * u"m", o3 * u"m") .≈ n3 * u"m") |> ismissing
+            @test all(colnorm(am4 * u"m", o4 * u"m") .≈ n4 * u"m") |> ismissing
+
+            @test all(colnorm2(am2, o2) .≈ n2 .^ 2) |> ismissing
+            @test all(colnorm2(am3, o3) .≈ n3 .^ 2) |> ismissing
+            @test all(colnorm2(am4, o4) .≈ n4 .^ 2) |> ismissing
+
+            @test all(colnorm2(am2 * u"m", o2 * u"m") .≈ (n2 * u"m") .^ 2) |> ismissing
+            @test all(colnorm2(am3 * u"m", o3 * u"m") .≈ (n3 * u"m") .^ 2) |> ismissing
+            @test all(colnorm2(am4 * u"m", o4 * u"m") .≈ (n4 * u"m") .^ 2) |> ismissing
+        end
     end
 end
