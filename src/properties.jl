@@ -217,7 +217,7 @@ end
 
 Returns the dot products of the matrix columns as a new matrix.
 
-Both input matrices need to have the same dimensions ``3 × N``.
+Both input matrices need to have the same dimensions ``d × N``, representing ``N`` ``d``-dimensional vectors.
 """
 function coldot(a::AbstractMatrix, b::AbstractMatrix)
     @assert size(a) == size(b)
