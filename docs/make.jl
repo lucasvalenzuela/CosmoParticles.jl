@@ -18,6 +18,7 @@ makedocs(;
         "Particles" => "particles.md",
         "Particle Collections" => "particlecollection.md",
         "Operations" => "operations.md",
+        "Properties" => "properties.md",
         "Geometry" => "geometry.md",
         "Utils" => "utils.md",
     ],

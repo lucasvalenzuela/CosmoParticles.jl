@@ -40,7 +40,11 @@ export
     to_comoving,
     to_comoving!,
     to_physical,
-    to_physical!
+    to_physical!,
+
+    # properties
+    colnorm,
+    colnorm2
 
 
 include("abstractparticles.jl")
@@ -53,5 +57,6 @@ include("geometry.jl")
 include("utils.jl")
 include("transformations.jl")
 include("miscoperations.jl")
+include("properties.jl")
 
 end

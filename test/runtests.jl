@@ -1,5 +1,6 @@
 using CosmoParticles
 using LazyArrays
+using LinearAlgebra
 using Rotations
 using SortingAlgorithms
 using StatsBase
@@ -1163,5 +1164,58 @@ const CP = CosmoParticles
             @test_throws ErrorException filter(ap, sph)
             @test_throws ErrorException filter!(ap, sph)
         end
+    end
+
+
+    @testset "Properties" begin
+        a2 = rand(2, 100)
+        a3 = rand(3, 100)
+        a4 = rand(4, 100)
+
+        n2 = norm.(eachcol(a2))
+        n3 = norm.(eachcol(a3))
+        n4 = norm.(eachcol(a4))
+
+        @test colnorm(a2) ≈ n2
+        @test colnorm(a3) ≈ n3
+        @test colnorm(a4) ≈ n4
+
+        @test colnorm(a2 * u"m") ≈ n2 * u"m"
+        @test colnorm(a3 * u"m") ≈ n3 * u"m"
+        @test colnorm(a4 * u"m") ≈ n4 * u"m"
+
+        @test colnorm2(a2) ≈ n2 .^ 2
+        @test colnorm2(a3) ≈ n3 .^ 2
+        @test colnorm2(a4) ≈ n4 .^ 2
+
+        @test colnorm2(a2 * u"m") ≈ (n2 * u"m") .^ 2
+        @test colnorm2(a3 * u"m") ≈ (n3 * u"m") .^ 2
+        @test colnorm2(a4 * u"m") ≈ (n4 * u"m") .^ 2
+
+        am2 = similar(a2, Union{Float64,Missing})
+        am3 = similar(a3, Union{Float64,Missing})
+        am4 = similar(a4, Union{Float64,Missing})
+        am2 .= a2
+        am3 .= a3
+        am4 .= a4
+        am2[:, 1] .= missing
+        am3[:, 1] .= missing
+        am4[:, 1] .= missing
+
+        @test all(colnorm(am2) .≈ n2) |> ismissing
+        @test all(colnorm(am3) .≈ n3) |> ismissing
+        @test all(colnorm(am4) .≈ n4) |> ismissing
+
+        @test all(colnorm(am2 * u"m") .≈ n2 * u"m") |> ismissing
+        @test all(colnorm(am3 * u"m") .≈ n3 * u"m") |> ismissing
+        @test all(colnorm(am4 * u"m") .≈ n4 * u"m") |> ismissing
+
+        @test all(colnorm2(am2) .≈ n2 .^ 2) |> ismissing
+        @test all(colnorm2(am3) .≈ n3 .^ 2) |> ismissing
+        @test all(colnorm2(am4) .≈ n4 .^ 2) |> ismissing
+
+        @test all(colnorm2(am2 * u"m") .≈ (n2 * u"m") .^ 2) |> ismissing
+        @test all(colnorm2(am3 * u"m") .≈ (n3 * u"m") .^ 2) |> ismissing
+        @test all(colnorm2(am4 * u"m") .≈ (n4 * u"m") .^ 2) |> ismissing
     end
 end
