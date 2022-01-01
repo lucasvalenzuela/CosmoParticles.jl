@@ -18,7 +18,7 @@ function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
 end
 
 """
-    colnorm2(a::AbstractMatrix)
+    colnorm2(a::AbstractMatrix[, origin:AbstractVector])
 
 Returns a new `Vector` with the columnwise squared norms of `a` around `origin`.
 """
