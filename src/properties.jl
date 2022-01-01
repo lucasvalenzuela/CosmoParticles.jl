@@ -209,3 +209,153 @@ function _colnorm_unsafe_3D!(dst::AbstractVector, a::AbstractMatrix, origin::Abs
     end
     return dst
 end
+
+
+
+"""
+    coldot(a::AbstractMatrix, b::AbstractMatrix)
+
+Returns the dot products of the matrix columns as a new matrix.
+
+Both input matrices need to have the same dimensions ``3 × N``.
+"""
+function coldot(a::AbstractMatrix, b::AbstractMatrix)
+    @assert size(a) == size(b)
+    return _coldot_unsafe(a, b)
+end
+
+function _coldot_unsafe(a::AbstractMatrix, b::AbstractMatrix)
+    dst = similar(a, Any, size(a, 2))
+    return _coldot_unsafe!(dst, a, b)
+end
+
+function _coldot_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, T, size(a, 2))
+    return _coldot_unsafe!(dst, a, b)
+end
+
+function _coldot_unsafe(
+    a::AbstractMatrix{Union{T1,Missing}},
+    b::AbstractMatrix{T2},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing}, size(a, 2))
+    return _coldot_unsafe!(dst, a, b)
+end
+
+function _coldot_unsafe(
+    a::AbstractMatrix{T1},
+    b::AbstractMatrix{Union{T2,Missing}},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing}, size(a, 2))
+    return _coldot_unsafe!(dst, a, b)
+end
+
+function _coldot_unsafe(
+    a::AbstractMatrix{Union{T1,Missing}},
+    b::AbstractMatrix{Union{T2,Missing}},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing}, size(a, 2))
+    return _coldot_unsafe!(dst, a, b)
+end
+
+function _coldot_unsafe!(dst::AbstractVector, a::AbstractMatrix, b::AbstractMatrix)
+    dims = size(a, 1)
+    if dims == 2
+        return _coldot_unsafe_2D!(dst, a, b)
+    elseif dims == 3
+        return _coldot_unsafe_3D!(dst, a, b)
+    else
+        return _coldot_unsafe_ND!(dst, a, b)
+    end
+end
+
+function _coldot_unsafe_2D!(dst::AbstractVector, a::AbstractMatrix, b::AbstractMatrix)
+    @inbounds @simd for i in axes(a, 2)
+        dst[i] = a[1, i] * b[1, i] + a[2, i] * b[2, i]
+    end
+    return dst
+end
+
+function _coldot_unsafe_3D!(dst::AbstractVector, a::AbstractMatrix, b::AbstractMatrix)
+    @inbounds @simd for i in axes(a, 2)
+        dst[i] = a[1, i] * b[1, i] + a[2, i] * b[2, i] + a[3, i] * b[3, i]
+    end
+    return dst
+end
+
+function _coldot_unsafe_ND!(dst::AbstractVector{T}, a::AbstractMatrix, b::AbstractMatrix) where {T}
+    @inbounds for i in axes(a, 2)
+        dsti = a[1, i] * b[1, i]
+        for j in Iterators.drop(axes(a, 1), 1)
+            dsti += a[j, i] * b[j, i]
+        end
+        dst[i] = dsti
+    end
+    return dst
+end
+
+
+
+"""
+    colcross(a::AbstractMatrix, b::AbstractMatrix)
+
+Returns the cross products of the matrix columns as a new matrix.
+
+Both input matrices need to have the same dimensions ``3 × N``.
+"""
+function colcross(a::AbstractMatrix, b::AbstractMatrix)
+    @assert size(a) == size(b)
+    @assert size(a, 1) == 3
+    return _colcross_unsafe(a, b)
+end
+
+function _colcross_unsafe(a::AbstractMatrix, b::AbstractMatrix)
+    dst = similar(a, Any)
+    return _colcross_unsafe!(dst, a, b)
+end
+
+function _colcross_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, T)
+    return _colcross_unsafe!(dst, a, b)
+end
+
+function _colcross_unsafe(
+    a::AbstractMatrix{Union{T1,Missing}},
+    b::AbstractMatrix{T2},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing})
+    return _colcross_unsafe!(dst, a, b)
+end
+
+function _colcross_unsafe(
+    a::AbstractMatrix{T1},
+    b::AbstractMatrix{Union{T2,Missing}},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing})
+    return _colcross_unsafe!(dst, a, b)
+end
+
+function _colcross_unsafe(
+    a::AbstractMatrix{Union{T1,Missing}},
+    b::AbstractMatrix{Union{T2,Missing}},
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2))
+    dst = similar(a, Union{T,Missing})
+    return _colcross_unsafe!(dst, a, b)
+end
+
+function _colcross_unsafe!(dst::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix)
+    @inbounds @simd for i in axes(dst, 2)
+        dst[1, i] = a[2, i] * b[3, i] - a[3, i] * b[2, i]
+        dst[2, i] = a[3, i] * b[1, i] - a[1, i] * b[3, i]
+        dst[3, i] = a[1, i] * b[2, i] - a[2, i] * b[1, i]
+    end
+    return dst
+end

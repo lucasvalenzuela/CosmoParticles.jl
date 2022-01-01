@@ -7,4 +7,6 @@ CurrentModule = CosmoParticles
 ```@docs
 colnorm
 colnorm2
+coldot
+colcross
 ```

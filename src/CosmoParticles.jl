@@ -44,7 +44,9 @@ export
 
     # properties
     colnorm,
-    colnorm2
+    colnorm2,
+    colcross,
+    coldot
 
 
 include("abstractparticles.jl")

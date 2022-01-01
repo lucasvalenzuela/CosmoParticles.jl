@@ -27,7 +27,7 @@ function matrix_rotate!(vals::ApplyMatrix{<:Number}, rotmat::AbstractMatrix{<:Re
     return vals
 end
 
-@doc raw"""
+"""
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
 
@@ -53,7 +53,7 @@ end
 
 rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rotate(p, rotmat, (prop,))
 
-@doc raw"""
+"""
     rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop)
     rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
 
@@ -77,7 +77,7 @@ function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, 
     rotate(pc, rotmat, (prop,))
 end
 
-@doc raw"""
+"""
     LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
     LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
     LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))

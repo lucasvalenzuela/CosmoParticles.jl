@@ -1275,5 +1275,66 @@ const CP = CosmoParticles
             @test all(colnorm2(am3 * u"m", o3 * u"m") .≈ (n3 * u"m") .^ 2) |> ismissing
             @test all(colnorm2(am4 * u"m", o4 * u"m") .≈ (n4 * u"m") .^ 2) |> ismissing
         end
+
+        @testset "Dot Product" begin
+            a2 = rand(2, 100)
+            a3 = rand(3, 100)
+            a4 = rand(4, 100)
+            b2 = rand(2, 100)
+            b3 = rand(3, 100)
+            b4 = rand(4, 100)
+
+            c2 = reduce(hcat, [dot(ai, bi) for (ai, bi) in zip(eachcol(a2), eachcol(b2))]) |> vec
+            c3 = reduce(hcat, [dot(ai, bi) for (ai, bi) in zip(eachcol(a3), eachcol(b3))]) |> vec
+            c4 = reduce(hcat, [dot(ai, bi) for (ai, bi) in zip(eachcol(a4), eachcol(b4))]) |> vec
+
+            for (a, b, c) in zip([a2, a3, a4], [b2, b3, b4], [c2, c3, c4])
+                @test coldot(a, b) ≈ c
+                @test coldot(a * u"m", b) ≈ c * u"m"
+                @test coldot(a, b * u"m") ≈ c * u"m"
+                @test coldot(a * u"m", b * u"m") ≈ c * u"m^2"
+
+                am = similar(a, Union{Float64,Missing})
+                am .= a
+                am[:, 1] .= missing
+                bm = similar(b, Union{Float64,Missing})
+                bm .= b
+                bm[:, 1] .= missing
+
+                @test all(coldot(am, b) .≈ c) |> ismissing
+                @test all(coldot(a * u"m", bm) .≈ c * u"m") |> ismissing
+                @test all(coldot(a, bm * u"m") .≈ c * u"m") |> ismissing
+                @test all(coldot(am * u"m", bm) .≈ c * u"m") |> ismissing
+                @test all(coldot(am * u"m", bm * u"m") .≈ c * u"m^2") |> ismissing
+            end
+
+        end
+
+        @testset "Cross Product" begin
+            a = rand(3, 100)
+            b = rand(3, 100)
+            au = a * u"m"
+            bu = b * u"m"
+
+            c = reduce(hcat, [cross(ai, bi) for (ai, bi) in zip(eachcol(a), eachcol(b))])
+
+            @test colcross(a, b) ≈ c
+            @test colcross(au, b) ≈ c * u"m"
+            @test colcross(a, bu) ≈ c * u"m"
+            @test colcross(au, bu) ≈ c * u"m^2"
+
+            am = similar(a, Union{Float64,Missing})
+            am .= a
+            am[:, 1] .= missing
+            bm = similar(b, Union{Float64,Missing})
+            bm .= b
+            bm[:, 1] .= missing
+
+            @test all(colcross(am, b) .≈ c) |> ismissing
+            @test all(colcross(au, bm) .≈ c * u"m") |> ismissing
+            @test all(colcross(a, bm * u"m") .≈ c * u"m") |> ismissing
+            @test all(colcross(am * u"m", bm) .≈ c * u"m") |> ismissing
+            @test all(colcross(am * u"m", bm * u"m") .≈ c * u"m^2") |> ismissing
+        end
     end
 end

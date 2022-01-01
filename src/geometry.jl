@@ -33,7 +33,7 @@ function geometry_enclosing_center(::AbstractCosmoGeometry) end
 @doc raw"""
     mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 
-Return the `BitArray` mask of the positions (``\mathrm{dims} \times N``) located within the geometry.
+Return the `BitArray` mask of the positions (``\mathrm{dims} × N``) located within the geometry.
 
 This is not exported.
 """
