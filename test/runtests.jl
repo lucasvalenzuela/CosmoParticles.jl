@@ -1308,6 +1308,9 @@ const CP = CosmoParticles
                 @test all(coldot(am * u"m", bm * u"m") .≈ c * u"m^2") |> ismissing
             end
 
+            am = similar(a3, Union{Float64,Nothing})
+            am .= a3
+            @test coldot(am, b3) ≈ c3
         end
 
         @testset "Cross Product" begin
@@ -1335,6 +1338,10 @@ const CP = CosmoParticles
             @test all(colcross(a, bm * u"m") .≈ c * u"m") |> ismissing
             @test all(colcross(am * u"m", bm) .≈ c * u"m") |> ismissing
             @test all(colcross(am * u"m", bm * u"m") .≈ c * u"m^2") |> ismissing
+
+            am = similar(a, Union{Float64,Nothing})
+            am .= a
+            @test colcross(am, b) ≈ c
         end
     end
 end
