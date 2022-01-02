@@ -152,23 +152,27 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
 end
 
 """
-    product_preserve_type(arr::AbstractArray{T}, b::Real) where {T}
+    CosmoParticles.product_preserve_type(arr::AbstractArray{T}, b::Real) where {T}
 
 Multiply an array with a scalar while preserving the element type of the array.
 
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+
+This is not exported.
 """
 product_preserve_type(arr::AbstractArray{T}, b::Real) where {T<:Real} = arr .* convert(T, b)
 product_preserve_type(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
 
 """
-    product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
+    CosmoParticles product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
 
 Multiply an array with a scalar in-place while preserving the element type of the array.
 
 By converting the scalar factor to the array element type, this can be more performant than a normal
 broadcasted product.
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+
+This is not exported.
 """
 function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
@@ -183,3 +187,26 @@ function product_preserve_type!(
     product_preserve_type!.(arr.args, b)
     return arr
 end
+
+
+"""
+    CosmoParticles.ustrip_lazy(a::AbstractArray)
+
+Strips off the units of unitful arrays in a performant way.
+
+Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
+unitful array, but without reallocating non-unitful or lazy arrays.
+
+This is not exported.
+"""
+ustrip_lazy(a::Number) = a
+ustrip_lazy(a::AbstractArray) = a
+ustrip_lazy(a::Array{<:Quantity}) = ustrip(a)
+ustrip_lazy(a::Diagonal{<:Quantity}) = ustrip(a)
+ustrip_lazy(a::Bidiagonal{<:Quantity}) = ustrip(a)
+ustrip_lazy(a::Tridiagonal{<:Quantity}) = ustrip(a)
+ustrip_lazy(a::SymTridiagonal{<:Quantity}) = ustrip(a)
+
+ustrip_lazy(a::AbstractArray{<:Quantity}) = reinterpret(T, a) #ustrip.(a) # alternative implementation
+ustrip_lazy(a::ApplyArray{<:Quantity{T}}) where {T} = reinterpret(T, a)
+ustrip_lazy(a::Fill{<:Quantity{T}}) where {T} = reinterpret(T, a)

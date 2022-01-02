@@ -4,6 +4,8 @@ using FastUnitfulOperations
 using FillArrays
 using LazyArrays
 using LinearAlgebra
+using Statistics
+using StatsBase
 using Unitful
 
 export
@@ -43,10 +45,17 @@ export
     to_physical!,
 
     # properties
+    meanprop,
+    sumprop,
+    meanpos,
+    meanvel,
     colnorm,
     colnorm2,
     colcross,
-    coldot
+    coldot,
+    angmom,
+    angmomtot,
+    angmomtot_stable
 
 
 include("abstractparticles.jl")

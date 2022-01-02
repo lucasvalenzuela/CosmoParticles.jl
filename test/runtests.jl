@@ -1,4 +1,5 @@
 using CosmoParticles
+using FillArrays
 using LazyArrays
 using LinearAlgebra
 using Rotations
@@ -459,6 +460,32 @@ const CP = CosmoParticles
             afuc = copy(afu)
             CP.product_preserve_type!(afuc, b)
             @test afuc == afu .* convert(Float32, b)
+        end
+
+        @testset "Lazy ustrip" begin
+            @test CP.ustrip_lazy(3) == 3
+
+            a = rand(4)
+            b = rand(3)
+            au = a * u"m"
+            bu = b * u"m"
+            @test CP.ustrip_lazy(a) === a
+            @test CP.ustrip_lazy(au) == a
+            @test CP.ustrip_lazy(Diagonal(au)) == Diagonal(a)
+            @test CP.ustrip_lazy(Bidiagonal(au, bu, :U)) == Bidiagonal(a, b, :U)
+            @test CP.ustrip_lazy(Tridiagonal(bu, au, bu)) == Tridiagonal(b, a, b)
+            @test CP.ustrip_lazy(SymTridiagonal(au, bu)) == SymTridiagonal(a, b)
+
+            auview = @view a[1:3]
+            @test CP.ustrip_lazy(auview) == a[1:3]
+
+            c = vcat(a, b)
+            cu = ApplyArray(vcat, au, bu)
+            @test CP.ustrip_lazy(cu) == c
+
+            c = fill(2.5, 4)
+            cu = Fill(2.5u"m", 4)
+            @test CP.ustrip_lazy(cu) == c
         end
     end
 
@@ -1342,6 +1369,122 @@ const CP = CosmoParticles
             am = similar(a, Union{Float64,Nothing})
             am .= a
             @test colcross(am, b) ≈ c
+        end
+
+        @testset "Angular momentum" begin
+            a = rand(3, 100)
+            b = rand(3, 100)
+            au = a * u"m"
+            bu = b * u"m"
+
+            for m in [rand(), rand(100)]
+                mu = m * u"kg"
+
+                j = m' .* colcross(a, b)
+
+                @test angmom(a, b, m) ≈ j
+                @test angmom(au, b, m) ≈ j * u"m"
+                @test angmom(a, bu, m) ≈ j * u"m"
+                @test angmom(au, bu, m) ≈ j * u"m^2"
+                @test angmom(a, b, mu) ≈ j * u"kg"
+                @test angmom(au, b, mu) ≈ j * u"m*kg"
+                @test angmom(a, bu, mu) ≈ j * u"m*kg"
+                @test angmom(au, bu, mu) ≈ j * u"m^2*kg"
+
+                am = similar(a, Union{Float64,Missing})
+                am .= a
+                am[:, 1] .= missing
+                bm = similar(b, Union{Float64,Missing})
+                bm .= b
+                bm[:, 1] .= missing
+
+                @test all(angmom(am, b, m) .≈ j) |> ismissing
+                @test all(angmom(au, bm, m) .≈ j * u"m") |> ismissing
+                @test all(angmom(a, bm * u"m", m) .≈ j * u"m") |> ismissing
+                @test all(angmom(am * u"m", bm, m) .≈ j * u"m") |> ismissing
+                @test all(angmom(am * u"m", bm * u"m", m) .≈ j * u"m^2") |> ismissing
+                @test all(angmom(am, b, mu) .≈ j * u"kg") |> ismissing
+                @test all(angmom(au, bm, mu) .≈ j * u"m*kg") |> ismissing
+                @test all(angmom(a, bm * u"m", mu) .≈ j * u"m*kg") |> ismissing
+                @test all(angmom(am * u"m", bm, mu) .≈ j * u"m*kg") |> ismissing
+                @test all(angmom(am * u"m", bm * u"m", mu) .≈ j * u"m^2*kg") |> ismissing
+
+                am = similar(a, Union{Float64,Nothing})
+                am .= a
+                @test angmom(am, b, m) ≈ j
+            end
+        end
+
+
+        @testset "Particles properties" begin
+            dm = Particles(:dm, :pos => rand(3, 100), :vel => rand(Float32, 3, 100), :mass => 2)
+            gas = Particles(
+                :gas,
+                :pos => rand(3, 100),
+                :vel => rand(Float32, 3, 100),
+                :mass => rand(100),
+                :temp => rand(100),
+                :test => 1,
+                :mass2 => Fill(2, 100),
+            )
+
+            dmu = deepcopy(dm)
+            gasu = deepcopy(gas)
+            dmu.pos *= u"m"
+            dmu.vel *= u"km/s"
+            dmu.mass *= u"kg"
+            gasu.pos *= u"m"
+            gasu.vel *= u"km/s"
+            gasu.mass *= u"kg"
+            gasu.mass2 *= u"kg"
+            gasu.temp *= u"K"
+
+            for (dm, gas) in zip([dm, dmu], [gas, gasu])
+                cp = ParticleCollection(dm, gas)
+                ap = cp.all
+                p = Particles(ap)
+
+                @test meanpos(dm) == mean(dm.pos; dims=2)
+                @test meanpos(dm; massweighted=false) == mean(dm.pos; dims=2)
+                @test meanpos(gas) ≈ sum(gas.pos .* gas.mass'; dims=2) / sum(gas.mass)
+                @test meanpos(gas; massweighted=false) == mean(gas.pos; dims=2)
+                @test meanpos(ap) ≈ meanpos(p)
+
+                @test meanprop(dm, :pos) == mean(dm.pos; dims=2)
+                @test meanprop(gas, :pos; massprop=:mass2) == mean(gas.pos; dims=2)
+                @test meanprop(gas, :temp) ≈ sum(gas.temp .* gas.mass) / sum(gas.mass)
+                @test meanprop(gas, :temp; massweighted=false) == mean(gas.temp)
+                @test meanprop(gas, :temp; massprop=:mass2) == mean(gas.temp)
+                @test meanprop(dm, :mass) == dm.mass
+                @test meanprop(gas, :test) == gas.test
+                @test meanprop(gas, :mass2) == gas.mass2[1]
+                @test meanprop(gas, :mass2; massweighted=false) == gas.mass2[1]
+                @test meanprop(gas, :mass2; massprop=:mass2) == gas.mass2[1]
+                @test meanprop(ap, :mass) ≈ meanvel(p, :mass)
+
+                @test meanvel(dm) == mean(dm.vel; dims=2)
+                @test meanvel(dm; massweighted=false) == mean(dm.vel; dims=2)
+                @test meanvel(gas) ≈ sum(gas.vel .* gas.mass'; dims=2) / sum(gas.mass)
+                @test meanvel(gas; massweighted=false) == mean(gas.vel; dims=2)
+                @test meanvel(ap) ≈ meanvel(p)
+
+                @test sumprop(dm, :pos) == sum(dm.pos; dims=2)
+                @test sumprop(gas, :pos) == sum(gas.pos; dims=2)
+                @test sumprop(dm, :mass) == CP.particle_number(dm) * dm.mass
+                @test sumprop(gas, :mass2) == sum(gas.mass2)
+                @test sumprop(ap, :pos) == sumprop(p, :pos)
+
+                @test angmom(dm; angmomprop=:j) == angmom(dm.pos, dm.vel, dm.mass)
+                @test angmomtot(dm; angmomprop=:j) == angmomtot(dm.pos, dm.vel, dm.mass)
+                @test angmomtot_stable(dm; angmomprop=:j) == angmomtot_stable(dm.pos, dm.vel, dm.mass)
+                dm.j = angmom(dm)
+                @test angmom(dm; angmomprop=:j) ≈ angmom(dm.pos, dm.vel, dm.mass)
+                @test angmomtot(dm; angmomprop=:j) ≈ angmomtot(dm.pos, dm.vel, dm.mass)
+                @test angmomtot_stable(dm; angmomprop=:j) ≈ angmomtot_stable(dm.pos, dm.vel, dm.mass)
+                @test angmom(gas; angmomprop=:j) == angmom(gas.pos, gas.vel, gas.mass)
+                @test angmomtot(gas; angmomprop=:j) == angmomtot(gas.pos, gas.vel, gas.mass)
+                @test angmomtot_stable(gas; angmomprop=:j) == angmomtot_stable(gas.pos, gas.vel, gas.mass)
+            end
         end
     end
 end

@@ -1,4 +1,114 @@
 """
+    meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted::Bool=true)
+
+Returns the mean of the specified property over all particles.
+
+The mean can be weighted by the mass.
+"""
+function meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted=true)
+    if massweighted
+        return _meanprop(p[prop], p[massprop])
+    else
+        return _meanprop(p[prop])
+    end
+end
+
+_meanprop(a::Number) = a
+_meanprop(a::Number, ::Any) = a
+_meanprop(a::Fill) = a[1]
+_meanprop(a::Fill, ::AbstractVector) = a[1]
+_meanprop(a::Fill, ::Fill) = a[1]
+_meanprop(a::AbstractVector) = mean(a)
+_meanprop(a::AbstractMatrix) = mean(a; dims=2)
+_meanprop(a::AbstractVector, m::AbstractVector) = mean(a, weights(ustrip_lazy(m)))
+_meanprop(a::AbstractMatrix, m::AbstractVector) = mean(a, weights(ustrip_lazy(m)); dims=2)
+_meanprop(a::AbstractArray, ::Number) = _meanprop(a)
+_meanprop(a::AbstractVector, ::Fill) = _meanprop(a)
+_meanprop(a::AbstractMatrix, ::Fill) = _meanprop(a)
+
+
+"""
+    sumprop(p::AbstractParticles, prop::Symbol)
+
+Returns the sum of the specified property over all particles.
+"""
+sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p, p[prop])
+
+_sumprop(p::AbstractParticles, a::Number) = particle_number(p) * a
+_sumprop(::AbstractParticles, a::AbstractVecOrMat) = _sumprop(a)
+_sumprop(a::AbstractVector) = sum(a)
+_sumprop(a::AbstractMatrix) = sum(a; dims=2)
+
+
+"""
+    meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true)
+
+Returns the mean of the particles' positions.
+
+The mean can be weighted by the mass.
+"""
+meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true) =
+    meanprop(p, prop; massprop, massweighted)
+
+"""
+    meanvel(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true)
+
+Returns the mean of the particles' velocities.
+
+The mean can be weighted by the mass.
+"""
+meanvel(p::AbstractParticles, prop::Symbol=:vel; massprop=:mass, massweighted=true) =
+    meanprop(p, prop; massprop, massweighted)
+
+
+"""
+    angmom(p::AbstractParticles; posprop=:pos, velprop=:vel, massprop=:mass, angmomprop=nothing)
+
+Returns the individual angular momenta of the particles.
+
+If `angmomprop` is a `Symbol`, the already computed angular momenta are returned directly if they exist.
+"""
+function angmom(p::AbstractParticles; posprop=:pos, velprop=:vel, massprop=:mass, angmomprop=nothing)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return p[angmomprop]
+    return angmom(p[posprop], p[velprop], p[massprop])
+end
+
+"""
+    angmomtot(p::AbstractParticles; posprop=:pos, velprop=:vel, massprop=:mass, angmomprop=nothing)
+
+Returns the total angular momentum of the particles.
+
+If `angmomprop` is a `Symbol`, the total angular momentum is computed from the already existing angular momenta.
+"""
+function angmomtot(p::AbstractParticles; posprop=:pos, velprop=:vel, massprop=:mass, angmomprop=nothing)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
+    return angmomtot(p[posprop], p[velprop], p[massprop])
+end
+
+"""
+    angmomtot_stable(p::AbstractParticles; posprop=:pos, velprop=:vel, massprop=:mass, angmomprop=nothing)
+
+Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
+
+If `angmomprop` is a `Symbol`, the total angular momentum is computed from the already existing angular momenta.
+
+Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
+[`angmomtot`](@ref).
+"""
+function angmomtot_stable(
+    p::AbstractParticles;
+    posprop=:pos,
+    velprop=:vel,
+    massprop=:mass,
+    angmomprop=nothing,
+)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
+    return angmomtot_stable(p[posprop], p[velprop], p[massprop])
+end
+
+
+
+"""
     colnorm(a::AbstractMatrix[, origin::AbstractVector])
 
 Returns a new `Vector` with the columnwise norms of `a` around `origin`.
@@ -358,4 +468,192 @@ function _colcross_unsafe!(dst::AbstractMatrix, a::AbstractMatrix, b::AbstractMa
         dst[3, i] = a[1, i] * b[2, i] - a[2, i] * b[1, i]
     end
     return dst
+end
+
+
+
+"""
+    angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass)
+
+Returns the angular momentum based on the positions, velocities, and masses.
+
+Both input matrices need to have the same dimensions ``3 × N``.
+The mass can be a vector or a scalar value (useful if all particles have the same mass).
+"""
+function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::AbstractVector)
+    @assert size(pos, 2) == size(vel, 2) == length(mass)
+    @assert size(pos, 1) == size(vel, 1) == 3
+    return _angmom_unsafe(pos, vel, mass)
+end
+
+function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number)
+    @assert size(pos, 2) == size(vel, 2)
+    @assert size(pos, 1) == size(vel, 1) == 3
+    return _angmom_unsafe(pos, vel, mass)
+end
+
+function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass)
+    dst = similar(pos, Any)
+    return _angmom_unsafe!(dst, pos, vel, mass)
+end
+
+function _angmom_unsafe(pos::AbstractMatrix{T1}, vel::AbstractMatrix{T2}, mass) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+    dst = similar(pos, T)
+    return _angmom_unsafe!(dst, pos, vel, mass)
+end
+
+function _angmom_unsafe(
+    pos::AbstractMatrix{Union{T1,Missing}},
+    vel::AbstractMatrix{T2},
+    mass,
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+    dst = similar(pos, Union{T,Missing})
+    return _angmom_unsafe!(dst, pos, vel, mass)
+end
+
+function _angmom_unsafe(
+    pos::AbstractMatrix{T1},
+    vel::AbstractMatrix{Union{T2,Missing}},
+    mass,
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+    dst = similar(pos, Union{T,Missing})
+    return _angmom_unsafe!(dst, pos, vel, mass)
+end
+
+function _angmom_unsafe(
+    pos::AbstractMatrix{Union{T1,Missing}},
+    vel::AbstractMatrix{Union{T2,Missing}},
+    mass,
+) where {T1<:Number,T2<:Number}
+    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+    dst = similar(pos, Union{T,Missing})
+    return _angmom_unsafe!(dst, pos, vel, mass)
+end
+
+function _angmom_unsafe!(dst::AbstractMatrix, p::AbstractMatrix, v::AbstractMatrix, m::Number)
+    @inbounds @simd for i in axes(dst, 2)
+        dst[1, i] = m * (p[2, i] * v[3, i] - p[3, i] * v[2, i])
+        dst[2, i] = m * (p[3, i] * v[1, i] - p[1, i] * v[3, i])
+        dst[3, i] = m * (p[1, i] * v[2, i] - p[2, i] * v[1, i])
+    end
+    return dst
+end
+
+function _angmom_unsafe!(dst::AbstractMatrix, p::AbstractMatrix, v::AbstractMatrix, m::AbstractVector)
+    @inbounds @simd for i in axes(dst, 2)
+        dst[1, i] = m[i] * (p[2, i] * v[3, i] - p[3, i] * v[2, i])
+        dst[2, i] = m[i] * (p[3, i] * v[1, i] - p[1, i] * v[3, i])
+        dst[3, i] = m[i] * (p[1, i] * v[2, i] - p[2, i] * v[1, i])
+    end
+    return dst
+end
+
+_zero_of(::T) where {T<:Number} = zero(T)
+_zero_of(::AbstractArray{T}) where {T<:Number} = zero(T)
+
+
+
+"""
+    angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass)
+
+Returns the total angular momentum based on the positions, velocities, and masses.
+
+Both input matrices need to have the same dimensions ``3 × N``.
+The mass can be a vector or a scalar value (useful if all particles have the same mass).
+
+This method never allocates the full angular momentum matrix for all particles like [`angmom`](@ref) does.
+Use this when the individual particle angular momenta are not needed.
+"""
+function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::AbstractVector)
+    @assert size(pos, 2) == size(vel, 2) == length(mass)
+    @assert size(pos, 1) == size(vel, 1) == 3
+    return _angmomtot_unsafe(pos, vel, mass)
+end
+
+function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number)
+    @assert size(pos, 2) == size(vel, 2)
+    @assert size(pos, 1) == size(vel, 1) == 3
+    return _angmomtot_unsafe(pos, vel, mass)
+end
+
+function _angmomtot_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass)
+    T, zeroT = _type_and_zero_of_summed_angmomtot(pos, vel, mass)
+    dst = Vector{T}(undef, 3)
+    _angmomtot_unsafe!(dst, pos, vel, mass; zeroT)
+end
+
+function _angmomtot_unsafe!(dst::AbstractVector, p::AbstractMatrix, v::AbstractMatrix, m::Number; zeroT)
+    d1 = d2 = d3 = zeroT
+    @inbounds @simd for i in axes(p, 2)
+        d1 += (p[2, i] * v[3, i] - p[3, i] * v[2, i])
+        d2 += (p[3, i] * v[1, i] - p[1, i] * v[3, i])
+        d3 += (p[1, i] * v[2, i] - p[2, i] * v[1, i])
+    end
+    dst .= m * d1, m * d2, m * d3
+    return dst
+end
+
+function _angmomtot_unsafe!(
+    dst::AbstractVector,
+    p::AbstractMatrix,
+    v::AbstractMatrix,
+    m::AbstractVector;
+    zeroT,
+)
+    dst .= zeroT
+    @inbounds @simd for i in axes(p, 2)
+        dst[1] += m[i] * (p[2, i] * v[3, i] - p[3, i] * v[2, i])
+        dst[2] += m[i] * (p[3, i] * v[1, i] - p[1, i] * v[3, i])
+        dst[3] += m[i] * (p[1, i] * v[2, i] - p[2, i] * v[1, i])
+    end
+    return dst
+end
+
+function _type_and_zero_of_summed_angmomtot(
+    p::AbstractMatrix{T1},
+    v::AbstractMatrix{T2},
+    m::T3,
+) where {T1,T2,T3<:Number}
+    z = zero(T1) * zero(T2)
+    return typeof(z * zero(T3)), z
+end
+
+function _type_and_zero_of_summed_angmomtot(
+    p::AbstractMatrix{T1},
+    v::AbstractMatrix{T2},
+    m::AbstractVector{T3},
+) where {T1,T2,T3}
+    z = zero(T1) * zero(T2) * zero(T3)
+    return typeof(z), z
+end
+
+
+"""
+    angmomtot_stable(pos::AbstractMatrix, vel::AbstractMatrix, mass)
+
+Returns the total angular momentum based on the positions, velocities, and masses, like [`angmomtot`](@ref).
+
+Both input matrices need to have the same dimensions ``3 × N``.
+The mass can be a vector or a scalar value (useful if all particles have the same mass).
+
+Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
+[`angmomtot`](@ref).
+"""
+function angmomtot_stable(p::AbstractMatrix, v::AbstractMatrix, m::Number)
+    return [
+        m * sum(p[2, i] * v[3, i] - p[3, i] * v[2, i] for i in axes(p, 2))
+        m * sum(p[3, i] * v[1, i] - p[1, i] * v[3, i] for i in axes(p, 2))
+        m * sum(p[1, i] * v[2, i] - p[2, i] * v[1, i] for i in axes(p, 2))
+    ]
+end
+
+function angmomtot_stable(p::AbstractMatrix, v::AbstractMatrix, m::AbstractVector)
+    return [
+        sum(m[i] * (p[2, i] * v[3, i] - p[3, i] * v[2, i]) for i in axes(p, 2))
+        sum(m[i] * (p[3, i] * v[1, i] - p[1, i] * v[3, i]) for i in axes(p, 2))
+        sum(m[i] * (p[1, i] * v[2, i] - p[2, i] * v[1, i]) for i in axes(p, 2))
+    ]
 end

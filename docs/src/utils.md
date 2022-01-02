@@ -7,4 +7,5 @@ CurrentModule = CosmoParticles
 ```@docs
 product_preserve_type
 product_preserve_type!
+CosmoParticles.ustrip_lazy
 ```
