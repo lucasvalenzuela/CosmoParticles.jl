@@ -1391,6 +1391,36 @@ const CP = CosmoParticles
                 @test angmom(a, bu, mu) ≈ j * u"m*kg"
                 @test angmom(au, bu, mu) ≈ j * u"m^2*kg"
 
+                for func in [angmomtot, angmomtot_stable]
+                    @test func(a, b, m) ≈ sum(j; dims=2)
+                    @test func(au, b, m) ≈ sum(j * u"m"; dims=2)
+                    @test func(a, bu, m) ≈ sum(j * u"m"; dims=2)
+                    @test func(au, bu, m) ≈ sum(j * u"m^2"; dims=2)
+                    @test func(a, b, mu) ≈ sum(j * u"kg"; dims=2)
+                    @test func(au, b, mu) ≈ sum(j * u"m*kg"; dims=2)
+                    @test func(a, bu, mu) ≈ sum(j * u"m*kg"; dims=2)
+                    @test func(au, bu, mu) ≈ sum(j * u"m^2*kg"; dims=2)
+                end
+
+
+                origin = rand(3)
+                velorigin = rand(3)
+                jorigin = m' .* colcross(a .- origin, b)
+                @test angmom(au, bu, mu; origin=origin * u"m") ≈ jorigin * u"m^2*kg"
+                @test angmomtot(au, bu, mu; origin=origin * u"m") ≈ sum(jorigin * u"m^2*kg"; dims=2)
+                jorigin = m' .* colcross(a, b .- velorigin)
+                @test angmom(au, bu, mu; velorigin=velorigin * u"m") ≈ jorigin * u"m^2*kg"
+                @test angmomtot(au, bu, mu; velorigin=velorigin * u"m") ≈ sum(jorigin * u"m^2*kg"; dims=2)
+                @test angmomtot_stable(au, bu, mu; velorigin=velorigin * u"m") ≈
+                      sum(jorigin * u"m^2*kg"; dims=2)
+                jorigin = m' .* colcross(a .- origin, b .- velorigin)
+                @test angmom(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
+                      jorigin * u"m^2*kg"
+                @test angmomtot(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
+                      sum(jorigin * u"m^2*kg"; dims=2)
+                @test angmomtot_stable(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
+                      sum(jorigin * u"m^2*kg"; dims=2)
+
                 am = similar(a, Union{Float64,Missing})
                 am .= a
                 am[:, 1] .= missing
@@ -1484,6 +1514,15 @@ const CP = CosmoParticles
                 @test angmom(gas; angmomprop=:j) == angmom(gas.pos, gas.vel, gas.mass)
                 @test angmomtot(gas; angmomprop=:j) == angmomtot(gas.pos, gas.vel, gas.mass)
                 @test angmomtot_stable(gas; angmomprop=:j) == angmomtot_stable(gas.pos, gas.vel, gas.mass)
+
+                origin = 2 * dm.pos[:, 1]
+                velorigin = 2 * dm.vel[:, 1]
+
+                for func in [angmom, angmomtot, angmomtot_stable]
+                    @test func(gas; origin) == func(gas.pos, gas.vel, gas.mass; origin)
+                    @test func(gas; velorigin) == func(gas.pos, gas.vel, gas.mass; velorigin)
+                    @test func(gas; origin, velorigin) == func(gas.pos, gas.vel, gas.mass; origin, velorigin)
+                end
             end
         end
     end
