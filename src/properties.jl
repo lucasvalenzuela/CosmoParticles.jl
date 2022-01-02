@@ -74,8 +74,7 @@ If `angmomprop` is a `Symbol`, the already computed angular momenta are returned
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
-- `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not.
-Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+- `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
 """
 function angmom(
     p::AbstractParticles;
@@ -103,8 +102,7 @@ If `angmomprop` is a `Symbol`, the total angular momentum is computed from the a
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
-- `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not.
-Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+- `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
 """
 function angmomtot(
     p::AbstractParticles;

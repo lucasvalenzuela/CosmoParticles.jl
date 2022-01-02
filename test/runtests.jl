@@ -476,7 +476,7 @@ const CP = CosmoParticles
             @test CP.ustrip_lazy(Tridiagonal(bu, au, bu)) == Tridiagonal(b, a, b)
             @test CP.ustrip_lazy(SymTridiagonal(au, bu)) == SymTridiagonal(a, b)
 
-            auview = @view a[1:3]
+            auview = @view au[1:3]
             @test CP.ustrip_lazy(auview) == a[1:3]
 
             c = vcat(a, b)
@@ -1486,6 +1486,7 @@ const CP = CosmoParticles
                 @test meanprop(gas, :temp; massweighted=false) == mean(gas.temp)
                 @test meanprop(gas, :temp; massprop=:mass2) == mean(gas.temp)
                 @test meanprop(dm, :mass) == dm.mass
+                @test meanprop(dm, :mass; massweighted=false) == dm.mass
                 @test meanprop(gas, :test) == gas.test
                 @test meanprop(gas, :mass2) == gas.mass2[1]
                 @test meanprop(gas, :mass2; massweighted=false) == gas.mass2[1]

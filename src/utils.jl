@@ -195,7 +195,7 @@ end
 Strips off the units of unitful arrays in a performant way.
 
 Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
-unitful array, but without reallocating non-unitful or lazy arrays.
+unitful arrays, but without reallocating non-unitful or lazy arrays.
 
 This is not exported.
 """
