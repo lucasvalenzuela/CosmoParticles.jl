@@ -122,7 +122,7 @@ end
 
 
 """
-    Base.filter!(p::AbstractParticles, ids)
+    Base.filter!(p::AbstractParticles; ids)
     Base.filter!(pc::AbstractParticleCollection; ids)
 
 Filter the particles or collection in-place by keeping only the particles with the given IDs.
