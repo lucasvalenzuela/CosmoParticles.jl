@@ -890,7 +890,7 @@ const CP = CosmoParticles
             @test filter!(deepcopy(p); ids=Set(ids_wanted)) == pc
         end
 
-        @testset "Particle Collection Sorting" begin
+        @testset "Particle Collection Filtering" begin
             dm = p
             gas = Particles(:gas, p.props)
             pc = ParticleCollection(dm, gas)
