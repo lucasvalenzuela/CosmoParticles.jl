@@ -32,12 +32,21 @@ jobs:
             arch: x86
     steps:
       - uses: actions/checkout@v2
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY_MACHINE_USER }}"
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - run: |
-          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "https://github.com/lucasvalenzuela/CosmoSimsRegistry"
+      - name: Download private registry
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -59,11 +68,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY_MACHINE_USER }}"
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1'
-      - run: |
-          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "https://github.com/lucasvalenzuela/CosmoSimsRegistry"
+      - name: Download private registry
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:
