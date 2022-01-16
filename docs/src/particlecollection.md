@@ -31,5 +31,5 @@ CosmoParticles.show_properties(io::IO, mime::AbstractString, pc::AbstractParticl
 ```@docs
 AllParticles
 particle_collection
-Base.copy!(dst::AbstractParticles, src::AllParticles, props=())
+Base.copy!(dst::AbstractParticles, src::AllParticles, props=nothing)
 ```

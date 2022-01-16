@@ -36,7 +36,7 @@ Rotates the specified properties `props` of the particles `p` by the rotation ma
 Creates a copy of the particles with only new pointers to the rotated properties
 (by default position and velocity). This means that mutations to other properties will
 affect both the original particles as well as the rotated copied particles.
-The properties should be given as a single `Symbol`, or an array or tuple of `Symbol`s. Only
+The properties should be given as a single `Symbol`, or a vector of `Symbol`s. Only
 the existing quantities will be rotated (e.g., this method does not throw an error if
 velocities are not given for the particles).
 """
@@ -60,7 +60,7 @@ rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rot
 Rotates the specified properties `props` of the particles in the collection by the rotation matrix `rotmat`.
 
 Creates a copy of the particle collection with only new pointers to the rotated particles
-(by default position and velocity).The properties should be given as a single `Symbol`, or an array or tuple of
+(by default position and velocity). The properties should be given as a single `Symbol`, or a vector of
 `Symbol`s.
 """
 function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
@@ -175,13 +175,13 @@ end
 
 
 """
-    to_comoving(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
-    to_comoving(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+    to_comoving(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
+    to_comoving(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
 
 Create new particles or collection with particle properties converted from physical to comoving.
 
 The properties and the positional exponent of their units (e.g., 1 for positions, 3 for volumes, and -3 for
-densities) are passed as the keyword argument `propexp` as a tuple of tuples.
+densities) are passed as the keyword argument `propexp` as a vector of tuples.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^n`` where ``n`` is the positional exponent.
@@ -189,8 +189,8 @@ The properties are multiplied by ``(1 + z)^n`` where ``n`` is the positional exp
 function to_comoving end
 
 """
-    to_comoving!(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
-    to_comoving!(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+    to_comoving!(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
+    to_comoving!(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
 
 Convert particle properties from physical to comoving in-place.
 
@@ -199,13 +199,13 @@ In-place version of [`to_comoving`](@ref).
 function to_comoving! end
 
 """
-    to_physical(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
-    to_physical(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+    to_physical(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
+    to_physical(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
 
 Create new particles or collection with particle properties converted from comoving to physical.
 
 The properties and the positional exponent of their units (e.g., 1 for positions, 3 for volumes, and -3 for
-densities) are passed as the keyword argument `propexp` as a tuple of tuples.
+densities) are passed as the keyword argument `propexp` as a vector of tuples.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^{-n}`` where ``n`` is the positional exponent.
@@ -213,8 +213,8 @@ The properties are multiplied by ``(1 + z)^{-n}`` where ``n`` is the positional 
 function to_physical end
 
 """
-    to_physical!(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
-    to_physical!(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+    to_physical!(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
+    to_physical!(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
 
 Convert particle properties from comoving to physical in-place.
 
@@ -224,7 +224,7 @@ function to_physical! end
 
 for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (1 + z))])
     quote
-        function $(Symbol(name))(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name))(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
             p = copy(p)
 
             factor = $factorexpr
@@ -237,7 +237,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             return p
         end
 
-        function $(Symbol(name))(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name))(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
             pc = copy(pc)
 
             for ptype in keys(pc)
@@ -247,7 +247,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             return pc
         end
 
-        function $(Symbol(name, "!"))(p::AbstractParticles, z::Real; propexp=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name, "!"))(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
             factor = $factorexpr
             for (prop, n) in propexp
                 if haskey(p, prop)
@@ -258,7 +258,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             return p
         end
 
-        function $(Symbol(name, "!"))(pc::AbstractParticleCollection; propexp=((:pos, 1), (:vel, 1)))
+        function $(Symbol(name, "!"))(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
             for ptype in keys(pc)
                 $(Symbol(name, "!"))(pc[ptype], redshift(pc); propexp)
             end

@@ -153,13 +153,13 @@ function Base.copy(::AllParticles)
     # return pnew
 end
 
-function Base.copy!(::AllParticles, ::AllParticles, props=())
+function Base.copy!(::AllParticles, ::AllParticles, props=nothing)
     error(
         "Copying particles to an AllParticles object is not allowed. Try converting it via Particles(allparticles) instead.",
     )
 end
 
-function Base.copy!(::AllParticles, ::AbstractParticles, props=())
+function Base.copy!(::AllParticles, ::AbstractParticles, props=nothing)
     error(
         "Copying particles to an AllParticles object is not allowed. Try converting it via Particles(allparticles) instead.",
     )
@@ -170,13 +170,13 @@ end
 
 Copies the materialized particle properties to another particle object.
 
-To only copy certain properties, `props` can be passed as a tuple of `Symbol`s.
+To only copy certain properties, `props` can be passed as a vector of `Symbol`s.
 The `dst` cannot be of type `AllParticles`.
 """
-function Base.copy!(dst::AbstractParticles, src::AllParticles, props=())
+function Base.copy!(dst::AbstractParticles, src::AllParticles, props=nothing)
     empty!(dst)
     for key in keys(src)
-        if isempty(props) || key in props
+        if isnothing(props) || key in props
             val = src[key]
             dst[key] = Array(val)
         end
@@ -231,13 +231,13 @@ end
 
 
 """
-    Particles(p::AllParticles, props=())
+    Particles(p::AllParticles, props=nothing)
 
 Materializes the particle properties in a new particle object of type `:all`.
 
 To only copy certain properties, `props` can be passed as a tuple of `Symbol`s.
 """
-Particles(p::AllParticles, props=()) = copy!(Particles(:all), p, props)
+Particles(p::AllParticles, props=nothing) = copy!(Particles(:all), p, props)
 
 function applyind!(::AllParticles, ::AbstractVector)
     error(

@@ -58,7 +58,7 @@ end
 Create new particles with the given indices or mask applied to all particle properties.
 
 This can also be called by the simple syntax `p[ind]`.
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are indexed into and
+If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
 
 This is not exported.

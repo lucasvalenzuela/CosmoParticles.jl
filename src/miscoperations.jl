@@ -33,7 +33,7 @@ end
 Create new particles with the particles sorted according to the specified property.
 
 All property arrays of the particles are rearranged according to the property being sorted.
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are rearranged and added
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are rearranged and added
 to the newly created particles object.
 The other keyword arguments are passed on to [`Base.sortperm`](https://docs.julialang.org/en/v1/base/sort/#Base.sortperm).
 
@@ -50,7 +50,7 @@ end
 
 Create new particle collection with the particles in the collection sorted by calling `Base.sort` on each of the [`Particles`](@ref) objects.
 
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only the affected properties are kept for the particles.
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only the affected properties are kept for the particles.
 The specified affected properties do not have to be available for all particles.
 """
 function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing, kwargs...)
@@ -98,7 +98,7 @@ Create new particles or collection with the particles filtered by a mask returne
 
 The function `f` takes the particles as argument and has to either return a `BitArray` mask with a length of the
 number of particles or an array of indices.
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
 function Base.filter(f, p::AbstractParticles; affect=keys(p))
@@ -146,7 +146,7 @@ end
 
 Create new particles or collection with them filtered by keeping only the particles with the given IDs.
 
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
 function Base.filter(p::AbstractParticles; ids, affect=keys(p))
@@ -176,7 +176,7 @@ end
 Create new particles or collection with them filtered by keeping only the particles inside the given [`AbstractCosmoGeometry`](@ref).
 
 The filter is applied to the property specified.
-If the keyword argument `affect` is a non-empty tuple of `Symbol`s, only those properties are filtered and added
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 """
 function Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))

@@ -166,12 +166,12 @@ const CP = CosmoParticles
         @test all(isequal.(pc.zs, p.zs))
         @test pc.test == p.test
 
-        copy!(pc, p, (:id, :mass, :temp))
+        copy!(pc, p, [:id, :mass, :temp])
         @test haskey.((pc,), [:id, :mass, :temp]) |> all
         @test !haskey(pc, :pos)
         @test isa.([pc.id, pc.mass, pc.temp], Array) |> all
 
-        @test Particles(p, (:id, :mass, :temp)) == pc
+        @test Particles(p, [:id, :mass, :temp]) == pc
 
         @test_throws ErrorException empty(p)
         @test_throws ErrorException empty!(p)
@@ -390,7 +390,7 @@ const CP = CosmoParticles
             CP.applyind!(pcc, ind)
             @test pcc == pc
 
-            pc = CP.applyind(p, mask; affect=(:pos, :mass, :foo))
+            pc = CP.applyind(p, mask; affect=[:pos, :mass, :foo])
             @test !haskey(pc, :id)
             @test !haskey(pc, :foo)
             @test pc.pos == p.pos[:, mask]
@@ -671,7 +671,7 @@ const CP = CosmoParticles
             nu = n * u"m^-3"
             m = copy(n)
 
-            propexp = ((:pos, 1), (:vel, 1), (:n, -3))
+            propexp = [(:pos, 1), (:vel, 1), (:n, -3)]
 
             acom = a .* (1 + z)
             aucom = au .* (1 + z)
@@ -796,12 +796,12 @@ const CP = CosmoParticles
             @test pc.pos[:, ind] == p.pos[:, 1]
             @test pc.mass[ind] == p.mass[1]
 
-            pc = sort(p, :mass; affect=(:mass, :pos), alg=RadixSort)
+            pc = sort(p, :mass; affect=[:mass, :pos], alg=RadixSort)
             @test issorted(pc.mass)
             @test haskey(pc, :pos)
             @test !haskey(pc, :id)
 
-            pc = sort(p, :mass; affect=(:pos,), alg=RadixSort)
+            pc = sort(p, :mass; affect=[:pos], alg=RadixSort)
             @test !haskey(pc, :mass)
 
             pc = deepcopy(p)
@@ -822,7 +822,7 @@ const CP = CosmoParticles
             @test pcc.dm == sort(dm, :id)
             @test pcc.gas == sort(gas, :id)
 
-            affect = (:mass, :pos)
+            affect = [:mass, :pos]
             pcc = sort(pc, :mass; affect, alg=RadixSort)
             @test pcc.dm == sort(dm, :mass; affect)
             @test pcc.gas == sort(gas, :mass; affect)
@@ -848,7 +848,7 @@ const CP = CosmoParticles
 
             @test filter(p -> findall(p.mass .> massmin), p) == pc
 
-            pc = filter(p -> p.mass .> massmin, p; affect=(:id, :mass))
+            pc = filter(p -> p.mass .> massmin, p; affect=[:id, :mass])
             @test all(pc.mass .> massmin)
             @test haskey(pc, :id)
             @test !haskey(pc, :pos)
@@ -873,7 +873,7 @@ const CP = CosmoParticles
 
             @test filter(p; ids=Set(ids_wanted)) == pc
 
-            pc = filter(p; ids=ids_wanted, affect=(:id, :mass))
+            pc = filter(p; ids=ids_wanted, affect=[:id, :mass])
             @test all(in.(pc.id, (ids_wanted,)))
             @test !any(in.(setdiff(ids, pc.id), (ids_wanted,)))
             @test haskey(pc, :mass)
@@ -902,7 +902,7 @@ const CP = CosmoParticles
 
             @test filter(p -> findall(p.mass .> massmin), pc) == pcc
 
-            affect = (:id, :mass)
+            affect = [:id, :mass]
             pcc = filter(f, pc; affect)
             @test pcc.dm == filter(f, dm; affect)
 
@@ -916,7 +916,7 @@ const CP = CosmoParticles
             @test pcc.dm == filter(dm; ids=ids_wanted)
             @test filter(pc; ids=Set(ids_wanted)) == pcc
 
-            affect = (:id, :mass)
+            affect = [:id, :mass]
             pcc = filter(pc; ids=ids_wanted, affect)
             @test pcc.dm == filter(dm; ids=ids_wanted, affect)
 
@@ -1162,7 +1162,7 @@ const CP = CosmoParticles
             @test filter(p, sph) == p[mask]
             @test filter(pu, sphu) == pu[mask]
 
-            pc = filter(p, sph; affect=(:pos,))
+            pc = filter(p, sph; affect=[:pos])
             @test pc.pos == p.pos[:, mask]
             @test !haskey(pc, :mass)
 
@@ -1179,8 +1179,8 @@ const CP = CosmoParticles
             pcc = filter(pc, sph)
             @test pcc.dm == dm[mask]
 
-            pcc = filter(pc, sph; affect=(:pos,))
-            @test pcc.dm == filter(dm, sph; affect=(:pos,))
+            pcc = filter(pc, sph; affect=[:pos])
+            @test pcc.dm == filter(dm, sph; affect=[:pos])
 
             pcc = deepcopy(pc)
             filter!(pcc, sph)
