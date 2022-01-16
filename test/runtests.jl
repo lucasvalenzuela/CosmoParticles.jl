@@ -827,6 +827,11 @@ const CP = CosmoParticles
             @test pcc.dm == sort(dm, :mass; affect)
             @test pcc.gas == sort(gas, :mass; affect)
 
+            affect = [(:dm, [:mass, :pos]), (:gas, [:mass])]
+            pcc = sort(pc, :mass; affect, alg=QuickSort)
+            @test pcc.dm == sort(dm, :mass; affect=[:mass, :pos])
+            @test pcc.gas == sort(gas, :mass; affect=[:mass])
+
             pcc = deepcopy(pc)
             sort!(pcc, :id; alg=RadixSort)
             @test pcc == sort(pc, :id)
@@ -906,6 +911,11 @@ const CP = CosmoParticles
             pcc = filter(f, pc; affect)
             @test pcc.dm == filter(f, dm; affect)
 
+            affect = [(:dm, [:id, :mass])]
+            pcc = filter(f, pc; affect)
+            @test pcc.dm == filter(f, dm; affect=[:id, :mass])
+            @test !haskey(pcc, :gas)
+
             pcc = deepcopy(pc)
             filter!(f, pcc)
             @test pcc == filter(f, pc)
@@ -919,6 +929,11 @@ const CP = CosmoParticles
             affect = [:id, :mass]
             pcc = filter(pc; ids=ids_wanted, affect)
             @test pcc.dm == filter(dm; ids=ids_wanted, affect)
+
+            affect = [(:gas, [:id])]
+            pcc = filter(pc; ids=ids_wanted, affect)
+            @test !haskey(pcc, :dm)
+            @test pcc.gas == filter(gas; ids=ids_wanted, affect=[:id])
 
             pcc = deepcopy(pc)
             filter!(pcc; ids=ids_wanted)
@@ -1181,6 +1196,10 @@ const CP = CosmoParticles
 
             pcc = filter(pc, sph; affect=[:pos])
             @test pcc.dm == filter(dm, sph; affect=[:pos])
+
+            pcc = filter(pc, sph; affect=[(:dm, [:pos, :mass])])
+            @test pcc.dm == filter(dm, sph; affect=[:pos, :mass])
+            @test !haskey(pcc, :gas)
 
             pcc = deepcopy(pc)
             filter!(pcc, sph)

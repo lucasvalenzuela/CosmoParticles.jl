@@ -48,23 +48,31 @@ end
 """
     Base.sort(pc::AbstractParticleCollection, prop::Symbol; [affect,] kwargs...)
 
-Create new particle collection with the particles in the collection sorted by calling `Base.sort` on each of the [`Particles`](@ref) objects.
+Create new particle collection with the particles in the collection sorted by calling `Base.sort` on each of the particles objects.
 
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only the affected properties are kept for the particles.
 The specified affected properties do not have to be available for all particles.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
 """
 function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing, kwargs...)
-    pc = copy(pc)
+    pcnew = empty(pc)
 
-    for ptype in keys(pc)
-        if isnothing(affect)
-            pc[ptype] = sort(pc[ptype], prop; kwargs...)
-        else
-            pc[ptype] = sort(pc[ptype], prop; affect, kwargs...)
+    if affect isa AbstractVector{<:Tuple}
+        for (ptype, props) in affect
+            pcnew[ptype] = sort(pc[ptype], prop; affect=props, kwargs...)
+        end
+    else
+        for ptype in keys(pc)
+            if isnothing(affect)
+                pcnew[ptype] = sort(pc[ptype], prop; kwargs...)
+            else
+                pcnew[ptype] = sort(pc[ptype], prop; affect, kwargs...)
+            end
         end
     end
 
-    return pc
+    return pcnew
 end
 
 
@@ -100,6 +108,9 @@ The function `f` takes the particles as argument and has to either return a `Bit
 number of particles or an array of indices.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
+
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
 """
 function Base.filter(f, p::AbstractParticles; affect=keys(p))
     ind = f(p)
@@ -107,17 +118,23 @@ function Base.filter(f, p::AbstractParticles; affect=keys(p))
 end
 
 function Base.filter(f, pc::AbstractParticleCollection; affect=nothing)
-    pc = copy(pc)
+    pcnew = empty(pc)
 
-    for ptype in keys(pc)
-        if isnothing(affect)
-            pc[ptype] = filter(f, pc[ptype])
-        else
-            pc[ptype] = filter(f, pc[ptype]; affect)
+    if affect isa AbstractVector{<:Tuple}
+        for (ptype, props) in affect
+            pcnew[ptype] = filter(f, pc[ptype]; affect=props)
+        end
+    else
+        for ptype in keys(pc)
+            if isnothing(affect)
+                pcnew[ptype] = filter(f, pc[ptype])
+            else
+                pcnew[ptype] = filter(f, pc[ptype]; affect)
+            end
         end
     end
 
-    return pc
+    return pcnew
 end
 
 
@@ -148,6 +165,9 @@ Create new particles or collection with them filtered by keeping only the partic
 
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
+
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
 """
 function Base.filter(p::AbstractParticles; ids, affect=keys(p))
     ind = findall_in(p.id, ids)
@@ -155,17 +175,23 @@ function Base.filter(p::AbstractParticles; ids, affect=keys(p))
 end
 
 function Base.filter(pc::AbstractParticleCollection; ids, affect=nothing)
-    pc = copy(pc)
+    pcnew = empty(pc)
 
-    for ptype in keys(pc)
-        if isnothing(affect)
-            pc[ptype] = filter(pc[ptype]; ids)
-        else
-            pc[ptype] = filter(pc[ptype]; ids, affect)
+    if affect isa AbstractVector{<:Tuple}
+        for (ptype, props) in affect
+            pcnew[ptype] = filter(pc[ptype]; ids, affect=props)
+        end
+    else
+        for ptype in keys(pc)
+            if isnothing(affect)
+                pcnew[ptype] = filter(pc[ptype]; ids)
+            else
+                pcnew[ptype] = filter(pc[ptype]; ids, affect)
+            end
         end
     end
 
-    return pc
+    return pcnew
 end
 
 
@@ -178,6 +204,9 @@ Create new particles or collection with them filtered by keeping only the partic
 The filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
+
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
 """
 function Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
     ind = mask_in(p[prop], geo)
@@ -190,17 +219,23 @@ function Base.filter(
     prop::Symbol=:pos;
     affect=nothing,
 )
-    pc = copy(pc)
+    pcnew = empty(pc)
 
-    for ptype in keys(pc)
-        if isnothing(affect)
-            pc[ptype] = filter(pc[ptype], geo, prop)
-        else
-            pc[ptype] = filter(pc[ptype], geo, prop; affect)
+    if affect isa AbstractVector{<:Tuple}
+        for (ptype, props) in affect
+            pcnew[ptype] = filter(pc[ptype], geo, prop; affect=props)
+        end
+    else
+        for ptype in keys(pc)
+            if isnothing(affect)
+                pcnew[ptype] = filter(pc[ptype], geo, prop)
+            else
+                pcnew[ptype] = filter(pc[ptype], geo, prop; affect)
+            end
         end
     end
 
-    return pc
+    return pcnew
 end
 
 """
