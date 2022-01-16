@@ -29,7 +29,7 @@ end
 
 """
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
-    rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
 
 Rotates the specified properties `props` of the particles `p` by the rotation matrix `rotmat`.
 
@@ -40,7 +40,7 @@ The properties should be given as a single `Symbol`, or a vector of `Symbol`s. O
 the existing quantities will be rotated (e.g., this method does not throw an error if
 velocities are not given for the particles).
 """
-function rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+function rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     p = copy(p)
 
     # only rotate existing quantities
@@ -55,7 +55,7 @@ rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rot
 
 """
     rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop)
-    rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
 
 Rotates the specified properties `props` of the particles in the collection by the rotation matrix `rotmat`.
 
@@ -63,7 +63,7 @@ Creates a copy of the particle collection with only new pointers to the rotated 
 (by default position and velocity). The properties should be given as a single `Symbol`, or a vector of
 `Symbol`s.
 """
-function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     pc = copy(pc)
 
     for ptype in keys(pc)
@@ -78,16 +78,16 @@ function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, 
 end
 
 """
-    LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
-    LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+    LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     LinearAlgebra.rotate!(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop)
 
 In-place version of [`rotate`](@ref).
 
 This function is reexported.
 """
-function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=(:pos, :vel))
+function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     # only rotate existing quantities
     for prop in intersect(keys(p), props)
         matrix_rotate!(p[prop], rotmat)
@@ -102,7 +102,7 @@ LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop
 function LinearAlgebra.rotate!(
     pc::AbstractParticleCollection,
     rotmat::AbstractMatrix{<:Real},
-    props=(:pos, :vel),
+    props=[:pos, :vel],
 )
     for ptype in keys(pc)
         rotate!(pc[ptype], rotmat, props)
