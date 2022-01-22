@@ -11,10 +11,10 @@ rotate
 LinearAlgebra.rotate!
 translate
 translate!
-translate_periodic,
-translate_periodic!,
-translate_periodic_to_center,
-translate_periodic_to_center!,
+translate_periodic
+translate_periodic!
+translate_periodic_to_center
+translate_periodic_to_center!
 to_comoving
 to_comoving!
 to_physical
