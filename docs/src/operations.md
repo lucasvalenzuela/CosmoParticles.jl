@@ -11,6 +11,10 @@ rotate
 LinearAlgebra.rotate!
 translate
 translate!
+translate_periodic,
+translate_periodic!,
+translate_periodic_to_center,
+translate_periodic_to_center!,
 to_comoving
 to_comoving!
 to_physical
@@ -37,4 +41,5 @@ CosmoParticles.findall_in_sorted
 CosmoParticles.matrix_rotate
 CosmoParticles.matrix_rotate!
 CosmoParticles._applyind
+CosmoParticles._translate_periodic
 ```
