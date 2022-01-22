@@ -615,6 +615,30 @@ const CP = CosmoParticles
                 translate!(pc, da, :vel)
                 @test pc.pos == au
                 @test pc.vel == atrans
+
+                # periodic translations
+                period, period_half = 10, 5
+                CP._translate_periodic(1, 2, period) == 1
+                CP._translate_periodic(8, 2, period, period_half) == -2
+                CP._translate_periodic(2, 8, period, period_half) == 12
+
+                o = oneunit(eltype(dau))
+
+                pc = translate_periodic(p, dau, o)
+                @test all(dau .- 0.5o .≤ minimum(pc.pos; dims=2)) &&
+                      all(maximum(pc.pos; dims=2) .≤ dau .+ 0.5o)
+
+                pc = deepcopy(p)
+                translate_periodic!(pc, dau, o)
+                @test all(dau .- 0.5o .≤ minimum(pc.pos; dims=2)) &&
+                      all(maximum(pc.pos; dims=2) .≤ dau .+ 0.5o)
+
+                pcc = translate_periodic_to_center(p, dau, o)
+                @test pcc == translate(pc, -dau)
+
+                pcc = deepcopy(p)
+                translate_periodic_to_center!(pcc, dau, o)
+                @test pcc == translate(pc, -dau)
             end
 
             @testset "Particle Collection Translations" begin
@@ -658,6 +682,24 @@ const CP = CosmoParticles
                 pccc = deepcopy(pc)
                 ap = pccc.all
                 translate!(ap, da, :vel)
+                @test pccc == pcc
+
+                o = oneunit(eltype(dau))
+
+                pcc = translate_periodic(pc, dau, o)
+                @test pcc.dm == translate_periodic(pc.dm, dau, o)
+                @test pcc.gas == translate_periodic(pc.gas, dau, o)
+
+                pccc = deepcopy(pc)
+                translate_periodic!(pccc, dau, o)
+                @test pccc == pcc
+
+                pcc = translate_periodic_to_center(pc, dau, o)
+                @test pcc.dm == translate_periodic_to_center(pc.dm, dau, o)
+                @test pcc.gas == translate_periodic_to_center(pc.gas, dau, o)
+
+                pccc = deepcopy(pc)
+                translate_periodic_to_center!(pccc, dau, o)
                 @test pccc == pcc
             end
         end

@@ -123,7 +123,7 @@ Translates the specified property of the particles `p` by `Δx`.
 Creates a copy of the particles with only new pointers to the translated property.
 Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
 """
-function translate(p::AbstractParticles, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+function translate(p::AbstractParticles, Δx, prop::Symbol=:pos)
     p = copy(p)
 
     if haskey(p, prop)
@@ -141,7 +141,7 @@ Translates the specified property of the particles in the collection `pc` by `Δ
 Creates a copy of the particle collection with only new pointers to the translated properties for the particles.
 Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
 """
-function translate(pc::AbstractParticleCollection, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+function translate(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
     pc = copy(pc)
 
     for ptype in keys(pc)
@@ -157,7 +157,7 @@ end
 
 In-place version of [`translate`](@ref).
 """
-function translate!(p::AbstractParticles, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+function translate!(p::AbstractParticles, Δx, prop::Symbol=:pos)
     if haskey(p, prop)
         p[prop] .+= Δx
     end
@@ -165,9 +165,143 @@ function translate!(p::AbstractParticles, Δx::AbstractVector{<:Number}, prop::S
     return p
 end
 
-function translate!(pc::AbstractParticleCollection, Δx::AbstractVector{<:Number}, prop::Symbol=:pos)
+function translate!(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
     for ptype in keys(pc)
         translate!(pc[ptype], Δx, prop)
+    end
+
+    return pc
+end
+
+
+"""
+    _translate_periodic(x::Number, x₀::Number, period::Number, period_half::Number=1//2*period)
+
+Returns the coordinate `x` shifted by the `period` if reference coordinate `x₀` is on the other side.
+
+For periodic simulation boxes, the period corresponds to the boxlength.
+
+This is not exported.
+"""
+@inline function _translate_periodic(
+    x::Number,
+    x₀::Number,
+    period::Number,
+    period_half::Number=1 // 2 * period,
+)
+    if x - x₀ > period_half
+        return x - period
+    elseif x₀ - x > period_half
+        return x + period
+    end
+    return x
+end
+
+
+"""
+    translate_periodic(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    translate_periodic(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+
+Translates the specified property of the particles or collection by the `period` such that all particles are the closest to `centerpos` as possible.
+
+Creates a copy of the particles or the collection with only new pointers to the translated property.
+Typically, `centerpos` will be an `AbstractVector`, e.g., for positions, and `period` can be a `Number` or
+`AbstractVector`, depending on if the period is the same for all dimensions or if they are different.
+"""
+function translate_periodic(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    p = copy(p)
+
+    if haskey(p, prop)
+        p[prop] = _translate_periodic.(p[prop], centerpos, period, 0.5period)
+    end
+
+    return p
+end
+
+function translate_periodic(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+    pc = copy(pc)
+
+    for ptype in keys(pc)
+        pc[ptype] = translate_periodic(pc[ptype], centerpos, period, prop)
+    end
+
+    return pc
+end
+
+"""
+    translate_periodic!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    translate_periodic!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+
+In-place version of [`translate_periodic`](@ref).
+"""
+function translate_periodic!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    if haskey(p, prop)
+        p[prop] .= _translate_periodic.(p[prop], centerpos, period, 0.5period)
+    end
+
+    return p
+end
+
+function translate_periodic!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+    for ptype in keys(pc)
+        translate_periodic!(pc[ptype], centerpos, period, prop)
+    end
+
+    return pc
+end
+
+
+"""
+    translate_periodic_to_center(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    translate_periodic_to_center(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+
+Translates the specified property of the particles or collection to place `centerpos` at the origin.
+
+The particles are translated periodically to place them closest to `centerpos`.
+
+Creates a copy of the particles or the collection with only new pointers to the translated property.
+Typically, `centerpos` will be an `AbstractVector`, e.g., for positions, and `period` can be a `Number` or
+`AbstractVector`, depending on if the period is the same for all dimensions or if they are different.
+
+Also see [`translate_periodic`](@ref).
+"""
+function translate_periodic_to_center(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    p = copy(p)
+
+    if haskey(p, prop)
+        p[prop] = _translate_periodic.(p[prop], centerpos, period, 0.5period) .- centerpos
+    end
+
+    return p
+end
+
+function translate_periodic_to_center(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+    pc = copy(pc)
+
+    for ptype in keys(pc)
+        pc[ptype] = translate_periodic_to_center(pc[ptype], centerpos, period, prop)
+    end
+
+    return pc
+end
+
+"""
+    translate_periodic_to_center!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    translate_periodic_to_center!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+
+In-place version of [`translate_periodic_to_center`](@ref).
+"""
+function translate_periodic_to_center!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
+    if haskey(p, prop)
+        p[prop] .= _translate_periodic.(p[prop], centerpos, period, 0.5period) .- centerpos
+    end
+
+    return p
+end
+
+function translate_periodic_to_center!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
+    for ptype in keys(pc)
+        translate_periodic_to_center!(pc[ptype], centerpos, period, prop)
     end
 
     return pc
