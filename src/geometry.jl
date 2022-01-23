@@ -240,15 +240,23 @@ geometry_enclosing_center(s::CosmoHypersphere) = s.center
 function mask_in(pos::AbstractMatrix{<:Number}, s::CosmoSphere)
     @assert size(pos, 1) == 3
     r² = s.radius^2
-    @inbounds @views @. (pos[1, :] - s.center[1])^2 +
-                        (pos[2, :] - s.center[2])^2 +
-                        (pos[3, :] - s.center[3])^2 ≤ r²
+    if all(==(0), s.center)
+        @inbounds @views @. pos[1, :]^2 + pos[2, :]^2 + pos[3, :]^2 ≤ r²
+    else
+        @inbounds @views @. (pos[1, :] - s.center[1])^2 +
+                            (pos[2, :] - s.center[2])^2 +
+                            (pos[3, :] - s.center[3])^2 ≤ r²
+    end
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, circle::CosmoCircle)
     @assert size(pos, 1) == 2
     r² = circle.radius^2
-    @inbounds @views @. (pos[1, :] - circle.center[1])^2 + (pos[2, :] - circle.center[2])^2 ≤ r²
+    if all(==(0), circle.center)
+        @inbounds @views @. pos[1, :]^2 + pos[2, :]^2 ≤ r²
+    else
+        @inbounds @views @. (pos[1, :] - circle.center[1])^2 + (pos[2, :] - circle.center[2])^2 ≤ r²
+    end
 end
 
 function mask_in(pos::AbstractMatrix{<:Number}, s::CosmoHypersphere{T,N}) where {T,N}
@@ -256,12 +264,22 @@ function mask_in(pos::AbstractMatrix{<:Number}, s::CosmoHypersphere{T,N}) where 
     r² = s.radius^2
     center = s.center
     mask = BitArray(undef, size(pos, 2))
-    @inbounds for i in eachindex(mask)
-        s = (pos[1, i] - center[1])^2
-        for j in 2:length(center)
-            s += (pos[j, i] - center[j])^2
+    if all(==(0), center)
+        @inbounds for i in eachindex(mask)
+            s = (pos[1, i] - center[1])^2
+            for j in 2:length(center)
+                s += pos[j, i]^2
+            end
+            mask[i] = s ≤ r²
         end
-        mask[i] = s ≤ r²
+    else
+        @inbounds for i in eachindex(mask)
+            s = (pos[1, i] - center[1])^2
+            for j in 2:length(center)
+                s += (pos[j, i] - center[j])^2
+            end
+            mask[i] = s ≤ r²
+        end
     end
     return mask
 end

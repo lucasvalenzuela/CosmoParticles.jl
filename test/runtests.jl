@@ -1119,6 +1119,18 @@ const CP = CosmoParticles
             pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
             @test all(sum(abs2, pos4in .- center; dims=1) .≤ r^2)
 
+            sphere = CosmoSphere(zeros(3), r)
+            pos3in = pos3[:, CP.mask_in(pos3, sphere)]
+            @test all(sum(abs2, pos3in; dims=1) .≤ r^2)
+
+            circle = CosmoCircle(zeros(2), r)
+            pos2in = pos2[:, CP.mask_in(pos2, circle)]
+            @test all(sum(abs2, pos2in; dims=1) .≤ r^2)
+
+            hsphere = CosmoHypersphere(zeros(4), r)
+            pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
+            @test all(sum(abs2, pos4in; dims=1) .≤ r^2)
+
             @test_throws AssertionError CP.mask_in(pos3, hsphere)
         end
 
