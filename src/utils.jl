@@ -191,11 +191,16 @@ end
 
 """
     CosmoParticles.ustrip_lazy([unit,] a::AbstractArray)
+    CosmoParticles.ustrip_lazy!(unit, a::AbstractArray)
 
 Strips off the units of unitful arrays in a performant way.
 
 Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
 unitful arrays, but without reallocating non-unitful or lazy arrays.
+
+Note that after calling this method with a different conversion unit, the original array still has the old units,
+but the numerical values correspond to the new units. This method should always be called as
+`a = uconvert_lazy!(u, a)`.
 
 This is not exported.
 """
@@ -214,6 +219,16 @@ ustrip_lazy(a::Fill{<:Quantity{T}}) where {T} = reinterpret(T, a)
 ustrip_lazy(u::Unitful.Units, a) = ustrip.(u, a)
 ustrip_lazy!(u::Unitful.Units, a) = ustrip_lazy(uconvert_lazy!(u, a))
 
+"""
+    CosmoParticles.uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where{T,D,U}
+
+Converts the unitful array to the specified units in-place.
+
+Note that after calling this method the original array still has the old units, but the numerical values
+correspond to the new units. This method should always be called as `a = uconvert_lazy!(u, a)`.
+
+This is not exported
+"""
 function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where{T,D,U}
     Q = Quantity{T,dimension(u),typeof(u)}
     if typeof(u) == U
