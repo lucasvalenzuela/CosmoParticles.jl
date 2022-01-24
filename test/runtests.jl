@@ -486,6 +486,52 @@ const CP = CosmoParticles
             c = fill(2.5, 4)
             cu = Fill(2.5u"m", 4)
             @test CP.ustrip_lazy(cu) == c
+
+            auf = rand(Float32, 4) * u"m"
+            au_strip = CP.ustrip_lazy(u"km", au)
+            auf_strip = CP.ustrip_lazy(u"km", auf)
+            @test au_strip ≈ ustrip(au ./ 1000)
+            @test eltype(au_strip) === Float64
+            @test auf_strip ≈ ustrip(auf ./ 1000)
+            @test eltype(auf_strip) === Float32
+
+            auc = copy(au)
+            aufc = copy(auf)
+            auc_strip = CP.ustrip_lazy!(u"km", auc)
+            aufc_strip = CP.ustrip_lazy!(u"km", aufc)
+            @test auc_strip == au_strip
+            @test aufc_strip == auf_strip
+            @test CP.ustrip_lazy(auc) == au_strip
+            @test CP.ustrip_lazy(aufc) == auf_strip
+
+            auc = copy(au)
+            aufc = copy(auf)
+            auc_conv = CP.uconvert_lazy!(u"km", auc)
+            aufc_conv = CP.uconvert_lazy!(u"km", aufc)
+            @test auc_conv ≈ uconvert.(u"km", au)
+            @test aufc_conv ≈ uconvert.(u"km", auf)
+            @test CP.ustrip_lazy(auc) == CP.ustrip_lazy(auc_conv)
+            @test CP.ustrip_lazy(aufc) == CP.ustrip_lazy(aufc_conv)
+
+            auc = copy(au)
+            aufc = copy(auf)
+            auc_conv = CP.uconvert_lazy!(u"m", auc)
+            aufc_conv = CP.uconvert_lazy!(u"m", aufc)
+            @test auc_conv ≈ uconvert.(u"m", au)
+            @test aufc_conv ≈ uconvert.(u"m", auf)
+            @test CP.ustrip_lazy(auc) == CP.ustrip_lazy(auc_conv)
+            @test CP.ustrip_lazy(aufc) == CP.ustrip_lazy(aufc_conv)
+
+            au = rand(4) * u"°C"
+            auf = rand(Float32, 4) * u"°C"
+            auc = copy(au)
+            aufc = copy(auf)
+            auc_conv = CP.uconvert_lazy!(u"K", auc)
+            aufc_conv = CP.uconvert_lazy!(u"K", aufc)
+            @test auc_conv ≈ uconvert.(u"K", au)
+            @test aufc_conv ≈ uconvert.(u"K", auf)
+            @test CP.ustrip_lazy(auc) == CP.ustrip_lazy(auc_conv)
+            @test CP.ustrip_lazy(aufc) == CP.ustrip_lazy(aufc_conv)
         end
     end
 
