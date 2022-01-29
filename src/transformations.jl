@@ -312,6 +312,8 @@ end
     factor_to_comoving(z::Real, n::Real)
 
 Returns ``(1 + z)^n``.
+
+This is not exported.
 """
 function factor_to_comoving(z::Real, n::Real)
     (1 + z)^n
@@ -321,6 +323,8 @@ end
     factor_to_physical(z::Real, n::Real)
 
 Returns ``(1 + z)^{-n}``.
+
+This is not exported.
 """
 function factor_to_physical(z::Real, n::Real)
     1 / (1 + z)^n
