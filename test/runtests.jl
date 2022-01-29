@@ -777,6 +777,11 @@ const CP = CosmoParticles
                 p.n = n
                 p.mass = m
 
+                @test a .* CP.factor_to_comoving(z, 1) ≈ acom
+                @test n .* CP.factor_to_comoving(z, -3) ≈ ncom
+                @test a .* CP.factor_to_physical(z, 1) ≈ aphys
+                @test n .* CP.factor_to_physical(z, -3) ≈ nphys
+
                 pc = to_comoving(p, z; propexp)
                 @test pc.pos ≈ acom
                 @test pc.n ≈ ncom

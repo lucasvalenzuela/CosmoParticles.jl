@@ -309,6 +309,25 @@ end
 
 
 """
+    factor_to_comoving(z::Real, n::Real)
+
+Returns ``(1 + z)^n``.
+"""
+function factor_to_comoving(z::Real, n::Real)
+    (1 + z)^n
+end
+
+"""
+    factor_to_physical(z::Real, n::Real)
+
+Returns ``(1 + z)^{-n}``.
+"""
+function factor_to_physical(z::Real, n::Real)
+    1 / (1 + z)^n
+end
+
+
+"""
     to_comoving(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
     to_comoving(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
 
