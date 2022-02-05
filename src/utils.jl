@@ -129,7 +129,7 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     iind = 0
     iset = 1
     ia = 1
-    if length(a) > 1_000_000
+    if na > 1_000_000
         if first(a) < first(set)
             ia = searchsortedfirst(a, first(set))
         else

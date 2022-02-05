@@ -425,7 +425,7 @@ const CP = CosmoParticles
 
             alarge = collect(1:1_200_000)
             alarge2 = collect(200_000:1_600_000)
-            setlarge = sample(1:1_200_000, 100_000; replace=false)
+            setlarge = sample(1:1_200_000, 100_000; replace=false) |> sort!
             inboth = intersect(alarge, setlarge)
             inboth2 = intersect(alarge2, setlarge)
 
