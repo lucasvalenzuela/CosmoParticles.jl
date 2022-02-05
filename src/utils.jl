@@ -127,8 +127,20 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     # end
 
     iind = 0
-    ia = 1
     iset = 1
+    ia = 1
+    if length(a) > 1_000_000
+        if first(a) < first(set)
+            ia = searchsortedfirst(a, first(set))
+        else
+            iset = searchsortedfirst(set, first(a))
+            ia = searchsortedfirst(a, set[iset])
+        end
+    end
+
+    if ia > na
+        return Int64[]
+    end
 
     while true
         if a[ia] == set[iset]
@@ -229,7 +241,7 @@ correspond to the new units. This method should always be called as `a = uconver
 
 This is not exported
 """
-function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where{T,D,U}
+function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where {T,D,U}
     Q = Quantity{T,dimension(u),typeof(u)}
     if typeof(u) == U
         return reinterpret(Q, a)

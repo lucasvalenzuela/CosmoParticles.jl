@@ -423,6 +423,22 @@ const CP = CosmoParticles
             @test CP.findall_in(a, Set(set)) == ind
             @test CP.findall_in_sorted(a, set) == ind
 
+            alarge = collect(1:1_200_000)
+            alarge2 = collect(200_000:1_600_000)
+            setlarge = sample(1:1_200_000, 100_000; replace=false)
+            inboth = intersect(alarge, setlarge)
+            inboth2 = intersect(alarge2, setlarge)
+
+            ind = CP.findall_in(alarge, setlarge)
+            @test length(ind) == length(inboth)
+            @test issetequal(alarge[ind], inboth)
+            @test CP.findall_in(alarge, Set(setlarge)) == ind
+
+            ind = CP.findall_in(alarge2, setlarge)
+            @test length(ind) == length(inboth2)
+            @test issetequal(alarge2[ind], inboth2)
+            @test CP.findall_in(alarge2, Set(setlarge)) == ind
+
             # test empty arrays
             @test CP.findall_in_sorted([], []) |> isempty
             @test CP.findall_in_sorted(a, []) |> isempty
