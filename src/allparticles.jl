@@ -135,6 +135,7 @@ end
 
 function Base.keys(ap::AllParticles)
     keys_arr = [keys(p) for p in values(ap.particle_collection)]
+    length(keys_arr) == 0 && return Symbol[]
     length(keys_arr) == 1 && return keys_arr[1]
     return union(keys_arr...) |> collect
 end

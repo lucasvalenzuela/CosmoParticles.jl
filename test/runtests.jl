@@ -193,6 +193,8 @@ const CP = CosmoParticles
         show(io, "text/plain", p)
         @test String(take!(io)) == "all: 200 Particles\n id mass pos temp test zs"
 
+        @test CP.particle_number(AllParticles(ParticleCollection())) == 0
+
 
         mask = isodd.(p.id)
         ind = findall(mask)
