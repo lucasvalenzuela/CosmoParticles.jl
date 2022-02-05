@@ -138,7 +138,7 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
         end
     end
 
-    if ia > na
+    if ia > na || iset > nset
         return Int64[]
     end
 
