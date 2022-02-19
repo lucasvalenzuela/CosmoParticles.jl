@@ -1084,8 +1084,8 @@ const CP = CosmoParticles
             )
 
             hrect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
-            @test hrect isa CosmoHyperrectangle{Rational{Int},3}
-            @test hrect isa CosmoCuboid{Rational{Int}}
+            @test hrect isa CosmoHyperrectangle{Float64,3}
+            @test hrect isa CosmoCuboid{Float64}
 
             # construct hyperrectangles from center and side lengths
             @test CosmoHyperrectangle([75, 125, 100] .// 1000, ([15, 25, 20] .// 100)...) == hrect
@@ -1120,9 +1120,9 @@ const CP = CosmoParticles
 
 
             cuboid = CosmoCuboid([0, 0, 0] .// 100, [15, 25, 19] .// 100)
-            @test CP.geometry_enclosing_center(cuboid) == [15, 25, 19] .// 200
+            @test CP.geometry_enclosing_center(cuboid) ≈ [15, 25, 19] .// 200 |> float
             @test CP.geometry_enclosing_center(CosmoCube(zeros(Int, 3), 4 // 1)) == zeros(3)
-            @test CP.geometry_enclosing_corners(cuboid) == (zeros(3), [15, 25, 19] .// 100)
+            @test all(CP.geometry_enclosing_corners(cuboid) .≈ (zeros(3), [15, 25, 19] .// 100 |> float))
 
             pos3in = pos3[:, CP.mask_in(pos3, cuboid)]
             @test all(0 .≤ pos3in[1, :] .≤ 0.15) &&
@@ -1148,8 +1148,8 @@ const CP = CosmoParticles
             @test hsphere isa CosmoHypersphere{Float64,4}
 
             hsphere = CosmoHypersphere([0, 0, 0] .// 100, 15 // 100)
-            @test hsphere isa CosmoHypersphere{Rational{Int},3}
-            @test hsphere isa CosmoSphere{Rational{Int}}
+            @test hsphere isa CosmoHypersphere{Float64,3}
+            @test hsphere isa CosmoSphere{Float64}
 
             @test hsphere == CosmoHypersphere([0, 0, 0], 15 // 100)
 
@@ -1170,8 +1170,11 @@ const CP = CosmoParticles
 
             center = [10, 20, 30] .// 100
             sphere = CosmoSphere(center, r)
-            @test CP.geometry_enclosing_center(sphere) == center
-            @test CP.geometry_enclosing_corners(sphere) == ([-2, 8, 18] .// 100, [22, 32, 42] .// 100)
+            @test CP.geometry_enclosing_center(sphere) ≈ center |> float
+            @test all(
+                CP.geometry_enclosing_corners(sphere) .≈
+                ([-2, 8, 18] .// 100 |> float, [22, 32, 42] .// 100 |> float),
+            )
 
             pos3in = pos3[:, CP.mask_in(pos3, sphere)]
             @test all(sum(abs2, pos3in .- center; dims=1) .≤ r^2)
@@ -1208,7 +1211,7 @@ const CP = CosmoParticles
             @test scyl isa CosmoStandingCylinder{Float64}
 
             scyl = CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
-            @test scyl isa CosmoStandingCylinder{Rational{Int}}
+            @test scyl isa CosmoStandingCylinder{Float64}
 
             @test CosmoStandingCylinder(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float64}
             @test CosmoStandingCylinder{Float32}(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float32}
@@ -1219,8 +1222,11 @@ const CP = CosmoParticles
             r = 15 // 100
             scyl = CosmoStandingCylinder(center, h, r)
 
-            @test CP.geometry_enclosing_center(scyl) == center
-            @test CP.geometry_enclosing_corners(scyl) == ([-5, 5, 18] .// 100, [25, 35, 42] .// 100)
+            @test CP.geometry_enclosing_center(scyl) ≈ center |> float
+            @test all(
+                CP.geometry_enclosing_corners(scyl) .≈
+                ([-5, 5, 18] .// 100 |> float, [25, 35, 42] .// 100 |> float),
+            )
 
             pos3in = pos3[:, CP.mask_in(pos3, scyl)]
             @test @views all(sum(abs2, pos3in[1:2, :] .- center[1:2]; dims=1) .≤ r^2)
@@ -1238,7 +1244,7 @@ const CP = CosmoParticles
             @test cyl isa CosmoCylinder{Float64}
 
             cyl = CosmoCylinder([1, 2, 3] .// 10, [2, 3, 4] .// 10, 1 // 10)
-            @test cyl isa CosmoCylinder{Rational{Int}}
+            @test cyl isa CosmoCylinder{Float64}
 
             @test CosmoCylinder(rand(3), rand(3), 1 // 10) isa CosmoCylinder{Float64}
             @test CosmoCylinder(rand(3), [0, 0, 0], 1 // 10) isa CosmoCylinder{Float64}
@@ -1252,7 +1258,7 @@ const CP = CosmoParticles
             r = r
             cyl = CosmoCylinder(startpos, endpos, r)
 
-            @test CP.geometry_enclosing_center(cyl) == center
+            @test CP.geometry_enclosing_center(cyl) ≈ center |> float
             @test all(CP.geometry_enclosing_corners(cyl) .≈ ([-5, 5, 18] .// 100, [25, 35, 42] .// 100))
 
             # right mask for standing cylinder
@@ -1269,8 +1275,8 @@ const CP = CosmoParticles
             r = 0.15
             c1 = CosmoCylinder(p1, p2, r)
             c2 = CosmoCylinder(p2, p1, r)
-            @test CP.geometry_enclosing_center(c1) == CP.geometry_enclosing_center(c2)
-            @test CP.geometry_enclosing_corners(c1) == CP.geometry_enclosing_corners(c2)
+            @test CP.geometry_enclosing_center(c1) ≈ CP.geometry_enclosing_center(c2)
+            @test all(CP.geometry_enclosing_corners(c1) .≈ CP.geometry_enclosing_corners(c2))
             @test CP.mask_in(pos3, c1) == CP.mask_in(pos3, c2)
 
             @test_throws AssertionError CosmoStandingCylinder(c1)
@@ -1278,8 +1284,8 @@ const CP = CosmoParticles
 
             scyl = CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
             @test scyl == CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
-            @test scyl == CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10)
-            @test CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10) == scyl
+            @test scyl ≈ CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10)
+            @test CosmoCylinder([1, 2, 2] .// 10, [1, 2, 4] .// 10, 1 // 10) ≈ scyl
         end
 
 

@@ -143,7 +143,7 @@ for (name, N) in zip([:CosmoHyperrectangle, :CosmoCuboid, :CosmoRectangle], [:(l
             lowerleft::AbstractVector{T1},
             upperright::AbstractVector{T2},
         ) where {T1<:Number,T2<:Number}
-            T = promote_type(T1, T2)
+            T = promote_type(T1, T2) |> float
             return CosmoHyperrectangle{T,$N}(lowerleft, upperright)
         end
     end |> eval
@@ -219,7 +219,7 @@ const CosmoCircle{T} = CosmoHypersphere{T,2} where {T<:Number}
 for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(center)), 3, 2])
     quote
         function $name(center::AbstractVector{T1}, radius::T2) where {T1<:Number,T2<:Number}
-            T = promote_type(T1, T2)
+            T = promote_type(T1, T2) |> float
             return CosmoHypersphere{T,$N}(center, radius)
         end
     end |> eval
@@ -312,7 +312,7 @@ function CosmoCylinder(
     endpos::AbstractVector{T2},
     radius::T3,
 ) where {T1<:Number,T2<:Number,T3<:Number}
-    T = promote_type(T1, T2, T3)
+    T = promote_type(T1, T2, T3) |> float
     return CosmoCylinder{T}(startpos, endpos, radius)
 end
 
@@ -382,7 +382,7 @@ function CosmoStandingCylinder(
     height::T2,
     radius::T3,
 ) where {T1<:Number,T2<:Number,T3<:Number}
-    T = promote_type(T1, T2, T3)
+    T = promote_type(T1, T2, T3) |> float
     return CosmoStandingCylinder{T}(center, height, radius)
 end
 
@@ -439,3 +439,11 @@ function Base.:(==)(c1::CosmoCylinder, c2::CosmoStandingCylinder)
            @views c1.startpos[1:2] == c1.endpos[1:2] # c1 is actually standing
 end
 Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoCylinder) = ==(c2, c1)
+
+function Base.isapprox(c1::CosmoCylinder, c2::CosmoStandingCylinder; kwargs...)
+    return isapprox(geometry_enclosing_center(c1), geometry_enclosing_center(c2); kwargs...) &&
+           isapprox(abs.(c1.startpos[3] - c1.endpos[3]), c2.height; kwargs...) &&
+           isapprox(c1.radius, c2.radius; kwargs...) &&
+           @views isapprox(c1.startpos[1:2], c1.endpos[1:2]; kwargs...) # c1 is actually standing
+end
+Base.isapprox(c1::CosmoStandingCylinder, c2::CosmoCylinder; kwargs...) = isapprox(c2, c1; kwargs...)
