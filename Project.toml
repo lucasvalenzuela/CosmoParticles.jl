@@ -1,7 +1,7 @@
 name = "CosmoParticles"
 uuid = "b2fead7a-f6ae-4e5b-9c3d-9b85ace3042d"
 authors = ["Lucas Valenzuela"]
-version = "0.2.7"
+version = "0.2.8"
 
 [deps]
 FastUnitfulOperations = "b031420d-871e-4e9c-8878-33bec386257e"
