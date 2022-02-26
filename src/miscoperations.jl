@@ -10,7 +10,9 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 [SortingAlgorithms.jl](https://github.com/JuliaCollections/SortingAlgorithms.jl).
 """
 function Base.sort!(p::AbstractParticles, prop::Symbol; kwargs...)
-    ind = usortperm(p[prop]; kwargs...)
+    vals = p[prop]
+    vals isa Number && return p
+    ind = usortperm(vals; kwargs...)
     return applyind!(p, ind)
 end
 
@@ -41,7 +43,9 @@ The sorting algorithm for unitful properties may also be `RadixSort` from
 [SortingAlgorithms.jl](https://github.com/JuliaCollections/SortingAlgorithms.jl).
 """
 function Base.sort(p::AbstractParticles, prop::Symbol; affect=keys(p), kwargs...)
-    ind = usortperm(p[prop]; kwargs...)
+    vals = p[prop]
+    vals isa Number && return applyind(p, (:); affect)
+    ind = usortperm(vals; kwargs...)
     return applyind(p, ind; affect)
 end
 

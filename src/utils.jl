@@ -1,5 +1,5 @@
 """
-    CosmoParticles._applyind(a, ind::AbstractVector)
+    CosmoParticles._applyind(a, ind::Union{AbstractVector,Colon})
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
 
@@ -10,15 +10,15 @@ The following indexing is applied:
 
 This is not exported.
 """
-_applyind(a::Number, _::AbstractVector) = a
-_applyind(a::AbstractVector, ind::AbstractVector) = a[ind]
-_applyind(a::AbstractMatrix, ind::AbstractVector) = a[:, ind]
+_applyind(a::Number, _::Union{AbstractVector,Colon}) = a
+_applyind(a::AbstractVector, ind::Union{AbstractVector,Colon}) = a[ind]
+_applyind(a::AbstractMatrix, ind::Union{AbstractVector,Colon}) = a[:, ind]
 _applyind(a::ApplyVector{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
     a[mask]
 _applyind(a::ApplyMatrix{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
     a[:, mask]
 
-function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+    function _applyind(a::ApplyVector{<:Any,F}, ind::Union{AbstractVector,Colon}) where {F<:Union{typeof(hcat),typeof(vcat)}}
     anew = similar(a, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
         anew[i] = a[indi]
@@ -26,7 +26,7 @@ function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union
     return anew
 end
 
-function _applyind(a::ApplyMatrix{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+function _applyind(a::ApplyMatrix{<:Any,F}, ind::Union{AbstractVector,Colon}) where {F<:Union{typeof(hcat),typeof(vcat)}}
     n = size(a, 1)
     anew = similar(a, n, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
@@ -38,13 +38,13 @@ function _applyind(a::ApplyMatrix{<:Any,F}, ind::AbstractVector) where {F<:Union
 end
 
 """
-    CosmoParticles.applyind!(p::AbstractParticles, ind::AbstractVector)
+    CosmoParticles.applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
 
 In-place application of indices or mask to all particle properties.
 
 This is not exported.
 """
-function applyind!(p::AbstractParticles, ind::AbstractVector)
+function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
     for key in keys(p)
         p[key] = _applyind(p[key], ind)
     end
@@ -53,7 +53,7 @@ function applyind!(p::AbstractParticles, ind::AbstractVector)
 end
 
 """
-    CosmoParticles.applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+    CosmoParticles.applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
 
 Create new particles with the given indices or mask applied to all particle properties.
 
@@ -63,7 +63,7 @@ added to the newly created particles object.
 
 This is not exported.
 """
-function applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
     pnew = empty(p)
 
     for key in intersect(affect, keys(p))
@@ -74,7 +74,7 @@ function applyind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
 end
 
 """
-    CosmoParticles.findall_in(a::AbstractVector, set)
+    CosmoParticles.findall_in(a::Union{AbstractVector,Colon}, set)
 
 Return all indices of `a` that are in `set`.
 
