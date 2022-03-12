@@ -312,10 +312,11 @@ end
 
 
 """
+    CosmoParticles.ustrip_lazy([unit,] a::Number)
     CosmoParticles.ustrip_lazy([unit,] a::AbstractArray)
     CosmoParticles.ustrip_lazy!(unit, a::AbstractArray)
 
-Strips off the units of unitful arrays in a performant way.
+Strips off the units of unitful arrays in a performant way while keeping the number type conserved (not always the case for `ustrip`).
 
 Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
 unitful arrays, but without reallocating non-unitful or lazy arrays.
@@ -326,6 +327,7 @@ but the numerical values correspond to the new units. This method should always 
 
 This is not exported.
 """
+ustrip_lazy(a::Unitful.AbstractQuantity) = ustrip(a)
 ustrip_lazy(a::Number) = a
 ustrip_lazy(a::AbstractArray) = a
 ustrip_lazy(a::Array{<:Quantity}) = ustrip(a)
@@ -339,17 +341,32 @@ ustrip_lazy(a::ApplyArray{<:Quantity{T}}) where {T} = reinterpret(T, a)
 ustrip_lazy(a::Fill{<:Quantity{T}}) where {T} = reinterpret(T, a)
 
 ustrip_lazy(u::Unitful.Units, a) = ustrip.(u, a)
+ustrip_lazy(u::Unitful.Units, a::AbstractVector{<:Quantity{T}}) where {T<:AbstractFloat} = ustrip_lazy.(u, a)
+ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:AbstractFloat} = ustrip_lazy(uconvert_lazy(u, a))
 ustrip_lazy!(u::Unitful.Units, a) = ustrip_lazy(uconvert_lazy!(u, a))
 
+uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = uconvert_lazy!(u, copy(a))
+
 """
-    CosmoParticles.uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where{T,D,U}
+    CosmoParticles.uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity})
+
+Converts the unitful array to the given units while preserving the number type passed (not always the case for `uconvert`).
+
+This is not exported.
+"""
+function uconvert_lazy(u::Unitful.Units, a::Quantity{T,D,U}) where {T,D,U}
+    return convert(T, ustrip(u, a)) * u
+end
+
+"""
+    CosmoParticles.uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where {T,D,U}
 
 Converts the unitful array to the specified units in-place.
 
 Note that after calling this method the original array still has the old units, but the numerical values
 correspond to the new units. This method should always be called as `a = uconvert_lazy!(u, a)`.
 
-This is not exported
+This is not exported.
 """
 function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where {T,D,U}
     Q = Quantity{T,dimension(u),typeof(u)}
