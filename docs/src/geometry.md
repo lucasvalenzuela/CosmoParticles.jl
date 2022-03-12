@@ -27,8 +27,13 @@ CosmoHypercube
 CosmoCube
 CosmoSquare
 CosmoHypersphere
+CosmoHypersphere(::Integer, ::Number)
 CosmoSphere
+CosmoSphere(::Number)
 CosmoCircle
+CosmoCircle(::Number)
 CosmoCylinder
+CosmoCylinder(::CosmoStandingCylinder)
 CosmoStandingCylinder
+CosmoStandingCylinder(::CosmoCylinder)
 ```

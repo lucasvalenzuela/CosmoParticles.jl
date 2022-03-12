@@ -1298,14 +1298,17 @@ const CP = CosmoParticles
             @test all(sum(abs2, pos4in .- center; dims=1) .≤ r^2)
 
             sphere = CosmoSphere(zeros(3), r)
+            @test CosmoSphere(r) == sphere
             pos3in = pos3[:, CP.mask_in(pos3, sphere)]
             @test all(sum(abs2, pos3in; dims=1) .≤ r^2)
 
             circle = CosmoCircle(zeros(2), r)
+            @test CosmoCircle(r) == circle
             pos2in = pos2[:, CP.mask_in(pos2, circle)]
             @test all(sum(abs2, pos2in; dims=1) .≤ r^2)
 
             hsphere = CosmoHypersphere(zeros(4), r)
+            @test CosmoHypersphere(4, r) == hsphere
             pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
             @test all(sum(abs2, pos4in; dims=1) .≤ r^2)
 

@@ -46,7 +46,7 @@ function mask_in(::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
         upperright::Vector{T}
     end
 
-Hyperrectangle aligned with the coordinate system axes given by its lower left and upper right corners.
+`N`-dimensional hyperrectangle aligned with the coordinate system axes given by its lower left and upper right corners.
 
 The dimensions of space are given by `N`.
 """
@@ -188,7 +188,7 @@ end
         radius::T
     end
 
-Hypersphere given by its `center` and `radius`.
+`N`-dimensional hypersphere given by its `center` and `radius`.
 
 If different types are passed to the constructor, the types will be promoted without throwing an error.
 """
@@ -223,6 +223,36 @@ for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(
             return CosmoHypersphere{T,$N}(center, radius)
         end
     end |> eval
+end
+
+"""
+    CosmoHypersphere(N::Integer, radius::T)
+
+Returns an `N`-dimensional hypersphere around the origin.
+"""
+function CosmoHypersphere(N::Integer, radius::T) where {T<:Number}
+    Tfloat = float(T)
+    return CosmoHypersphere{Tfloat,N}(zeros(Tfloat, N), radius)
+end
+
+"""
+    CosmoSphere(radius::T)
+
+Returns a sphere around the origin.
+"""
+function CosmoSphere(radius::T) where {T<:Number}
+    Tfloat = float(T)
+    return CosmoHypersphere{Tfloat,3}(zeros(Tfloat, 3), radius)
+end
+
+"""
+    CosmoCircle(radius::T)
+
+Returns a circle around the origin.
+"""
+function CosmoCircle(radius::T) where {T<:Number}
+    Tfloat = float(T)
+    return CosmoHypersphere{Tfloat,2}(zeros(Tfloat, 2), radius)
 end
 
 
