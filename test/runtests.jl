@@ -407,6 +407,60 @@ const CP = CosmoParticles
             @test_throws ErrorException CP.applyind!(ap, mask)
         end
 
+        @testset "Remove particles" begin
+            p = Particles(:dm)
+            p.id = sample(1:1000, 100; replace=false)
+            p.pos = rand(3, 100)
+            p.mass = 4u"kg"
+
+            mask = rand(100) .> 0.5
+            ind = findall(mask)
+
+            @test CP._removeind(3, ind) == 3
+            @test CP._removeind(p.mass, ind) == p.mass
+            @test CP._removeind(p.id, ind) == deleteat!(copy(p.id), ind)
+            posremoved = CP._removeind(p.pos, ind)
+            @test posremoved[1, :] == deleteat!(p.pos[1, :], ind)
+            @test posremoved[2, :] == deleteat!(p.pos[2, :], ind)
+            @test posremoved[3, :] == deleteat!(p.pos[3, :], ind)
+
+            a = rand(45)
+            b = rand(55)
+            c = ApplyArray(vcat, a, b)
+            @test CP._removeind(c, ind) == deleteat!(Array(c), ind)
+
+            a = rand(3, 45)
+            b = rand(3, 55)
+            c = ApplyArray(hcat, a, b)
+            cremoved = CP._removeind(c, ind)
+            carray = Array(c)
+            @test cremoved[1, :] == deleteat!(carray[1, :], ind)
+            @test cremoved[2, :] == deleteat!(carray[2, :], ind)
+            @test cremoved[3, :] == deleteat!(carray[3, :], ind)
+
+            pc = CP.applyind(p, .~mask)
+
+            @test CP.removeind(p, ind) == pc
+
+            pcc = deepcopy(p)
+            CP.removeind!(pcc, ind)
+            @test pcc == pc
+
+            affect = [:pos, :mass, :foo]
+            pc = CP.removeind(p, ind; affect)
+            @test pc == CP.applyind(p, .~mask; affect)
+
+            @test CP.deleteat(p, ind) == CP.removeind(p, ind)
+            pc = deepcopy(p)
+            @test CP.deleteat!(pc, ind) == CP.removeind(p, ind)
+
+
+            pc = ParticleCollection(p)
+            ap = pc.all
+            @test_throws ErrorException CP.removeind(ap, ind)
+            @test_throws ErrorException CP.removeind!(ap, ind)
+        end
+
         @testset "Find all in" begin
             a = sample(1:10000, 6000; replace=false)
             set = sample(1:10000, 100; replace=false)
@@ -1058,6 +1112,58 @@ const CP = CosmoParticles
             @test_throws ErrorException filter!(f, ap)
             @test_throws ErrorException filter(ap; ids=ids_wanted)
             @test_throws ErrorException filter!(ap; ids=ids_wanted)
+        end
+
+        @testset "Particle Removing" begin
+            ids_remove = sample(1:1000, 100; replace=false)
+            ids_keep = setdiff(1:1000, ids_remove)
+
+            pc_check = filter(p; ids=ids_keep)
+
+            @test delete(p; ids=ids_remove) == pc_check
+            @test delete(p; ids=Set(ids_remove)) == pc_check
+
+            pc = delete(p; ids=ids_remove, affect=[:id, :mass])
+            @test pc == filter(p; ids=ids_keep, affect=[:id, :mass])
+
+
+            pc = deepcopy(p)
+            delete!(pc; ids=ids_remove)
+            @test pc == pc_check
+
+            @test delete!(deepcopy(p); ids=Set(ids_remove)) == pc_check
+        end
+
+        @testset "Particle Collection Removing" begin
+            dm = p
+            gas = Particles(:gas, p.props)
+            pc = ParticleCollection(dm, gas)
+
+            ids_remove = sample(1:1000, 100; replace=false)
+
+            pcc = delete(pc; ids=ids_remove)
+            @test pcc.dm == delete(dm; ids=ids_remove)
+            @test delete(pc; ids=Set(ids_remove)) == pcc
+
+            affect = [:id, :mass]
+            pcc = delete(pc; ids=ids_remove, affect)
+            @test pcc.dm == delete(dm; ids=ids_remove, affect)
+
+            affect = [(:gas, [:id])]
+            pcc = delete(pc; ids=ids_remove, affect)
+            @test !haskey(pcc, :dm)
+            @test pcc.gas == delete(gas; ids=ids_remove, affect=[:id])
+
+            pcc = deepcopy(pc)
+            delete!(pcc; ids=ids_remove)
+            @test pcc == delete(pcc; ids=ids_remove)
+
+            @test delete!(deepcopy(pc); ids=Set(ids_remove)) == pcc
+
+
+            ap = pc.all
+            @test_throws ErrorException delete(ap; ids=ids_remove)
+            @test_throws ErrorException delete!(ap; ids=ids_remove)
         end
     end
 

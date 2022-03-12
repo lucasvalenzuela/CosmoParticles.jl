@@ -205,7 +205,7 @@ end
 
 Create new particles or collection with them filtered by keeping only the particles inside the given [`AbstractCosmoGeometry`](@ref).
 
-The filter is applied to the property specified.
+The geometry filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
@@ -248,7 +248,7 @@ end
 
 Filter the particles or collection in-place by keeping only the particles inside the given [`AbstractCosmoGeometry`](@ref).
 
-The filter is applied to the property specified.
+The geometry filter is applied to the property specified.
 """
 function Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
     ind = mask_in(p[prop], geo)
@@ -258,6 +258,128 @@ end
 function Base.filter!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
     Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         filter!(pc[ptype], geo, prop)
+    end
+
+    return pc
+end
+
+
+"""
+    Base.delete!(p::AbstractParticles; ids)
+    Base.delete!(pc::AbstractParticleCollection; ids)
+
+Filter the particles or collection in-place by removing all particles with the given IDs.
+"""
+function Base.delete!(p::AbstractParticles; ids)
+    ind = findall_in(p.id, ids)
+    return removeind!(p, ind)
+end
+
+function Base.delete!(pc::AbstractParticleCollection; ids)
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        delete!(pc[ptype]; ids)
+    end
+
+    return pc
+end
+
+"""
+    delete(p::AbstractParticles, ids; affect=keys(p))
+    delete(pc::AbstractParticleCollection; ids[, affect])
+
+Create new particles or collection with them filtered by keeping only the particles with the given IDs.
+
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
+to the newly created particles object.
+
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+"""
+function delete(p::AbstractParticles; ids, affect=keys(p))
+    ind = findall_in(p.id, ids)
+    return removeind(p, ind; affect)
+end
+
+function delete(pc::AbstractParticleCollection; ids, affect=nothing)
+    pcnew = empty(pc)
+
+    if affect isa AbstractVector{<:Tuple}
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
+            pcnew[ptype] = delete(pc[ptype]; ids, affect=props)
+        end
+    else
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
+            if isnothing(affect)
+                pcnew[ptype] = delete(pc[ptype]; ids)
+            else
+                pcnew[ptype] = delete(pc[ptype]; ids, affect)
+            end
+        end
+    end
+
+    return pcnew
+end
+
+
+"""
+    Base.delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
+    Base.delete(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos[; affect])
+
+Create new particles or collection with them filtered by keeping only the particles outside the given [`AbstractCosmoGeometry`](@ref).
+
+The geometry filter is applied to the property specified.
+If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
+to the newly created particles object.
+
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+"""
+function delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
+    ind = .~mask_in(p[prop], geo)
+    return applyind(p, ind; affect)
+end
+
+function delete(
+    pc::AbstractParticleCollection,
+    geo::AbstractCosmoGeometry,
+    prop::Symbol=:pos;
+    affect=nothing,
+)
+    pcnew = empty(pc)
+
+    if affect isa AbstractVector{<:Tuple}
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
+            pcnew[ptype] = delete(pc[ptype], geo, prop; affect=props)
+        end
+    else
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
+            if isnothing(affect)
+                pcnew[ptype] = delete(pc[ptype], geo, prop)
+            else
+                pcnew[ptype] = delete(pc[ptype], geo, prop; affect)
+            end
+        end
+    end
+
+    return pcnew
+end
+
+"""
+    Base.delete!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
+    Base.delete!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
+
+Filter the particles or collection in-place by keeping only the particles outside the given [`AbstractCosmoGeometry`](@ref).
+
+The geometry filter is applied to the property specified.
+"""
+function Base.delete!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
+    ind = .~mask_in(p[prop], geo)
+    return applyind!(p, ind)
+end
+
+function Base.delete!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        delete!(pc[ptype], geo, prop)
     end
 
     return pc

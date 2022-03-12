@@ -77,6 +77,8 @@ Base.isempty(p::AbstractParticles) = isempty(get_props(p))
 Base.copy!(dst::AbstractParticles, src::AbstractParticles) = (copy!(get_props(dst), get_props(src)); dst)
 
 Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
+Base.deleteat!(p::AbstractParticles, ind::AbstractVector) = removeind!(p, ind)
+deleteat(p::AbstractParticles, ind::AbstractVector) = removeind(p, ind)
 
 # to implement:
 # Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))

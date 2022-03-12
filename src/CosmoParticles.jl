@@ -34,6 +34,9 @@ export
     # getters
     redshift,
 
+    # operations
+    delete,
+
     # transformations
     rotate,
     rotate!,

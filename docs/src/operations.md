@@ -28,8 +28,12 @@ Base.sort
 Base.sort!
 Base.filter
 Base.filter!
+Base.delete
+Base.delete!
 CosmoParticles.applyind
 CosmoParticles.applyind!
+CosmoParticles.removeind
+CosmoParticles.removeind!
 CosmoParticles.findall_in
 CosmoParticles.findall_in_sorted
 ```
@@ -41,5 +45,6 @@ CosmoParticles.findall_in_sorted
 CosmoParticles.matrix_rotate
 CosmoParticles.matrix_rotate!
 CosmoParticles._applyind
+CosmoParticles._removeind
 CosmoParticles._translate_periodic
 ```

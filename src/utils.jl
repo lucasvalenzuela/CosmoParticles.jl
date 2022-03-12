@@ -18,7 +18,7 @@ _applyind(a::ApplyVector{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{t
 _applyind(a::ApplyMatrix{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
     a[:, mask]
 
-    function _applyind(a::ApplyVector{<:Any,F}, ind::Union{AbstractVector,Colon}) where {F<:Union{typeof(hcat),typeof(vcat)}}
+function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
     anew = similar(a, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
         anew[i] = a[indi]
@@ -26,7 +26,7 @@ _applyind(a::ApplyMatrix{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{t
     return anew
 end
 
-function _applyind(a::ApplyMatrix{<:Any,F}, ind::Union{AbstractVector,Colon}) where {F<:Union{typeof(hcat),typeof(vcat)}}
+function _applyind(a::ApplyMatrix{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
     n = size(a, 1)
     anew = similar(a, n, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
@@ -73,8 +73,118 @@ function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect
     return pnew
 end
 
+
+
+
 """
-    CosmoParticles.findall_in(a::Union{AbstractVector,Colon}, set)
+    CosmoParticles._removeind(a, ind::AbstractVector)
+
+Remove indices of a `Number`, `Vector`, or `Matrix`.
+
+The vector `ind` has to contain sorted and unique indices: `sort!(unique!(ind))`.
+Additionally, all elements in `ind` have to be valid indices in `a`.
+
+The following indexing is applied:
+- `a::Number`: `a` is returned directly.
+- `a::Vector`: `a[Not(ind)]` is returned.
+- `a::Matrix`: `a[:, Not(ind)]` is returned.
+
+This is not exported.
+"""
+_removeind(a::Number, _::AbstractVector) = a
+
+function _removeind(a::AbstractVector, ind::AbstractVector)
+    na = length(a)
+    nind = length(ind)
+    nanew = na - nind
+    anew = similar(a, nanew)
+
+    # catch empty array (otherwise throws BoundsError in loop)
+    na == nind && return anew
+
+    ia = 1
+    iind = 1
+    ianew = 1
+    @inbounds while true
+        while iind > nind || ia < ind[iind]
+            anew[ianew] = a[ia]
+            ia += 1
+            ianew += 1
+            ianew > nanew && return anew
+        end
+        ia += 1
+        iind += 1
+    end
+end
+
+function _removeind(a::AbstractMatrix, ind::AbstractVector)
+    n = size(a, 1)
+    na = size(a, 2)
+    nind = length(ind)
+    nanew = na - nind
+    anew = similar(a, n, nanew)
+
+    # catch empty array (otherwise throws BoundsError in loop)
+    na == nind && return anew
+
+    ia = 1
+    iind = 1
+    ianew = 1
+    @inbounds while true
+        while iind > nind || ia < ind[iind]
+            for j in 1:n
+                anew[j, ianew] = a[j, ia]
+            end
+            ia += 1
+            ianew += 1
+            ianew > nanew && return anew
+        end
+        ia += 1
+        iind += 1
+    end
+end
+
+"""
+    CosmoParticles.removeind!(p::AbstractParticles, ind::AbstractVector)
+
+In-place removal of indices to all particle properties.
+
+This is not exported.
+"""
+function removeind!(p::AbstractParticles, ind::AbstractVector)
+    for key in keys(p)
+        p[key] = _removeind(p[key], ind)
+    end
+
+    return p
+end
+
+"""
+    CosmoParticles.removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+
+Create new particles without the given indices or mask applied to all particle properties.
+
+This can also be called by the simple syntax `p[ind]`.
+If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
+added to the newly created particles object.
+
+This is not exported.
+"""
+function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+    pnew = empty(p)
+
+    for key in intersect(affect, keys(p))
+        pnew[key] = _removeind(p[key], ind)
+    end
+
+    return pnew
+end
+
+
+
+
+"""
+    CosmoParticles.findall_in(a::AbstractVector, set)
 
 Return all indices of `a` that are in `set`.
 
