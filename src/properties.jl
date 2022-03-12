@@ -113,7 +113,7 @@ function angmomtot(
     massprop=:mass,
     angmomprop=nothing,
 )
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
     return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin)
 end
 
@@ -136,7 +136,7 @@ function angmomtot_stable(
     massprop=:mass,
     angmomprop=nothing,
 )
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
     return angmomtot_stable(p[posprop], p[velprop], p[massprop]; origin, velorigin)
 end
 
