@@ -156,7 +156,7 @@ end
 
 function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
     @assert size(a, 1) == length(origin)
-    T === T0 && (origin = convert(Vector{T}, origin))
+    T === T0 || (origin = convert(Vector{T}, origin))
     dst = Vector{T}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a, origin)
 end
@@ -187,14 +187,14 @@ end
 
 function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
     @assert size(a, 1) == length(origin)
-    T === T0 && (origin = convert(Vector{T}, origin))
+    T === T0 || (origin = convert(Vector{T}, origin))
     dst = Vector{T}(undef, size(a, 2))
     return _colnorm2_unsafe!(dst, a, origin)
 end
 
 function colnorm2(a::AbstractMatrix{Q}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
     @assert size(a, 1) == length(origin)
-    Q === Q0 && (origin = convert(Vector{Q}, origin))
+    Q === Q0 || (origin = convert(Vector{Q}, origin))
     u = unit(Q)^2
     Q² = Quantity{T,dimension(u),typeof(u)}
     dst = Vector{Q²}(undef, size(a, 2))
@@ -203,7 +203,7 @@ end
 
 function colnorm2(a::AbstractMatrix{Union{Missing,Q}}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
     @assert size(a, 1) == length(origin)
-    Q === Q0 && (origin = convert(Vector{Q}, origin))
+    Q === Q0 || (origin = convert(Vector{Q}, origin))
     u = unit(Q)^2
     Q² = Quantity{T,dimension(u),typeof(u)}
     dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
