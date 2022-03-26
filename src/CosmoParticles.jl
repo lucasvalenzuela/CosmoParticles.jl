@@ -4,6 +4,7 @@ using FastUnitfulOperations
 using FillArrays
 using LazyArrays
 using LinearAlgebra
+using Polyester
 using Statistics
 using StatsBase
 using Unitful

@@ -979,7 +979,7 @@ const CP = CosmoParticles
 
         @testset "Particle Collection Sorting" begin
             dm = p
-            gas = Particles(:gas, p.props)
+            gas = Particles(:gas, deepcopy(p.props))
             pc = ParticleCollection(dm, gas)
 
             pcc = sort(pc, :id)
@@ -1062,7 +1062,7 @@ const CP = CosmoParticles
 
         @testset "Particle Collection Filtering" begin
             dm = p
-            gas = Particles(:gas, p.props)
+            gas = Particles(:gas, deepcopy(p.props))
             pc = ParticleCollection(dm, gas)
 
             massmin = 0.5u"kg"
@@ -1136,7 +1136,7 @@ const CP = CosmoParticles
 
         @testset "Particle Collection Removing" begin
             dm = p
-            gas = Particles(:gas, p.props)
+            gas = Particles(:gas, deepcopy(p.props))
             pc = ParticleCollection(dm, gas)
 
             ids_remove = sample(1:1000, 100; replace=false)
@@ -1426,7 +1426,7 @@ const CP = CosmoParticles
 
             # Particle collection
             dm = p
-            gas = Particles(:gas, p.props)
+            gas = Particles(:gas, deepcopy(p.props))
             pc = ParticleCollection(dm, gas)
 
             pcc = filter(pc, sph)

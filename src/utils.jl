@@ -45,7 +45,7 @@ In-place application of indices or mask to all particle properties.
 This is not exported.
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
-    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
+    @batch for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _applyind(p[key], ind)
     end
 
@@ -64,9 +64,15 @@ added to the newly created particles object.
 This is not exported.
 """
 function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
-    pnew = empty(p)
+    affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
 
-    Threads.@threads for key in intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
+    # preallocate particles (to avoid threading issues)
+    pnew = empty(p)
+    for key in affected_keys
+        pnew[key] = p[key]
+    end
+
+    @batch for key in affected_keys # collect used for compatibility with threads
         pnew[key] = _applyind(p[key], ind)
     end
 
@@ -152,7 +158,7 @@ In-place removal of indices to all particle properties.
 This is not exported.
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
-    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
+    @batch for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _removeind(p[key], ind)
     end
 
@@ -171,9 +177,15 @@ added to the newly created particles object.
 This is not exported.
 """
 function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
-    pnew = empty(p)
+    affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
 
-    Threads.@threads for key in intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
+    # preallocate particles (to avoid threading issues)
+    pnew = empty(p)
+    for key in affected_keys
+        pnew[key] = p[key]
+    end
+
+    @batch for key in affected_keys
         pnew[key] = _removeind(p[key], ind)
     end
 
