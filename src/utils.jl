@@ -45,7 +45,7 @@ In-place application of indices or mask to all particle properties.
 This is not exported.
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
-    @batch for key in keys(p) |> collect # collect used for compatibility with threads
+    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _applyind(p[key], ind)
     end
 
@@ -72,7 +72,7 @@ function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect
         pnew[key] = p[key]
     end
 
-    @batch for key in affected_keys # collect used for compatibility with threads
+    Threads.@threads for key in affected_keys # collect used for compatibility with threads
         pnew[key] = _applyind(p[key], ind)
     end
 
@@ -158,7 +158,7 @@ In-place removal of indices to all particle properties.
 This is not exported.
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
-    @batch for key in keys(p) |> collect # collect used for compatibility with threads
+    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _removeind(p[key], ind)
     end
 
@@ -185,7 +185,7 @@ function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
         pnew[key] = p[key]
     end
 
-    @batch for key in affected_keys
+    Threads.@threads for key in affected_keys
         pnew[key] = _removeind(p[key], ind)
     end
 

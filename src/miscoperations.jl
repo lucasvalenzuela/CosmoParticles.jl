@@ -22,7 +22,7 @@ end
 Sort the particles in the collection in-place by calling `Base.sort!` on each of the [`Particles`](@ref) objects.
 """
 function Base.sort!(pc::AbstractParticleCollection, prop::Symbol; kwargs...)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         sort!(pc[ptype], prop; kwargs...)
     end
 
@@ -64,11 +64,12 @@ function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing,
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = sort(pc[ptype], prop; affect=props, kwargs...)
         end
     else
-        @batch for ptype in keys(pc) |> collect
+        Threads.@threads for ptype in keys(pc) |> collect
+            println(ptype, " ", Threads.threadid())
             if isnothing(affect)
                 pcnew[ptype] = sort(pc[ptype], prop; kwargs...)
             else
@@ -96,7 +97,7 @@ function Base.filter!(f, p::AbstractParticles)
 end
 
 function Base.filter!(f, pc::AbstractParticleCollection)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         filter!(f, pc[ptype])
     end
 
@@ -127,11 +128,11 @@ function Base.filter(f, pc::AbstractParticleCollection; affect=nothing)
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = filter(f, pc[ptype]; affect=props)
         end
     else
-        @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
                 pcnew[ptype] = filter(f, pc[ptype])
             else
@@ -156,7 +157,7 @@ function Base.filter!(p::AbstractParticles; ids)
 end
 
 function Base.filter!(pc::AbstractParticleCollection; ids)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         filter!(pc[ptype]; ids=ids)
     end
 
@@ -185,11 +186,11 @@ function Base.filter(pc::AbstractParticleCollection; ids, affect=nothing)
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = filter(pc[ptype]; ids=ids, affect=props)
         end
     else
-        @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
                 pcnew[ptype] = filter(pc[ptype]; ids=ids)
             else
@@ -230,11 +231,11 @@ function Base.filter(
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = filter(pc[ptype], geo, prop; affect=props)
         end
     else
-        @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
                 pcnew[ptype] = filter(pc[ptype], geo, prop)
             else
@@ -260,7 +261,7 @@ function Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Sy
 end
 
 function Base.filter!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         filter!(pc[ptype], geo, prop)
     end
 
@@ -280,7 +281,7 @@ function Base.delete!(p::AbstractParticles; ids)
 end
 
 function Base.delete!(pc::AbstractParticleCollection; ids)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         delete!(pc[ptype]; ids=ids)
     end
 
@@ -309,11 +310,11 @@ function delete(pc::AbstractParticleCollection; ids, affect=nothing)
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = delete(pc[ptype]; ids=ids, affect=props)
         end
     else
-        @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
                 pcnew[ptype] = delete(pc[ptype]; ids=ids)
             else
@@ -349,11 +350,11 @@ function delete(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Tuple}
-        @batch for (ptype, props) in affect |> collect # collect used for compatibility with threads
+        Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
             pcnew[ptype] = delete(pc[ptype], geo, prop; affect=props)
         end
     else
-        @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+        Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
                 pcnew[ptype] = delete(pc[ptype], geo, prop)
             else
@@ -379,7 +380,7 @@ function Base.delete!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Sy
 end
 
 function Base.delete!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         delete!(pc[ptype], geo, prop)
     end
 
