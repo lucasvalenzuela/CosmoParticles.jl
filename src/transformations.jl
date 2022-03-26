@@ -44,7 +44,7 @@ function rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:po
     p = copy(p)
 
     # only rotate existing quantities
-    @batch for prop in intersect(keys(p), props) |> collect # collect used for compatibility with threads
+    Threads.@threads for prop in intersect(keys(p), props) |> collect # collect used for compatibility with threads
         p[prop] = matrix_rotate(p[prop], rotmat)
     end
 
@@ -66,7 +66,7 @@ Creates a copy of the particle collection with only new pointers to the rotated 
 function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     pc = copy(pc)
 
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         pc[ptype] = rotate(pc[ptype], rotmat, props)
     end
 
@@ -89,7 +89,7 @@ This function is reexported.
 """
 function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     # only rotate existing quantities
-    @batch for prop in intersect(keys(p), props) |> collect # collect used for compatibility with threads
+    Threads.@threads for prop in intersect(keys(p), props) |> collect # collect used for compatibility with threads
         matrix_rotate!(p[prop], rotmat)
     end
 
@@ -104,7 +104,7 @@ function LinearAlgebra.rotate!(
     rotmat::AbstractMatrix{<:Real},
     props=[:pos, :vel],
 )
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         rotate!(pc[ptype], rotmat, props)
     end
 
@@ -144,7 +144,7 @@ Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
 function translate(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
     pc = copy(pc)
 
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         pc[ptype] = translate(pc[ptype], Δx, prop)
     end
 
@@ -166,7 +166,7 @@ function translate!(p::AbstractParticles, Δx, prop::Symbol=:pos)
 end
 
 function translate!(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         translate!(pc[ptype], Δx, prop)
     end
 
@@ -221,7 +221,7 @@ end
 function translate_periodic(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
     pc = copy(pc)
 
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         pc[ptype] = translate_periodic(pc[ptype], centerpos, period, prop)
     end
 
@@ -243,7 +243,7 @@ function translate_periodic!(p::AbstractParticles, centerpos, period, prop::Symb
 end
 
 function translate_periodic!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         translate_periodic!(pc[ptype], centerpos, period, prop)
     end
 
@@ -278,7 +278,7 @@ end
 function translate_periodic_to_center(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
     pc = copy(pc)
 
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         pc[ptype] = translate_periodic_to_center(pc[ptype], centerpos, period, prop)
     end
 
@@ -300,7 +300,7 @@ function translate_periodic_to_center!(p::AbstractParticles, centerpos, period, 
 end
 
 function translate_periodic_to_center!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
-    @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+    Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
         translate_periodic_to_center!(pc[ptype], centerpos, period, prop)
     end
 
@@ -385,7 +385,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
             p = copy(p)
 
             factor = $factorexpr
-            @batch for (prop, n) in propexp
+            Threads.@threads for (prop, n) in propexp
                 if haskey(p, prop)
                     p[prop] = product_preserve_type(p[prop], factor^n)
                 end
@@ -397,7 +397,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
         function $(Symbol(name))(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
             pc = copy(pc)
 
-            @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+            Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
                 pc[ptype] = $(Symbol(name))(pc[ptype], redshift(pc); propexp=propexp)
             end
 
@@ -406,7 +406,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
 
         function $(Symbol(name, "!"))(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
             factor = $factorexpr
-            @batch for (prop, n) in propexp
+            Threads.@threads for (prop, n) in propexp
                 if haskey(p, prop)
                     product_preserve_type!(p[prop], factor^n)
                 end
@@ -416,7 +416,7 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (
         end
 
         function $(Symbol(name, "!"))(pc::AbstractParticleCollection; propexp=[(:pos, 1), (:vel, 1)])
-            @batch for ptype in keys(pc) |> collect # collect used for compatibility with threads
+            Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
                 $(Symbol(name, "!"))(pc[ptype], redshift(pc); propexp=propexp)
             end
 
