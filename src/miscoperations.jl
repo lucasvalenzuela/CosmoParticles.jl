@@ -339,12 +339,7 @@ function delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:
     return applyind(p, ind; affect)
 end
 
-function delete(
-    pc::AbstractParticleCollection,
-    geo::AbstractCosmoGeometry,
-    prop::Symbol=:pos;
-    affect=nothing,
-)
+function delete(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=nothing)
     pcnew = empty(pc)
 
     if affect isa AbstractVector{<:Tuple}

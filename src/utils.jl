@@ -45,7 +45,7 @@ In-place application of indices or mask to all particle properties.
 This is not exported.
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
-    for key in keys(p)
+    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _applyind(p[key], ind)
     end
 
@@ -66,7 +66,7 @@ This is not exported.
 function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
     pnew = empty(p)
 
-    for key in intersect(affect, keys(p))
+    Threads.@threads for key in intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
         pnew[key] = _applyind(p[key], ind)
     end
 
@@ -152,7 +152,7 @@ In-place removal of indices to all particle properties.
 This is not exported.
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
-    for key in keys(p)
+    Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
         p[key] = _removeind(p[key], ind)
     end
 
@@ -173,7 +173,7 @@ This is not exported.
 function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     pnew = empty(p)
 
-    for key in intersect(affect, keys(p))
+    Threads.@threads for key in intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
         pnew[key] = _removeind(p[key], ind)
     end
 
@@ -239,6 +239,8 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     iind = 0
     iset = 1
     ia = 1
+
+    # for a large number of values, search for the first indices in a faster way
     if na > 1_000_000
         if first(a) < first(set)
             ia = searchsortedfirst(a, first(set))
