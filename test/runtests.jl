@@ -457,8 +457,8 @@ const CP = CosmoParticles
 
             pc = ParticleCollection(p)
             ap = pc.all
-            @test_throws ErrorException CP.removeind(ap, ind)
-            @test_throws ErrorException CP.removeind!(ap, ind)
+            @test_throws Exception CP.removeind(ap, ind)
+            @test_throws Exception CP.removeind!(ap, ind)
         end
 
         @testset "Find all in" begin
@@ -1162,8 +1162,8 @@ const CP = CosmoParticles
 
 
             ap = pc.all
-            @test_throws ErrorException delete(ap; ids=ids_remove)
-            @test_throws ErrorException delete!(ap; ids=ids_remove)
+            @test_throws Exception delete(ap; ids=ids_remove)
+            @test_throws Exception delete!(ap; ids=ids_remove)
         end
     end
 

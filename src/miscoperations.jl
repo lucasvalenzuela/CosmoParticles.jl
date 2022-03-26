@@ -69,7 +69,6 @@ function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing,
         end
     else
         Threads.@threads for ptype in keys(pc) |> collect
-            println(ptype, " ", Threads.threadid())
             if isnothing(affect)
                 pcnew[ptype] = sort(pc[ptype], prop; kwargs...)
             else
