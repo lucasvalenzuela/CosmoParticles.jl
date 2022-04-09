@@ -3,6 +3,8 @@
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
 
+Other possible types: `Nothing`
+
 The following indexing is applied:
 - `a::Number`: `a` is returned directly.
 - `a::Vector`: `a[ind]` is returned.
@@ -10,7 +12,7 @@ The following indexing is applied:
 
 This is not exported.
 """
-_applyind(a::Number, _::Union{AbstractVector,Colon}) = a
+_applyind(a::Union{Number,Nothing}, _::Union{AbstractVector,Colon}) = a
 _applyind(a::AbstractVector, ind::Union{AbstractVector,Colon}) = a[ind]
 _applyind(a::AbstractMatrix, ind::Union{AbstractVector,Colon}) = a[:, ind]
 _applyind(a::ApplyVector{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{typeof(hcat),typeof(vcat)}} =
@@ -90,6 +92,8 @@ Remove indices of a `Number`, `Vector`, or `Matrix`.
 The vector `ind` has to contain sorted and unique indices: `sort!(unique!(ind))`.
 Additionally, all elements in `ind` have to be valid indices in `a`.
 
+Other possible types: `Nothing`
+
 The following indexing is applied:
 - `a::Number`: `a` is returned directly.
 - `a::Vector`: `a[Not(ind)]` is returned.
@@ -97,7 +101,7 @@ The following indexing is applied:
 
 This is not exported.
 """
-_removeind(a::Number, _::AbstractVector) = a
+_removeind(a::Union{Number,Nothing}, _::AbstractVector) = a
 
 function _removeind(a::AbstractVector, ind::AbstractVector)
     na = length(a)
