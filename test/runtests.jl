@@ -628,6 +628,14 @@ const CP = CosmoParticles
             CP.matrix_rotate!(auc, rotmat)
             @test auc == aurot
 
+            ac = similar(a)
+            CP.matrix_rotate!(ac, a, rotmat)
+            @test ac == arot
+
+            auc = similar(au)
+            CP.matrix_rotate!(auc, au, rotmat)
+            @test auc == aurot
+
 
             @testset "Particle Rotation" begin
                 p = Particles(:dm)

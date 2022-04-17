@@ -11,7 +11,7 @@ matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = 
 """
     CosmoParticles.matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 
-In-place version of [`CosmoParticles.matrix_rotate`](@ref).
+In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `vals`.
 
 This is not exported.
 """
@@ -26,6 +26,19 @@ function matrix_rotate!(vals::ApplyMatrix{<:Number}, rotmat::AbstractMatrix{<:Re
     matrix_rotate!.(vals.args, (rotmat,))
     return vals
 end
+
+
+"""
+    CosmoParticles.matrix_rotate!(dst::AbstractMatrix{<:Number}, vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
+
+In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `dst`.
+
+This is not exported.
+"""
+function matrix_rotate!(dst::AbstractMatrix{<:Number}, vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
+    uproduct!(dst, rotmat, vals)
+end
+
 
 """
     rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop)
