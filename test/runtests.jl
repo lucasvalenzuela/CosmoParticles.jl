@@ -1182,13 +1182,6 @@ const CP = CosmoParticles
             hrect = CosmoHyperrectangle(0.5rand(4), 0.5(1 .+ rand(4)))
             @test hrect isa CosmoHyperrectangle{Float64,4}
 
-            # abstract functions do nothing
-            @test isnothing(Base.@invoke CP.geometry_enclosing_corners(hrect::AbstractCosmoGeometry))
-            @test isnothing(Base.@invoke CP.geometry_enclosing_center(hrect::AbstractCosmoGeometry))
-            @test isnothing(
-                Base.@invoke CP.mask_in(pos2::AbstractMatrix{<:Number}, hrect::AbstractCosmoGeometry)
-            )
-
             hrect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
             @test hrect isa CosmoHyperrectangle{Float64,3}
             @test hrect isa CosmoCuboid{Float64}
