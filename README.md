@@ -35,7 +35,7 @@ SSH_PUB_KEY_PATH=~/.ssh/id_rsa_gitlab.pub
 The package registry can be loaded from the Julia REPL with the Julia package manager:
 ```julia
 using Pkg
-pkg"registry add https://gilab.com/juliacosmosims/CosmoSimsRegistry"
+pkg"registry add https://gitlab.com/juliacosmosims/CosmoSimsRegistry"
 ```
 This only needs to be done once per Julia installation.
 
