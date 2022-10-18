@@ -19,9 +19,18 @@ _meanprop(a::Fill) = a[1]
 _meanprop(a::Fill, ::AbstractVector) = a[1]
 _meanprop(a::Fill, ::Fill) = a[1]
 _meanprop(a::AbstractVector) = mean(a)
-_meanprop(a::AbstractMatrix) = mean(a; dims=2)
+# NOTE: commented versions had to be removed because the summation over a large number of
+# Float32 values with the `dims` keyword calls a mapreduce summation, which can introduce
+# large numerical errors. This is not the case when summing without `dims`.
+# _meanprop(a::AbstractMatrix) = mean(a; dims=2)
+_meanprop(a::AbstractMatrix) = [mean(@view a[i, :]) for i in axes(a, 1)]
 _meanprop(a::AbstractVector, m::AbstractVector) = mean(a, weights(ustrip_lazy(m)))
-_meanprop(a::AbstractMatrix, m::AbstractVector) = mean(a, weights(ustrip_lazy(m)); dims=2)
+# _meanprop(a::AbstractMatrix, m::AbstractVector) = mean(a, weights(ustrip_lazy(m)); dims=2)
+function _meanprop(a::AbstractMatrix, m::AbstractVector)
+    w = weights(ustrip_lazy(m))
+    return [mean(@view(a[i, :]), w) for i in axes(a, 1)]
+end
+_meanprop(a::AbstractMatrix) = [mean(@view a[i, :]) for i in axes(a, 1)]
 _meanprop(a::AbstractArray, ::Number) = _meanprop(a)
 _meanprop(a::AbstractVector, ::Fill) = _meanprop(a)
 _meanprop(a::AbstractMatrix, ::Fill) = _meanprop(a)
