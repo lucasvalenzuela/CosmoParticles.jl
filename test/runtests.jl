@@ -1732,55 +1732,55 @@ const CP = CosmoParticles
                 ap = cp.all
                 p = Particles(ap)
 
-                @test meanpos(dm) == mean(dm.pos; dims=2)
-                @test meanpos(dm; massweighted=false) == mean(dm.pos; dims=2)
+                @test meanpos(dm) ≈ mean(dm.pos; dims=2)
+                @test meanpos(dm; massweighted=false) ≈ mean(dm.pos; dims=2)
                 @test meanpos(gas) ≈ sum(gas.pos .* gas.mass'; dims=2) / sum(gas.mass)
-                @test meanpos(gas; massweighted=false) == mean(gas.pos; dims=2)
+                @test meanpos(gas; massweighted=false) ≈ mean(gas.pos; dims=2)
                 @test meanpos(ap) ≈ meanpos(p)
 
-                @test meanprop(dm, :pos) == mean(dm.pos; dims=2)
-                @test meanprop(gas, :pos; massprop=:mass2) == mean(gas.pos; dims=2)
+                @test meanprop(dm, :pos) ≈ mean(dm.pos; dims=2)
+                @test meanprop(gas, :pos; massprop=:mass2) ≈ mean(gas.pos; dims=2)
                 @test meanprop(gas, :temp) ≈ sum(gas.temp .* gas.mass) / sum(gas.mass)
-                @test meanprop(gas, :temp; massweighted=false) == mean(gas.temp)
-                @test meanprop(gas, :temp; massprop=:mass2) == mean(gas.temp)
-                @test meanprop(dm, :mass) == dm.mass
-                @test meanprop(dm, :mass; massweighted=false) == dm.mass
-                @test meanprop(gas, :test) == gas.test
-                @test meanprop(gas, :mass2) == gas.mass2[1]
-                @test meanprop(gas, :mass2; massweighted=false) == gas.mass2[1]
-                @test meanprop(gas, :mass2; massprop=:mass2) == gas.mass2[1]
+                @test meanprop(gas, :temp; massweighted=false) ≈ mean(gas.temp)
+                @test meanprop(gas, :temp; massprop=:mass2) ≈ mean(gas.temp)
+                @test meanprop(dm, :mass) ≈ dm.mass
+                @test meanprop(dm, :mass; massweighted=false) ≈ dm.mass
+                @test meanprop(gas, :test) ≈ gas.test
+                @test meanprop(gas, :mass2) ≈ gas.mass2[1]
+                @test meanprop(gas, :mass2; massweighted=false) ≈ gas.mass2[1]
+                @test meanprop(gas, :mass2; massprop=:mass2) ≈ gas.mass2[1]
                 @test meanprop(ap, :mass) ≈ meanvel(p, :mass)
 
-                @test meanvel(dm) == mean(dm.vel; dims=2)
-                @test meanvel(dm; massweighted=false) == mean(dm.vel; dims=2)
+                @test meanvel(dm) ≈ mean(dm.vel; dims=2)
+                @test meanvel(dm; massweighted=false) ≈ mean(dm.vel; dims=2)
                 @test meanvel(gas) ≈ sum(gas.vel .* gas.mass'; dims=2) / sum(gas.mass)
-                @test meanvel(gas; massweighted=false) == mean(gas.vel; dims=2)
+                @test meanvel(gas; massweighted=false) ≈ mean(gas.vel; dims=2)
                 @test meanvel(ap) ≈ meanvel(p)
 
-                @test sumprop(dm, :pos) == sum(dm.pos; dims=2)
-                @test sumprop(gas, :pos) == sum(gas.pos; dims=2)
-                @test sumprop(dm, :mass) == CP.particle_number(dm) * dm.mass
-                @test sumprop(gas, :mass2) == sum(gas.mass2)
-                @test sumprop(ap, :pos) == sumprop(p, :pos)
+                @test sumprop(dm, :pos) ≈ sum(dm.pos; dims=2)
+                @test sumprop(gas, :pos) ≈ sum(gas.pos; dims=2)
+                @test sumprop(dm, :mass) ≈ CP.particle_number(dm) * dm.mass
+                @test sumprop(gas, :mass2) ≈ sum(gas.mass2)
+                @test sumprop(ap, :pos) ≈ sumprop(p, :pos)
 
-                @test angmom(dm; angmomprop=:j) == angmom(dm.pos, dm.vel, dm.mass)
-                @test angmomtot(dm; angmomprop=:j) == angmomtot(dm.pos, dm.vel, dm.mass)
-                @test angmomtot_stable(dm; angmomprop=:j) == angmomtot_stable(dm.pos, dm.vel, dm.mass)
+                @test angmom(dm; angmomprop=:j) ≈ angmom(dm.pos, dm.vel, dm.mass)
+                @test angmomtot(dm; angmomprop=:j) ≈ angmomtot(dm.pos, dm.vel, dm.mass)
+                @test angmomtot_stable(dm; angmomprop=:j) ≈ angmomtot_stable(dm.pos, dm.vel, dm.mass)
                 dm.j = angmom(dm)
                 @test angmom(dm; angmomprop=:j) ≈ angmom(dm.pos, dm.vel, dm.mass)
                 @test angmomtot(dm; angmomprop=:j) ≈ angmomtot(dm.pos, dm.vel, dm.mass)
                 @test angmomtot_stable(dm; angmomprop=:j) ≈ angmomtot_stable(dm.pos, dm.vel, dm.mass)
-                @test angmom(gas; angmomprop=:j) == angmom(gas.pos, gas.vel, gas.mass)
-                @test angmomtot(gas; angmomprop=:j) == angmomtot(gas.pos, gas.vel, gas.mass)
-                @test angmomtot_stable(gas; angmomprop=:j) == angmomtot_stable(gas.pos, gas.vel, gas.mass)
+                @test angmom(gas; angmomprop=:j) ≈ angmom(gas.pos, gas.vel, gas.mass)
+                @test angmomtot(gas; angmomprop=:j) ≈ angmomtot(gas.pos, gas.vel, gas.mass)
+                @test angmomtot_stable(gas; angmomprop=:j) ≈ angmomtot_stable(gas.pos, gas.vel, gas.mass)
 
                 origin = 2 * dm.pos[:, 1]
                 velorigin = 2 * dm.vel[:, 1]
 
                 for func in [angmom, angmomtot, angmomtot_stable]
-                    @test func(gas; origin) == func(gas.pos, gas.vel, gas.mass; origin)
-                    @test func(gas; velorigin) == func(gas.pos, gas.vel, gas.mass; velorigin)
-                    @test func(gas; origin, velorigin) == func(gas.pos, gas.vel, gas.mass; origin, velorigin)
+                    @test func(gas; origin) ≈ func(gas.pos, gas.vel, gas.mass; origin)
+                    @test func(gas; velorigin) ≈ func(gas.pos, gas.vel, gas.mass; velorigin)
+                    @test func(gas; origin, velorigin) ≈ func(gas.pos, gas.vel, gas.mass; origin, velorigin)
                 end
             end
         end
