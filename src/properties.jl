@@ -30,7 +30,6 @@ function _meanprop(a::AbstractMatrix, m::AbstractVector)
     w = weights(ustrip_lazy(m))
     return [mean(@view(a[i, :]), w) for i in axes(a, 1)]
 end
-_meanprop(a::AbstractMatrix) = [mean(@view a[i, :]) for i in axes(a, 1)]
 _meanprop(a::AbstractArray, ::Number) = _meanprop(a)
 _meanprop(a::AbstractVector, ::Fill) = _meanprop(a)
 _meanprop(a::AbstractMatrix, ::Fill) = _meanprop(a)
