@@ -337,7 +337,8 @@ end
 Strips off the units of unitful arrays in a performant way while keeping the number type conserved (not always the case for `ustrip`).
 
 Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
-unitful arrays, but without reallocating non-unitful or lazy arrays.
+unitful arrays, but without reallocating non-unitful or lazy arrays. Differently to `ustrip`, this also works
+for `Number`s and arrays thereof, simply returning the original array.
 
 Note that after calling this method with a different conversion unit, the original array still has the old units,
 but the numerical values correspond to the new units. This method should always be called as
@@ -358,10 +359,15 @@ ustrip_lazy(a::AbstractArray{<:Quantity{T}}) where {T} = reinterpret(T, a) #ustr
 ustrip_lazy(a::ApplyArray{<:Quantity{T}}) where {T} = reinterpret(T, a)
 ustrip_lazy(a::Fill{<:Quantity{T}}) where {T} = reinterpret(T, a)
 
-ustrip_lazy(u::Unitful.Units, a) = ustrip.(u, a)
-ustrip_lazy(u::Unitful.Units, a::AbstractVector{<:Quantity{T}}) where {T<:AbstractFloat} = ustrip_lazy.(u, a)
-ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:AbstractFloat} = ustrip_lazy(uconvert_lazy(u, a))
 ustrip_lazy!(u::Unitful.Units, a) = ustrip_lazy(uconvert_lazy!(u, a))
+ustrip_lazy(_::Unitful.Units, a::Number) = a
+ustrip_lazy(_::Unitful.Units, a::AbstractArray{<:Number}) = a
+ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = ustrip.(u, a)
+# ustrip_lazy(u::Unitful.Units, a::AbstractVector{<:Quantity{T}}) where {T<:AbstractFloat} = ustrip_lazy.(u, a)
+ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:AbstractFloat} = ustrip_lazy(uconvert_lazy(u, a))
+function ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity{T}}) where {T<:AbstractFloat} 
+    unit(eltype(a)) == u ? ustrip_lazy(a) : ustrip_lazy.(u, a)
+end
 
 uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = uconvert_lazy!(u, copy(a))
 
