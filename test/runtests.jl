@@ -578,6 +578,28 @@ const CP = CosmoParticles
 
             auc = copy(au)
             aufc = copy(auf)
+            auc_strip = CP.ustrip_lazy(u"m", auc)
+            aufc_strip = CP.ustrip_lazy(u"m", aufc)
+            @test auc_strip ≈ ustrip.(u"m", au)
+            @test aufc_strip ≈ ustrip.(u"m", auf)
+            @test auc == au
+            @test aufc == auf
+
+            auc = copy(au)
+            aufc = copy(auf)
+            auc_strip = CP.ustrip_lazy(u"km", auc)
+            aufc_strip = CP.ustrip_lazy(u"km", aufc)
+            @test auc_strip ≈ ustrip.(u"km", au)
+            @test aufc_strip ≈ ustrip.(u"km", auf)
+            @test auc == au
+            @test aufc == auf
+
+            ac = copy(a)
+            @test CP.ustrip_lazy(u"m", ac) === ac == a
+            @test CP.ustrip_lazy(u"m", ac[1]) === ac[1]
+
+            auc = copy(au)
+            aufc = copy(auf)
             auc_conv = CP.uconvert_lazy!(u"km", auc)
             aufc_conv = CP.uconvert_lazy!(u"km", aufc)
             @test auc_conv ≈ uconvert.(u"km", au)
