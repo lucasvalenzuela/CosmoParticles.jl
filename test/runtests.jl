@@ -626,6 +626,9 @@ const CP = CosmoParticles
             @test aufc_conv ≈ uconvert.(u"K", auf)
             @test CP.ustrip_lazy(auc) == CP.ustrip_lazy(auc_conv)
             @test CP.ustrip_lazy(aufc) == CP.ustrip_lazy(aufc_conv)
+
+            # test Int units
+            @test CP.ustrip_lazy(u"g", 2u"g") === 2
         end
     end
 

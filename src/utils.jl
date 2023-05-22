@@ -364,7 +364,7 @@ ustrip_lazy(_::Unitful.Units, a::Number) = a
 ustrip_lazy(_::Unitful.Units, a::AbstractArray{<:Number}) = a
 ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = ustrip.(u, a)
 # ustrip_lazy(u::Unitful.Units, a::AbstractVector{<:Quantity{T}}) where {T<:AbstractFloat} = ustrip_lazy.(u, a)
-ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:AbstractFloat} = ustrip_lazy(uconvert_lazy(u, a))
+ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:Real} = ustrip_lazy(uconvert_lazy(u, a))
 function ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity{T}}) where {T<:AbstractFloat} 
     unit(eltype(a)) == u ? ustrip_lazy(a) : ustrip_lazy.(u, a)
 end
