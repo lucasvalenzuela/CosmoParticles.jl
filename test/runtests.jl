@@ -629,6 +629,8 @@ const CP = CosmoParticles
 
             # test Int units
             @test CP.ustrip_lazy(u"g", 2u"g") === 2
+            # TODO: the following still errors
+            #@test CP.ustrip_lazy(u"g", 2u"kg") ≈ 0.002
         end
     end
 
