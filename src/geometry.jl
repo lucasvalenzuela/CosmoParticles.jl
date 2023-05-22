@@ -7,6 +7,7 @@ Any subtypes of `AbstractCosmoGeometry` have to implement the following methods:
 - [`CosmoParticles.geometry_enclosing_corners`](@ref)
 - [`CosmoParticles.geometry_enclosing_center`](@ref)
 - [`CosmoParticles.mask_in!`](@ref)
+- [`CosmoParticles.translate`](@ref)
 """
 abstract type AbstractCosmoGeometry end
 
@@ -38,6 +39,13 @@ Return the `BitVector` mask of the positions (``\mathrm{dims} × N``) located wi
 This is not exported.
 """
 function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
+
+"""
+    translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number})
+
+Returns a new geometry translated by `Δx`.
+"""
+function translate(::AbstractCosmoGeometry, ::AbstractVector{<:Number}) end
 
 @doc raw"""
     mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
@@ -197,6 +205,10 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoHyperr
     return mask
 end
 
+function translate(r::HR, Δx::AbstractVector{<:Number}) where {HR<:CosmoHyperrectangle}
+    HR(r.lowerleft .+ Δx, r.upperright .+ Δx)
+end
+
 
 """
     struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
@@ -331,6 +343,10 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoHypers
     return mask
 end
 
+function translate(s::HS, Δx::AbstractVector{<:Number}) where {HS<:CosmoHypersphere}
+    HS(s.center .+ Δx, s.radius)
+end
+
 
 """
     struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
@@ -402,6 +418,10 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoCylind
         )
 end
 
+function translate(c::C, Δx::AbstractVector{<:Number}) where {C<:CosmoCylinder}
+    C(c.startpos .+ Δx, c.endpos .+ Δx, c.radius)
+end
+
 
 """
     struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
@@ -454,6 +474,10 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoStandi
     @inbounds @views @. mask =
         ((pos[1, :] - c.center[1])^2 + (pos[2, :] - c.center[2])^2 ≤ r²) &
         (c.center[3] - halfheight ≤ pos[3, :] ≤ c.center[3] + halfheight)
+end
+
+function translate(c::C, Δx::AbstractVector{<:Number}) where {C<:CosmoStandingCylinder}
+    C(c.center .+ Δx, c.height, c.radius)
 end
 
 
