@@ -1032,6 +1032,11 @@ const CP = CosmoParticles
             @test pcc.dm == sort(dm, :mass; affect=[:mass, :pos])
             @test pcc.gas == sort(gas, :mass; affect=[:mass])
 
+            affect = [:dm => [:mass, :pos], :gas => [:mass]]
+            pcc = sort(pc, :mass; affect, alg=QuickSort)
+            @test pcc.dm == sort(dm, :mass; affect=[:mass, :pos])
+            @test pcc.gas == sort(gas, :mass; affect=[:mass])
+
             pcc = deepcopy(pc)
             sort!(pcc, :id; alg=RadixSort)
             @test pcc == sort(pc, :id)
@@ -1116,6 +1121,11 @@ const CP = CosmoParticles
             @test pcc.dm == filter(f, dm; affect=[:id, :mass])
             @test !haskey(pcc, :gas)
 
+            affect = [:dm => [:id, :mass]]
+            pcc = filter(f, pc; affect)
+            @test pcc.dm == filter(f, dm; affect=[:id, :mass])
+            @test !haskey(pcc, :gas)
+
             pcc = deepcopy(pc)
             filter!(f, pcc)
             @test pcc == filter(f, pc)
@@ -1131,6 +1141,11 @@ const CP = CosmoParticles
             @test pcc.dm == filter(dm; ids=ids_wanted, affect)
 
             affect = [(:gas, [:id])]
+            pcc = filter(pc; ids=ids_wanted, affect)
+            @test !haskey(pcc, :dm)
+            @test pcc.gas == filter(gas; ids=ids_wanted, affect=[:id])
+
+            affect = [:gas => [:id]]
             pcc = filter(pc; ids=ids_wanted, affect)
             @test !haskey(pcc, :dm)
             @test pcc.gas == filter(gas; ids=ids_wanted, affect=[:id])
@@ -1185,6 +1200,11 @@ const CP = CosmoParticles
             @test pcc.dm == delete(dm; ids=ids_remove, affect)
 
             affect = [(:gas, [:id])]
+            pcc = delete(pc; ids=ids_remove, affect)
+            @test !haskey(pcc, :dm)
+            @test pcc.gas == delete(gas; ids=ids_remove, affect=[:id])
+
+            affect = [:gas => [:id]]
             pcc = delete(pc; ids=ids_remove, affect)
             @test !haskey(pcc, :dm)
             @test pcc.gas == delete(gas; ids=ids_remove, affect=[:id])
@@ -1464,6 +1484,10 @@ const CP = CosmoParticles
             @test pcc.dm == filter(dm, sph; affect=[:pos])
 
             pcc = filter(pc, sph; affect=[(:dm, [:pos, :mass])])
+            @test pcc.dm == filter(dm, sph; affect=[:pos, :mass])
+            @test !haskey(pcc, :gas)
+
+            pcc = filter(pc, sph; affect=[:dm => [:pos, :mass]])
             @test pcc.dm == filter(dm, sph; affect=[:pos, :mass])
             @test !haskey(pcc, :gas)
 
