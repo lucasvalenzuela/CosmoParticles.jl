@@ -56,8 +56,9 @@ Create new particle collection with the particles in the collection sorted by ca
 
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only the affected properties are kept for the particles.
 The specified affected properties do not have to be available for all particles.
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function Base.sort(pc::AbstractParticleCollection, prop::Symbol; affect=nothing, kwargs...)
     # preallocate particle collection (to avoid threading issues)
@@ -114,8 +115,9 @@ number of particles or an array of indices.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function Base.filter(f, p::AbstractParticles; affect=keys(p))
     ind = f(p)
@@ -172,8 +174,9 @@ Create new particles or collection with them filtered by keeping only the partic
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function Base.filter(p::AbstractParticles; ids, affect=keys(p))
     ind = findall_in(p.id, ids)
@@ -212,8 +215,9 @@ The geometry filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
     ind = mask_in(p[prop], geo)
@@ -296,8 +300,9 @@ Create new particles or collection with them filtered by keeping only the partic
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function delete(p::AbstractParticles; ids, affect=keys(p))
     ind = findall_in(p.id, ids)
@@ -336,8 +341,9 @@ The geometry filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
 
-For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples in the following form:
-`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`.
+For collections of [`Particles`](@ref), `affect` can alternatively be a vector of tuples or pairs in the following form:
+`[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
+`[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
 function delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
     ind = .~mask_in(p[prop], geo)
