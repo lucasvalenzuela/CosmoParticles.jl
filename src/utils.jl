@@ -1,4 +1,54 @@
 """
+    get_dims(projection::Symbol)
+    get_dims(dims::AbstractArray)
+
+Returns the 2D dimensions of the passed projection, or the dimensions themselves.
+
+The following dimensions are returned:
+- `[1, 3]`: `:edgeon` or `:xz`
+- `[2, 3]`: `:sideon` or `:yz`
+- `[1, 2]`: `:faceon` or `:xy`
+"""
+function get_dims(projection::Symbol)
+    if projection === :edgeon || projection === :xz
+        return [1, 3]
+    elseif projection === :sideon || projection === :yz
+        return [2, 3]
+    elseif projection === :faceon || projection === :xy
+        return [1, 2]
+    else
+        @error "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."
+    end
+end
+get_dims(dims) = dims
+
+"""
+    get_losdims(projection::Symbol)
+    get_losdims(dims::AbstractArray)
+
+Returns the 1D line-of-sight dimension of the passed projection, or of the passed 2D dimensions.
+
+The following dimensions are returned:
+- `2`: `:edgeon` or `:xz` or `[1, 3]`
+- `1`: `:sideon` or `:yz` or `[2, 3]`
+- `3`: `:faceon` or `:xy` or `[1, 2]`
+"""
+function get_losdim(projection::Symbol)
+    if projection === :edgeon || projection === :xz
+        return 2
+    elseif projection === :sideon || projection === :yz
+        return 1
+    elseif projection === :faceon || projection === :xy
+        return 3
+    else
+        @error "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."
+    end
+end
+get_losdim(dims) = setdiff(1:3, dims)[1]
+
+
+
+"""
     CosmoParticles._applyind(a, ind::Union{AbstractVector,Colon})
 
 Apply indices or mask to a `Number`, `Vector`, or `Matrix`.
