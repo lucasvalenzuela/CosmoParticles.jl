@@ -632,6 +632,18 @@ const CP = CosmoParticles
             # TODO: the following still errors
             #@test CP.ustrip_lazy(u"g", 2u"kg") ≈ 0.002
         end
+
+        @testset "Dimensions" begin
+            @test CP.get_dims(:edgeon) == CP.get_dims(:xz) == CP.get_dims([1, 3]) == [1, 3]
+            @test CP.get_dims(:sideon) == CP.get_dims(:yz) == CP.get_dims([2, 3]) == [2, 3]
+            @test CP.get_dims(:faceon) == CP.get_dims(:xy) == CP.get_dims([1, 2]) == [1, 2]
+            @test_throws ArgumentError CP.get_dims(:test)
+
+            @test CP.get_losdim(:edgeon) == CP.get_losdim(:xz) == CP.get_losdim([1, 3]) == 2
+            @test CP.get_losdim(:sideon) == CP.get_losdim(:yz) == CP.get_losdim([2, 3]) == 1
+            @test CP.get_losdim(:faceon) == CP.get_losdim(:xy) == CP.get_losdim([1, 2]) == 3
+            @test_throws ArgumentError CP.get_losdim(:test)
+        end
     end
 
 
