@@ -17,7 +17,7 @@ function get_dims(projection::Symbol)
     elseif projection === :faceon || projection === :xy
         return [1, 2]
     else
-        @error "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."
+        throw(ArgumentError("The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."))
     end
 end
 get_dims(dims) = dims
@@ -41,7 +41,7 @@ function get_losdim(projection::Symbol)
     elseif projection === :faceon || projection === :xy
         return 3
     else
-        @error "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."
+        throw(ArgumentError("The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."))
     end
 end
 get_losdim(dims) = setdiff(1:3, dims)[1]
