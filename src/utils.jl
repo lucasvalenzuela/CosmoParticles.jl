@@ -23,8 +23,8 @@ end
 get_dims(dims) = dims
 
 """
-    get_losdims(projection::Symbol)
-    get_losdims(dims::AbstractArray)
+    get_losdim(projection::Symbol)
+    get_losdim(dims::AbstractArray)
 
 Returns the 1D line-of-sight dimension of the passed projection, or of the passed 2D dimensions.
 

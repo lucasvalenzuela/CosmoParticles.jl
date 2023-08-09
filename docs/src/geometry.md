@@ -20,6 +20,7 @@ AbstractCosmoGeometry
 CosmoParticles.geometry_enclosing_corners
 CosmoParticles.geometry_enclosing_center
 CosmoParticles.mask_in
+CosmoParticles.mask_in!
 CosmoHyperrectangle
 CosmoCuboid
 CosmoRectangle

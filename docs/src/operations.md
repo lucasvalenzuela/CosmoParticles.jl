@@ -28,7 +28,7 @@ Base.sort
 Base.sort!
 Base.filter
 Base.filter!
-Base.delete
+delete
 Base.delete!
 CosmoParticles.applyind
 CosmoParticles.applyind!
