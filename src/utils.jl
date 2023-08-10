@@ -153,6 +153,8 @@ This is not exported.
 """
 _removeind(a::Union{Number,Nothing}, _::AbstractVector) = a
 
+_removeind(a::AbstractFillVector, ind::AbstractVector) = a[begin:(end-length(ind))]
+
 function _removeind(a::AbstractVector, ind::AbstractVector)
     na = length(a)
     nind = length(ind)

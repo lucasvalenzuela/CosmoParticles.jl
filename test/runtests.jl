@@ -217,6 +217,7 @@ const CP = CosmoParticles
         dm = Particles(:dm)
         dm.id = sample(1:1000, 100; replace=false)
         dm.pos = rand(3, 100)
+        dm.mass = Fill(1.5, 100)
 
         gas = Particles(:gas)
         gas.id = sample(1001:2000, 100; replace=false)
@@ -249,7 +250,7 @@ const CP = CosmoParticles
             io = IOBuffer()
             show(io, "text/plain", pc)
             @test String(take!(io)) ==
-                  "ParticleCollection\ndm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+                  "ParticleCollection\ndm: 100 Particles\n id mass pos\ngas: 100 Particles\n id pos"
         end
 
         @testset "RedshiftParticleCollection" begin
@@ -282,7 +283,7 @@ const CP = CosmoParticles
             io = IOBuffer()
             show(io, "text/plain", pc)
             @test String(take!(io)) ==
-                  "ParticleCollection at z = $z\ndm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+                  "ParticleCollection at z = $z\ndm: 100 Particles\n id mass pos\ngas: 100 Particles\n id pos"
 
             @test issetequal(propertynames(pc), [:z, :all, :dm, :gas])
             @test issetequal(propertynames(pc; private=true), [:z, :all, :particles, :dm, :gas])
@@ -339,7 +340,7 @@ const CP = CosmoParticles
 
             io = IOBuffer()
             CP.show_properties(io, "text/plain", pc)
-            @test String(take!(io)) == "dm: 100 Particles\n id pos\ngas: 100 Particles\n id pos"
+            @test String(take!(io)) == "dm: 100 Particles\n id mass pos\ngas: 100 Particles\n id pos"
         end
     end
 
@@ -350,16 +351,19 @@ const CP = CosmoParticles
             p.id = sample(1:1000, 100; replace=false)
             p.pos = rand(3, 100)
             p.mass = 4u"kg"
+            p.mass2 = Fill(4u"kg", 100)
 
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
             @test CP._applyind(3, mask) == 3
             @test CP._applyind(p.mass, mask) == p.mass
+            @test CP._applyind(p.mass2, mask) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, mask) == p.id[mask]
             @test CP._applyind(p.pos, mask) == p.pos[:, mask]
             @test CP._applyind(3, ind) == 3
             @test CP._applyind(p.mass, ind) == p.mass
+            @test CP._applyind(p.mass2, ind) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, ind) == p.id[ind]
             @test CP._applyind(p.pos, ind) == p.pos[:, ind]
 
@@ -379,6 +383,7 @@ const CP = CosmoParticles
             @test pc.id == p.id[mask]
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass
+            @test pc.mass2 == collect(p.mass2)[mask]
 
             @test CP.applyind(p, ind) == pc
             @test p[ind] == pc
@@ -392,11 +397,12 @@ const CP = CosmoParticles
             CP.applyind!(pcc, ind)
             @test pcc == pc
 
-            pc = CP.applyind(p, mask; affect=[:pos, :mass, :foo])
+            pc = CP.applyind(p, mask; affect=[:pos, :mass, :mass2, :foo])
             @test !haskey(pc, :id)
             @test !haskey(pc, :foo)
             @test pc.pos == p.pos[:, mask]
             @test pc.mass == p.mass
+            @test pc.mass2 == collect(p.mass2)[mask]
 
 
             pc = ParticleCollection(p)
@@ -412,12 +418,14 @@ const CP = CosmoParticles
             p.id = sample(1:1000, 100; replace=false)
             p.pos = rand(3, 100)
             p.mass = 4u"kg"
+            p.mass2 = Fill(4u"kg", 100)
 
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
             @test CP._removeind(3, ind) == 3
             @test CP._removeind(p.mass, ind) == p.mass
+            @test CP._removeind(p.mass2, ind) == deleteat!(collect(p.mass2), ind)
             @test CP._removeind(p.id, ind) == deleteat!(copy(p.id), ind)
             posremoved = CP._removeind(p.pos, ind)
             @test posremoved[1, :] == deleteat!(p.pos[1, :], ind)
@@ -446,7 +454,7 @@ const CP = CosmoParticles
             CP.removeind!(pcc, ind)
             @test pcc == pc
 
-            affect = [:pos, :mass, :foo]
+            affect = [:pos, :mass, :mass2, :foo]
             pc = CP.removeind(p, ind; affect)
             @test pc == CP.applyind(p, .~mask; affect)
 
@@ -877,6 +885,7 @@ const CP = CosmoParticles
             n = rand(Float32, 100)
             nu = n * u"m^-3"
             m = copy(n)
+            m2 = Fill(1.5, 100)
 
             propexp = [(:pos, 1), (:vel, 1), (:n, -3)]
 
@@ -895,6 +904,7 @@ const CP = CosmoParticles
                 p.pos = a
                 p.n = n
                 p.mass = m
+                p.mass2 = m2
 
                 @test a .* CP.factor_to_comoving(z, 1) ≈ acom
                 @test n .* CP.factor_to_comoving(z, -3) ≈ ncom
@@ -905,6 +915,7 @@ const CP = CosmoParticles
                 @test pc.pos ≈ acom
                 @test pc.n ≈ ncom
                 @test pc.mass ≈ m
+                @test pc.mass2 ≈ m2
 
                 pcc = deepcopy(p)
                 to_comoving!(pcc, z; propexp)
@@ -914,6 +925,7 @@ const CP = CosmoParticles
                 @test pc.pos ≈ aphys
                 @test pc.n ≈ nphys
                 @test pc.mass ≈ m
+                @test pc.mass2 ≈ m2
 
                 pcc = deepcopy(p)
                 to_physical!(pcc, z; propexp)
@@ -923,11 +935,13 @@ const CP = CosmoParticles
                 p.pos = au
                 p.n = nu
                 p.mass = m
+                p.mass2 = m2
 
                 pc = to_comoving(p, z; propexp)
                 @test pc.pos ≈ aucom
                 @test pc.n ≈ nucom
                 @test pc.mass ≈ m
+                @test pc.mass2 ≈ m2
 
                 pcc = deepcopy(p)
                 to_comoving!(pcc, z; propexp)
@@ -937,6 +951,7 @@ const CP = CosmoParticles
                 @test pc.pos ≈ auphys
                 @test pc.n ≈ nuphys
                 @test pc.mass ≈ m
+                @test pc.mass2 ≈ m2
 
                 pcc = deepcopy(p)
                 to_physical!(pcc, z; propexp)
@@ -948,6 +963,7 @@ const CP = CosmoParticles
                 dm.pos = copy(au)
                 dm.n = copy(n)
                 dm.mass = copy(m)
+                dm.mass2 = copy(m2)
                 gas = Particles(:gas)
                 gas.pos = copy(a)
                 gas.n = copy(nu)
@@ -993,11 +1009,13 @@ const CP = CosmoParticles
         ids = sample(1:1000, 100; replace=false)
         a = rand(3, 100)
         bu = rand(100) * u"kg"
+        cu = Fill(1.5u"kg", 100)
 
         p = Particles(:dm)
         p.id = ids
         p.pos = copy(a)
         p.mass = copy(bu)
+        p.mass2 = copy(bu)
 
 
         @testset "Particle Sorting" begin
@@ -1007,14 +1025,19 @@ const CP = CosmoParticles
             ind = searchsortedfirst(pc.id, p.id[1])
             @test pc.pos[:, ind] == p.pos[:, 1]
             @test pc.mass[ind] == p.mass[1]
+            @test pc.mass2[ind] == p.mass2[1]
 
-            pc = sort(p, :mass; affect=[:mass, :pos], alg=RadixSort)
+            pc = sort(p, :mass; affect=[:mass, :mass2, :pos], alg=RadixSort)
             @test issorted(pc.mass)
             @test haskey(pc, :pos)
+            @test haskey(pc, :mass2)
             @test !haskey(pc, :id)
 
             pc = sort(p, :mass; affect=[:pos], alg=RadixSort)
             @test !haskey(pc, :mass)
+
+            pc = sort(p, :mass2; affect=[:pos], alg=RadixSort)
+            @test !haskey(pc, :mass2)
 
             pc = deepcopy(p)
             sort!(pc, :id; alg=RadixSort)
@@ -1022,6 +1045,7 @@ const CP = CosmoParticles
             ind = searchsortedfirst(pc.id, p.id[1])
             @test pc.pos[:, ind] == p.pos[:, 1]
             @test pc.mass[ind] == p.mass[1]
+            @test pc.mass2[ind] == p.mass2[1]
         end
 
         @testset "Particle Collection Sorting" begin
@@ -1039,15 +1063,30 @@ const CP = CosmoParticles
             @test pcc.dm == sort(dm, :mass; affect)
             @test pcc.gas == sort(gas, :mass; affect)
 
+            affect = [:mass2, :pos]
+            pcc = sort(pc, :mass2; affect, alg=RadixSort)
+            @test pcc.dm == sort(dm, :mass2; affect)
+            @test pcc.gas == sort(gas, :mass2; affect)
+
             affect = [(:dm, [:mass, :pos]), (:gas, [:mass])]
             pcc = sort(pc, :mass; affect, alg=QuickSort)
             @test pcc.dm == sort(dm, :mass; affect=[:mass, :pos])
             @test pcc.gas == sort(gas, :mass; affect=[:mass])
 
+            affect = [(:dm, [:mass2, :pos]), (:gas, [:mass2])]
+            pcc = sort(pc, :mass2; affect, alg=QuickSort)
+            @test pcc.dm == sort(dm, :mass2; affect=[:mass2, :pos])
+            @test pcc.gas == sort(gas, :mass2; affect=[:mass2])
+
             affect = [:dm => [:mass, :pos], :gas => [:mass]]
             pcc = sort(pc, :mass; affect, alg=QuickSort)
             @test pcc.dm == sort(dm, :mass; affect=[:mass, :pos])
             @test pcc.gas == sort(gas, :mass; affect=[:mass])
+
+            affect = [:dm => [:mass2, :pos], :gas => [:mass2]]
+            pcc = sort(pc, :mass2; affect, alg=QuickSort)
+            @test pcc.dm == sort(dm, :mass2; affect=[:mass2, :pos])
+            @test pcc.gas == sort(gas, :mass2; affect=[:mass2])
 
             pcc = deepcopy(pc)
             sort!(pcc, :id; alg=RadixSort)
@@ -1064,6 +1103,13 @@ const CP = CosmoParticles
             pc = filter(p -> p.mass .> massmin, p)
             @test all(pc.mass .> massmin)
             @test p.mass == bu
+            ind = findfirst(>(massmin), p.mass)
+            @test pc.pos[:, 1] == p.pos[:, ind]
+            @test pc.id[1] == p.id[ind]
+
+            pc = filter(p -> p.mass2 .> massmin, p)
+            @test all(pc.mass2 .> massmin)
+            @test p.mass2 == bu
             ind = findfirst(>(massmin), p.mass)
             @test pc.pos[:, 1] == p.pos[:, ind]
             @test pc.id[1] == p.id[ind]
@@ -1108,6 +1154,7 @@ const CP = CosmoParticles
             ind = findfirst(in(ids_wanted), p.id)
             @test pc.pos[:, 1] == p.pos[:, ind]
             @test pc.mass[1] == p.mass[ind]
+            @test pc.mass2[1] == p.mass2[ind]
 
             @test filter!(deepcopy(p); ids=Set(ids_wanted)) == pc
         end
@@ -1133,9 +1180,9 @@ const CP = CosmoParticles
             @test pcc.dm == filter(f, dm; affect=[:id, :mass])
             @test !haskey(pcc, :gas)
 
-            affect = [:dm => [:id, :mass]]
+            affect = [:dm => [:id, :mass, :mass2]]
             pcc = filter(f, pc; affect)
-            @test pcc.dm == filter(f, dm; affect=[:id, :mass])
+            @test pcc.dm == filter(f, dm; affect=[:id, :mass, :mass2])
             @test !haskey(pcc, :gas)
 
             pcc = deepcopy(pc)
@@ -1185,8 +1232,8 @@ const CP = CosmoParticles
             @test delete(p; ids=ids_remove) == pc_check
             @test delete(p; ids=Set(ids_remove)) == pc_check
 
-            pc = delete(p; ids=ids_remove, affect=[:id, :mass])
-            @test pc == filter(p; ids=ids_keep, affect=[:id, :mass])
+            pc = delete(p; ids=ids_remove, affect=[:id, :mass, :mass2])
+            @test pc == filter(p; ids=ids_keep, affect=[:id, :mass, :mass2])
 
 
             pc = deepcopy(p)
@@ -1207,7 +1254,7 @@ const CP = CosmoParticles
             @test pcc.dm == delete(dm; ids=ids_remove)
             @test delete(pc; ids=Set(ids_remove)) == pcc
 
-            affect = [:id, :mass]
+            affect = [:id, :mass, :mass2]
             pcc = delete(pc; ids=ids_remove, affect)
             @test pcc.dm == delete(dm; ids=ids_remove, affect)
 
@@ -1462,10 +1509,12 @@ const CP = CosmoParticles
             p = Particles(:dm)
             p.pos = pos3
             p.mass = rand(size(pos3, 2))
+            p.mass2 = fill(1.5, size(pos3, 2))
 
             pu = Particles(:dm)
             pu.pos = pos3 .* u"m"
             pu.mass = rand(size(pos3, 2))
+            pu.mass2 = p.mass2
 
             center = rand(3)
             sph = CosmoSphere(center, 0.2)
@@ -1495,8 +1544,8 @@ const CP = CosmoParticles
             pcc = filter(pc, sph; affect=[:pos])
             @test pcc.dm == filter(dm, sph; affect=[:pos])
 
-            pcc = filter(pc, sph; affect=[(:dm, [:pos, :mass])])
-            @test pcc.dm == filter(dm, sph; affect=[:pos, :mass])
+            pcc = filter(pc, sph; affect=[(:dm, [:pos, :mass, :mass2])])
+            @test pcc.dm == filter(dm, sph; affect=[:pos, :mass, :mass2])
             @test !haskey(pcc, :gas)
 
             pcc = filter(pc, sph; affect=[:dm => [:pos, :mass]])
