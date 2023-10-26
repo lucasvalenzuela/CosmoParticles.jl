@@ -15,9 +15,9 @@ end
 
 _meanprop(a::Number) = a
 _meanprop(a::Number, ::Any) = a
-_meanprop(a::Fill) = a[1]
-_meanprop(a::Fill, ::AbstractVector) = a[1]
-_meanprop(a::Fill, ::Fill) = a[1]
+_meanprop(a::AbstractFillVector) = a[1]
+_meanprop(a::AbstractFillVector, ::AbstractVector) = a[1]
+_meanprop(a::AbstractFillVector, ::AbstractFillVector) = a[1]
 _meanprop(a::AbstractVector) = mean(a)
 # NOTE: commented versions had to be removed because the summation over a large number of
 # Float32 values with the `dims` keyword calls a mapreduce summation, which can introduce
@@ -30,9 +30,11 @@ function _meanprop(a::AbstractMatrix, m::AbstractVector)
     w = weights(ustrip_lazy(m))
     return [mean(@view(a[i, :]), w) for i in axes(a, 1)]
 end
+_meanprop(a::AbstractFillMatrix) = Fill(a[1, 1], size(a, 1))
+_meanprop(a::AbstractFillMatrix, ::AbstractVector) = _meanprop(a)
 _meanprop(a::AbstractArray, ::Number) = _meanprop(a)
-_meanprop(a::AbstractVector, ::Fill) = _meanprop(a)
-_meanprop(a::AbstractMatrix, ::Fill) = _meanprop(a)
+_meanprop(a::AbstractVector, ::AbstractFillVector) = _meanprop(a)
+_meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
 
 
 """
@@ -807,6 +809,26 @@ for (T1, T2) in zip(
             dst::AbstractVector,
             p::AbstractMatrix,
             v::AbstractMatrix,
+            m::AbstractFillVector,
+            origin::$T1,
+            velorigin::$T2;
+            zeroT,
+        )
+            d1 = d2 = d3 = zeroT
+            @inbounds @simd for i in axes(p, 2)
+                d1 += $p2 * $v3 - $p3 * $v2
+                d2 += $p3 * $v1 - $p1 * $v3
+                d3 += $p1 * $v2 - $p2 * $v1
+            end
+            mval = m[1]
+            dst .= mval * d1, mval * d2, mval * d3
+            return dst
+        end
+
+        function _angmomtot_unsafe!(
+            dst::AbstractVector,
+            p::AbstractMatrix,
+            v::AbstractMatrix,
             m::AbstractVector,
             origin::$T1,
             velorigin::$T2;
@@ -832,6 +854,21 @@ for (T1, T2) in zip(
                 m * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
                 m * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
                 m * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
+            ]
+        end
+
+        function _angmomtot_stable_unsafe(
+            p::AbstractMatrix,
+            v::AbstractMatrix,
+            m::AbstractFillVector,
+            origin::$T1,
+            velorigin::$T2,
+        )
+            mval = m[1]
+            return [
+                mval * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
+                mval * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
+                mval * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
             ]
         end
 

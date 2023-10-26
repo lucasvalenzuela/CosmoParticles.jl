@@ -2,7 +2,7 @@ module CosmoParticles
 
 using FastUnitfulOperations
 using FillArrays
-using FillArrays: AbstractFillVector
+using FillArrays: AbstractFill, AbstractFillVector, AbstractFillMatrix
 using LazyArrays
 using LinearAlgebra
 using Statistics

@@ -409,7 +409,7 @@ ustrip_lazy(a::SymTridiagonal{<:Quantity}) = ustrip(a)
 
 ustrip_lazy(a::AbstractArray{<:Quantity{T}}) where {T} = reinterpret(T, a) #ustrip.(a) # alternative implementation
 ustrip_lazy(a::ApplyArray{<:Quantity{T}}) where {T} = reinterpret(T, a)
-ustrip_lazy(a::Fill{<:Quantity{T}}) where {T} = reinterpret(T, a)
+ustrip_lazy(a::AbstractFill{<:Quantity{T}}) where {T} = reinterpret(T, a)
 
 ustrip_lazy!(u::Unitful.Units, a) = ustrip_lazy(uconvert_lazy!(u, a))
 ustrip_lazy(_::Unitful.Units, a::Number) = a
