@@ -46,7 +46,7 @@ jobs:
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          julia -e "using Pkg; Registry.add("General"); Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
+          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -81,7 +81,7 @@ jobs:
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          julia -e "using Pkg; Registry.add("General"); Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
+          julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:
