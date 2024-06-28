@@ -322,7 +322,13 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
         return Int64[]
     end
 
-    while true
+    ind_all, iind = _run_loop!(ind_all, a, ia, set, iset, iind, na, nset)
+
+    return resize!(ind_all, iind)
+end
+
+function _run_loop!(ind_all, a, ia, set, iset, iind, na, nset)
+    @inbounds while true
         if a[ia] == set[iset]
             iind += 1
             ind_all[iind] = ia
@@ -340,7 +346,7 @@ function findall_in_sorted(a::AbstractVector, set::AbstractVector)
         end
     end
 
-    return resize!(ind_all, iind)
+    return ind_all, iind
 end
 
 """
