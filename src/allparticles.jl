@@ -17,6 +17,16 @@ where all lazy arrays are materialized as `Array`s.
 `AllParticles` cannot be sorted, filtered, or copied.
 In-place modifications are possible, such as [`rotate!`](@ref), [`translate!`](@ref), or [`to_comoving`](@ref).
 
+# Creation
+```julia
+pc::ParticleCollection # e.g. with particle types :dm, :stars, :gas
+
+ap = AllParticles(pc)
+ap = pc.all # equivalent to the above
+
+ap = AllParticles(pc, [:dm, :stars]) # just include certain particle types
+```
+
 !!! warning "In-place modifications"
     Modifying an `AllParticles` object in-place results in the modification of the underlying particle collection!
     To prevent bugs or unexpected behavior, it is advised to modify the particle collection instead and then
@@ -51,13 +61,34 @@ all: 150 Particles
  id mass pos temp
 
 julia> sort!(p, :id)
+
+julia> p = Particles(ap, [:id, :mass]) # only get certain properties
+all: 150 Particles
+ id mass
+
 ```
 """
 struct AllParticles{APC} <: AbstractParticles where {APC<:AbstractParticleCollection}
     particle_collection::APC
+    ptypes::Vector{Symbol}
     props::Dict{Symbol,Any}
 
-    AllParticles(pc::APC) where {APC} = new{APC}(pc, Dict{Symbol,Any}())
+    function AllParticles(pc::APC) where {APC}
+        ptypes = collect(keys(pc))
+        return new{APC}(pc, ptypes, Dict{Symbol,Any}())
+    end
+
+    function AllParticles(pc::APC, ptypes) where {APC}
+        if !(ptypes isa Vector)
+            ptypes = collect(ptypes)
+        end
+
+        for key in ptypes
+            @assert haskey(pc, key) "The particle collection does not have the particle type $key."
+        end
+
+        return new{APC}(pc, ptypes, Dict{Symbol,Any}())
+    end
 end
 
 
@@ -81,7 +112,7 @@ function Base.getindex(ap::AllParticles, sym::Symbol)
 
     # get array dimensions
     dims = 0 # 0 for vectors; for arrays: size(arr, 1)
-    for key in keys(pc)
+    for key in ap.ptypes
         p = pc[key]
         if haskey(p, sym)
             p[sym] isa AbstractVector && break
@@ -96,7 +127,8 @@ function Base.getindex(ap::AllParticles, sym::Symbol)
     arrs = []
 
     # iterate through particles
-    for p in values(pc)
+    for key in ap.ptypes
+        p = pc[key]
         # fill array with missing if property does not exist
         if haskey(p, sym)
             # fill array with scalar value if property is not an array
@@ -134,7 +166,7 @@ function Base.setindex!(::AllParticles, _, ::Symbol)
 end
 
 function Base.keys(ap::AllParticles)
-    keys_arr = [keys(p) for p in values(ap.particle_collection)]
+    keys_arr = [keys(ap.particle_collection[ptype]) for ptype in ap.ptypes]
     length(keys_arr) == 0 && return Symbol[]
     length(keys_arr) == 1 && return keys_arr[1]
     return union(keys_arr...) |> collect
@@ -198,20 +230,22 @@ function Base.empty!(::AllParticles)
 end
 
 function Base.isempty(p::AllParticles)
-    for p in values(p.particle_collection)
-        isempty(p) || return false
+    pc = p.particle_collection
+    for ptype in p.ptypes
+        isempty(pc[ptype]) || return false
     end
     return true
 end
 
-Base.:(==)(p1::AllParticles, p2::AllParticles) = p1.particle_collection == p2.particle_collection
+Base.:(==)(p1::AllParticles, p2::AllParticles) = p1.particle_collection == p2.particle_collection && p1.ptypes == p2.ptypes
 
 particle_name(::AllParticles) = "Particles"
 
 function particle_number(ap::AllParticles)
     n = 0
-    for p in values(ap.particle_collection)
-        n += particle_number(p)
+    pc = ap.particle_collection
+    for ptype in ap.ptypes
+        n += particle_number(pc[ptype])
     end
     return n
 end

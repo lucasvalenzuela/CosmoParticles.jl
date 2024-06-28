@@ -210,6 +210,34 @@ const CP = CosmoParticles
         ap = pc.all
         @test ap.pos == pos
         @test ap.mass == fill(mass, 100)
+
+
+
+        # only certain particle types
+        stars = Particles(:stars)
+        stars.id = sample(1001:2000, 50; replace=false)
+        stars.pos = rand(3, 50)
+        stars.mass = rand(50)
+
+        ptypes = [:dm, :stars]
+        pcoll = ParticleCollection(dm, gas, stars)
+        ap = AllParticles(pcoll, ptypes)
+
+        @test CP.particle_number(ap) == 150
+        @test Set(keys(ap)) == union([keys(pcoll[ptype]) for ptype in ptypes]...)
+        @test !isempty(ap)
+        @test_throws KeyError ap.blah
+        @test_throws KeyError ap.temp
+        @test_throws KeyError ap[:temp]
+        @test ap == AllParticles(pcoll, ptypes)
+        @test ap != pcoll.all
+        @test ap.pos == hcat(pcoll.dm.pos, pcoll.stars.pos)
+        @test ap.id == vcat(pcoll.dm.id, pcoll.stars.id)
+        @test ap.mass == vcat(fill(pcoll.dm.mass, CP.particle_number(dm)), pcoll.stars.mass)
+        @test all(collect(values(ap)) .=== collect(getindex.((ap,), keys(ap))))
+
+        pcoll_empty = ParticleCollection(dm, gas, stars, Particles(:empty))
+        @test isempty(AllParticles(pcoll_empty, [:empty]))
     end
 
 
