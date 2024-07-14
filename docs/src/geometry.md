@@ -37,4 +37,10 @@ CosmoCylinder
 CosmoCylinder(::CosmoStandingCylinder)
 CosmoStandingCylinder
 CosmoStandingCylinder(::CosmoCylinder)
+CosmoUnionGeometry
+CosmoIntersectGeometry
+CosmoDiffGeometry
+Base.union(::AbstractCosmoGeometry...)
+Base.intersect(::AbstractCosmoGeometry...)
+Base.setdiff(::Any, ::AbstractCosmoGeometry...)
 ```

@@ -5,7 +5,6 @@ Abstract type for (multi-dimensional) geometry volumes, particularly for filteri
 
 Any subtypes of `AbstractCosmoGeometry` have to implement the following methods:
 - [`CosmoParticles.geometry_enclosing_corners`](@ref)
-- [`CosmoParticles.geometry_enclosing_center`](@ref)
 - [`CosmoParticles.mask_in!`](@ref)
 - [`CosmoParticles.translate`](@ref)
 """
@@ -29,7 +28,10 @@ Return the center of the enclosing box of the geometry as a vector.
 
 This is not exported.
 """
-function geometry_enclosing_center(::AbstractCosmoGeometry) end
+function geometry_enclosing_center(geo::AbstractCosmoGeometry)
+    corners = geometry_enclosing_corners(geo)
+    return 1 // 2 .* (corners[1] .+ corners[2])
+end
 
 @doc raw"""
     mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
@@ -60,6 +62,207 @@ function mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
     mask = BitVector(undef, size(pos, 2))
     return mask_in!(mask, pos, geo)
 end
+
+
+
+"""
+    struct CosmoUnionGeometry <: AbstractCosmoGeometry
+        geos::Tuple
+    end
+
+Union of multiple geometries.
+
+This union geometry represents all of the volumes contained within the geometries. 
+"""
+struct CosmoUnionGeometry <: AbstractCosmoGeometry
+    geos::Tuple
+
+    function CosmoUnionGeometry(geos)
+        new(Tuple(geos))
+    end
+end
+
+"""
+    CosmoUnionGeometry(geos::AbstractVector) 
+    CosmoUnionGeometry(geos::AbstractCosmoGeometry...) 
+
+Create a union of geometries from the passed geometries.
+"""
+CosmoUnionGeometry(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
+
+"""
+    Base.union(geos::AbstractCosmoGeometry...) 
+
+Create a union of geometries from the passed geometries.
+
+# Examples
+```julia
+pos::Matrix # 3×n
+
+g1 = CosmoSphere([1, 2, 3], 4)
+g2 = CosmoSphere([3, 2, 3], 4)
+geo = union(g1, g2)
+
+mask_in(pos, geo) == mask_in(pos, g1) .| mask_in(pos, g2)
+```
+"""
+Base.union(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
+
+function geometry_enclosing_corners(g::CosmoUnionGeometry)
+    corners = [geometry_enclosing_corners(geo) for geo in g.geos]
+    ndims = length(corners[1][1])
+    lowerleft = [minimum(ll[i] for (ll, ur) in corners) for i in 1:ndims]
+    upperright = [maximum(ur[i] for (ll, ur) in corners) for i in 1:ndims]
+
+    return lowerleft, upperright
+end
+
+function mask_in(pos::AbstractMatrix{<:Number}, g::CosmoUnionGeometry)
+    reduce(.|, mask_in(pos, geo) for geo in g.geos)
+end
+
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, g::CosmoUnionGeometry)
+    mask .= mask_in(pos, g)
+end
+
+function translate(g::CosmoUnionGeometry, Δx::AbstractVector{<:Number})
+    CosmoUnionGeometry(Tuple(translate(geo, Δx) for geo in g.geos))
+end
+
+
+"""
+    struct CosmoIntersectGeometry <: AbstractCosmoGeometry
+        geos::Tuple
+    end
+
+Intersect of multiple geometries.
+
+This intersect geometry represents the volume that is shared among all of the geometries. 
+"""
+struct CosmoIntersectGeometry <: AbstractCosmoGeometry
+    geos::Tuple
+
+    function CosmoIntersectGeometry(geos)
+        new(Tuple(geos))
+    end
+end
+
+"""
+    CosmoIntersectGeometry(geos::AbstractVector) 
+    CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) 
+
+Create an intersect of geometries from the passed geometries.
+"""
+CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
+
+"""
+    Base.intersect(geos::AbstractCosmoGeometry...) 
+
+Create an intersect of geometries from the passed geometries.
+
+# Examples
+```julia
+pos::Matrix # 3×n
+
+g1 = CosmoSphere([1, 2, 3], 4)
+g2 = CosmoSphere([3, 2, 3], 4)
+geo = intersect(g1, g2)
+
+mask_in(pos, geo) == mask_in(pos, g1) .& mask_in(pos, g2)
+```
+"""
+Base.intersect(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
+
+function geometry_enclosing_corners(g::CosmoIntersectGeometry)
+    corners = [geometry_enclosing_corners(geo) for geo in g.geos]
+    ndims = length(corners[1][1])
+    lowerleft = [maximum(ll[i] for (ll, ur) in corners) for i in 1:ndims]
+    upperright = [minimum(ur[i] for (ll, ur) in corners) for i in 1:ndims]
+
+    if any(lowerleft .≥ upperright)
+        return zeros(ndims), zeros(ndims)
+    end
+
+    return lowerleft, upperright
+end
+
+function mask_in(pos::AbstractMatrix{<:Number}, g::CosmoIntersectGeometry)
+    reduce(.&, mask_in(pos, geo) for geo in g.geos)
+end
+
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, g::CosmoIntersectGeometry)
+    mask .= mask_in(pos, g)
+end
+
+function translate(g::CosmoIntersectGeometry, Δx::AbstractVector{<:Number})
+    CosmoIntersectGeometry(Tuple(translate(geo, Δx) for geo in g.geos))
+end
+
+
+"""
+    struct CosmoDiffGeometry <: AbstractCosmoGeometry
+        geo::AbstractCosmoGeometry
+        geos::Tuple
+    end
+
+Difference of a geometry with multiple geometries.
+
+This difference geometry represents the volume of `geo`, but that is not contained in any of the geometries `geos`.
+"""
+struct CosmoDiffGeometry <: AbstractCosmoGeometry
+    geo::AbstractCosmoGeometry
+    geos::Tuple
+
+    function CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos)
+        new(geo, Tuple(geos))
+    end
+end
+
+"""
+    CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractVector) 
+    CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) 
+
+Create a difference of geometries from the passed geometries.
+"""
+CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = CosmoDiffGeometry(geo, geos)
+
+"""
+    Base.setdiff(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) 
+
+Create a difference of geometries from the passed geometries.
+
+# Examples
+```julia
+pos::Matrix # 3×n
+
+g1 = CosmoSphere([1, 2, 3], 4)
+g2 = CosmoSphere([3, 2, 3], 4)
+geo = setdiff(g1, g2)
+
+mask_in(pos, geo) == mask_in(pos, g1) .& .~mask_in(pos, g2)
+```
+"""
+Base.setdiff(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = CosmoDiffGeometry(geo, geos)
+
+geometry_enclosing_corners(g::CosmoDiffGeometry) = geometry_enclosing_corners(g.geo)
+
+function mask_in(pos::AbstractMatrix{<:Number}, g::CosmoDiffGeometry)
+    mask = mask_in(pos, g.geo)
+    masknot = reduce(.|, mask_in(pos, geo) for geo in g.geos)
+
+    return @. mask & ~masknot
+end
+
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, g::CosmoDiffGeometry)
+    mask .= mask_in(pos, g)
+end
+
+function translate(g::CosmoDiffGeometry, Δx::AbstractVector{<:Number})
+    CosmoDiffGeometry(translate(g.geo, Δx), Tuple(translate(geo, Δx) for geo in g.geos))
+end
+
+
+
 
 
 """

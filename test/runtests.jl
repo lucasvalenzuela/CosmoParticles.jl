@@ -1589,6 +1589,28 @@ const CP = CosmoParticles
             @test_throws ErrorException filter(ap, sph)
             @test_throws ErrorException filter!(ap, sph)
         end
+
+        @testset "Combining geometries" begin
+            rect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
+            sph = CosmoSphere(zeros(3), 0.5)
+            cyl = CosmoCylinder(0.5rand(3), 0.5rand(3), 0.5)
+
+            gunion = union(sph, cyl)
+            gintersect = intersect(sph, cyl)
+            gdiff = setdiff(sph, cyl)
+
+            @test CP.mask_in(pos3, gunion) == CP.mask_in(pos3, sph) .| CP.mask_in(pos3, cyl)
+            @test CP.mask_in(pos3, gintersect) == CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl)
+            @test CP.mask_in(pos3, gdiff) == CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl)
+
+            gunion = union(sph, cyl, rect)
+            gintersect = intersect(sph, cyl, rect)
+            gdiff = setdiff(sph, cyl, rect)
+
+            @test CP.mask_in(pos3, gunion) == CP.mask_in(pos3, sph) .| CP.mask_in(pos3, cyl) .| CP.mask_in(pos3, rect)
+            @test CP.mask_in(pos3, gintersect) == CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl) .& CP.mask_in(pos3, rect)
+            @test CP.mask_in(pos3, gdiff) == CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl) .& .~CP.mask_in(pos3, rect)
+        end
     end
 
 
