@@ -73,6 +73,8 @@ end
 Union of multiple geometries.
 
 This union geometry represents all of the volumes contained within the geometries. 
+
+This is not exported.
 """
 struct CosmoUnionGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -87,6 +89,8 @@ end
     CosmoUnionGeometry(geos::AbstractCosmoGeometry...) 
 
 Create a union of geometries from the passed geometries.
+
+This is not exported.
 """
 CosmoUnionGeometry(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
 
@@ -97,6 +101,9 @@ Create a union of geometries from the passed geometries.
 
 # Examples
 ```julia
+using CosmoParticles
+using CosmoParticles: mask_in
+
 pos::Matrix # 3×n
 
 g1 = CosmoSphere([1, 2, 3], 4)
@@ -138,6 +145,8 @@ end
 Intersect of multiple geometries.
 
 This intersect geometry represents the volume that is shared among all of the geometries. 
+
+This is not exported.
 """
 struct CosmoIntersectGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -152,6 +161,8 @@ end
     CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) 
 
 Create an intersect of geometries from the passed geometries.
+
+This is not exported.
 """
 CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
 
@@ -162,6 +173,9 @@ Create an intersect of geometries from the passed geometries.
 
 # Examples
 ```julia
+using CosmoParticles
+using CosmoParticles: mask_in
+
 pos::Matrix # 3×n
 
 g1 = CosmoSphere([1, 2, 3], 4)
@@ -208,6 +222,8 @@ end
 Difference of a geometry with multiple geometries.
 
 This difference geometry represents the volume of `geo`, but that is not contained in any of the geometries `geos`.
+
+This is not exported.
 """
 struct CosmoDiffGeometry <: AbstractCosmoGeometry
     geo::AbstractCosmoGeometry
@@ -223,6 +239,8 @@ end
     CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) 
 
 Create a difference of geometries from the passed geometries.
+
+This is not exported.
 """
 CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = CosmoDiffGeometry(geo, geos)
 
@@ -233,6 +251,9 @@ Create a difference of geometries from the passed geometries.
 
 # Examples
 ```julia
+using CosmoParticles
+using CosmoParticles: mask_in
+
 pos::Matrix # 3×n
 
 g1 = CosmoSphere([1, 2, 3], 4)
