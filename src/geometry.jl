@@ -6,6 +6,10 @@ Abstract type for (multi-dimensional) geometry volumes, particularly for filteri
 Any subtypes of `AbstractCosmoGeometry` have to implement the following methods:
 - [`CosmoParticles.geometry_enclosing_corners`](@ref)
 - [`CosmoParticles.mask_in!`](@ref)
+
+The following methods are optional, but have default implementations:
+- [`CosmoParticles.geometry_enclosing_center`](@ref)
+- [`CosmoParticles.mask_in`](@ref)
 - [`CosmoParticles.translate`](@ref)
 """
 abstract type AbstractCosmoGeometry end
@@ -41,13 +45,6 @@ Return the `BitVector` mask of the positions (``\mathrm{dims} × N``) located wi
 This is not exported.
 """
 function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
-
-"""
-    translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number})
-
-Returns a new geometry translated by `Δx`.
-"""
-function translate(::AbstractCosmoGeometry, ::AbstractVector{<:Number}) end
 
 @doc raw"""
     mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
@@ -281,6 +278,126 @@ end
 function translate(g::CosmoDiffGeometry, Δx::AbstractVector{<:Number})
     CosmoDiffGeometry(translate(g.geo, Δx), Tuple(translate(geo, Δx) for geo in g.geos))
 end
+
+
+"""
+    struct Rotated{G,R} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,R<:AbstractMatrix}
+        geo::G
+        rotmat::R
+    end
+
+Rotated geometry defined by a rotation matrix.
+
+This can be created by [`rotate`](@ref) applied to a geometry.
+
+This is not exported.
+"""
+struct Rotated{G,R} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,R<:AbstractMatrix}
+    geo::G
+    rotmat::R
+end
+
+"""
+    rotation_matrix(rot::Rotated)
+
+Returns the rotation matrix that rotates the original geometry into the rotated state.
+
+This is not exported.
+"""
+rotation_matrix(rot::Rotated) = rot.rotmat
+
+"""
+    rotation_matrix_inv(rot::Rotated)
+
+Returns the rotation matrix that rotates the rotated geometry back to its original orientation.
+
+Use this to rotate objects in the rotated frame of reference to the original frame of reference
+of the geometry.
+
+This is not exported.
+"""
+rotation_matrix_inv(rot::Rotated) = transpose(rot.rotmat)
+
+function geometry_enclosing_corners(rot::Rotated)
+    bounding_corners = geometry_enclosing_corners(rot.geo)
+    n = length(bounding_corners[1])
+
+    # create matrix of positions of the hypercuboid corners
+    pos = Matrix{eltype(bounding_corners[1])}(undef, n, 2^n)
+    @inbounds for bitval in axes(pos, 2)
+        for i in 0:n-1
+            # bitval defines which corner vector it should take the corners from,
+            # e.g. bitval = 1 for 3D space represents 100,
+            # i.e. [upperright[1], lowerleft[2], lowerleft[3]]
+            # or bitval = 6 for 3D space represents 110,
+            # i.e. [upperright[1], upperright[2], lowerleft[3]]
+            ind_corner = ifelse(iszero(((1 << i) & bitval)), 1, 2)
+            pos[i + 1, bitval] = bounding_corners[ind_corner][i + 1]
+        end
+    end
+
+    # rotate the hypercuboid corners by the matrix
+    posrot = pos * rot.rotmat
+
+    # extract the extrema along each dimension as the lower left and upper right corners
+    return minimum(posrot; dims=2), maximum(posrot; dims=2)
+end
+
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, rot::Rotated)
+    mask_in!(mask, matrix_rotate(pos, rotation_matrix_inv(rot)), rot.geo)
+end
+
+"""
+    rotate(geo::AbstractCosmoGeometry, rotmat::AbstractMatrix{<:Real})
+
+Returns a rotated geometry rotated by the rotation matrix.
+
+Individual geometries may specify that this returns a different type than [`Rotated`](@ref).
+"""
+rotate(geo::AbstractCosmoGeometry, rotmat::AbstractMatrix{<:Real}) = Rotated(geo, rotmat)
+rotate(rot::Rotated, rotmat::AbstractMatrix{<:Real}) = Rotated(rot.geo, rotmat * rot.rotmat)
+
+
+
+"""
+    struct Translated{G,L} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,L<:AbstractVector}
+        geo::G
+        Δx::L
+    end
+
+Translated geometry defined by a translation vector.
+
+This can be created by [`translate`](@ref) applied to a geometry.
+
+This is not exported.
+"""
+struct Translated{G,L} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,L<:AbstractVector}
+    geo::G
+    Δx::L
+end
+
+function geometry_enclosing_corners(tra::Translated)
+    lowerleft, upperright = geometry_enclosing_corners(tra.geo)
+    return lowerleft .+ tra.Δx, upperright .+ tra.Δx
+end
+
+function geometry_enclosing_center(tra::Translated)
+    geometry_enclosing_center(tra.geo) .+ tra.Δx
+end
+
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, tra::Translated)
+    mask_in!(mask, pos .- tra.Δx, tra.geo)
+end
+
+"""
+    translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number})
+
+Returns a new geometry translated by `Δx`.
+
+Individual geometries may specify that this returns a different type than [`Translated`](@ref).
+"""
+translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number}) = Translated(geo, Δx)
+translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, tra.Δx .+ Δx)
 
 
 
@@ -571,6 +688,10 @@ function translate(s::HS, Δx::AbstractVector{<:Number}) where {HS<:CosmoHypersp
     HS(s.center .+ Δx, s.radius)
 end
 
+function rotate(s::HS, rotmat::AbstractMatrix{<:Real}) where {HS<:CosmoHypersphere}
+    HS(rotmat * s.center, s.radius)
+end
+
 
 """
     struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
@@ -646,6 +767,10 @@ function translate(c::C, Δx::AbstractVector{<:Number}) where {C<:CosmoCylinder}
     C(c.startpos .+ Δx, c.endpos .+ Δx, c.radius)
 end
 
+function rotate(c::C, rotmat::AbstractMatrix{<:Real}) where {C<:CosmoCylinder}
+    C(rotmat * c.startpos, rotmat * c.endpos, c.radius)
+end
+
 
 """
     struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
@@ -702,6 +827,10 @@ end
 
 function translate(c::C, Δx::AbstractVector{<:Number}) where {C<:CosmoStandingCylinder}
     C(c.center .+ Δx, c.height, c.radius)
+end
+
+function rotate(c::C, rotmat::AbstractMatrix{<:Real}) where {C<:CosmoStandingCylinder}
+    rotate(CosmoCylinder(c), rotmat)
 end
 
 

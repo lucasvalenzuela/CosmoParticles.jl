@@ -7,6 +7,7 @@ using LazyArrays
 using LinearAlgebra
 using Statistics
 using StatsBase
+using Tables
 using Unitful
 
 export

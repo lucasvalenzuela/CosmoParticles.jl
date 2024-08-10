@@ -1611,6 +1611,42 @@ const CP = CosmoParticles
             @test CP.mask_in(pos3, gintersect) == CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl) .& CP.mask_in(pos3, rect)
             @test CP.mask_in(pos3, gdiff) == CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl) .& .~CP.mask_in(pos3, rect)
         end
+
+        @testset "Transforming geometries" begin
+            rect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
+            sph = CosmoSphere(zeros(3), 0.5001)
+            sph_shift = CosmoSphere([0, 0, 0.5], 0.5001)
+            cyl = CosmoCylinder(0.5rand(3), 0.5rand(3), 0.5)
+
+            rotmat = rand(RotMatrix{3})
+            rotmat_inv = transpose(rotmat)
+            dx = rand(3)
+
+            rect_rot = rotate(rect, rotmat)
+            sph_rot = rotate(sph, rotmat)
+            sph_shift_rot = rotate(sph_shift, rotmat)
+            cyl_rot = rotate(cyl, rotmat)
+            pos3_rot = CP.matrix_rotate(pos3, rotmat_inv)
+
+            @test CP.mask_in(pos3, rect_rot) == CP.mask_in(pos3_rot, rect)
+            @test CP.mask_in(pos3, sph_rot) == CP.mask_in(pos3_rot, sph)
+            @test CP.mask_in(pos3, sph_shift_rot) == CP.mask_in(pos3_rot, sph_shift)
+            @test CP.mask_in(pos3, cyl_rot) == CP.mask_in(pos3_rot, cyl)
+            @test CP.rotation_matrix(rect_rot) == rotmat
+            @test CP.rotation_matrix_inv(rect_rot) == rotmat_inv
+            @test sph_rot isa CosmoSphere
+
+            rect_dx = translate(rect, dx)
+            sph_dx = translate(sph, dx)
+            sph_shift_dx = translate(sph_shift, dx)
+            cyl_dx = translate(cyl, dx)
+            pos3_dx = pos3 .- dx
+
+            @test CP.mask_in(pos3, rect_dx) == CP.mask_in(pos3_dx, rect)
+            @test CP.mask_in(pos3, sph_dx) == CP.mask_in(pos3_dx, sph)
+            @test CP.mask_in(pos3, sph_shift_dx) == CP.mask_in(pos3_dx, sph_shift)
+            @test CP.mask_in(pos3, cyl_dx) == CP.mask_in(pos3_dx, cyl)
+        end
     end
 
 

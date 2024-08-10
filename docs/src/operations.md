@@ -7,9 +7,11 @@ CurrentModule = CosmoParticles
 ## Transformations
 
 ```@docs
-rotate
+rotate(::AbstractParticles, ::AbstractMatrix)
+rotate(::AbstractParticleCollection, ::AbstractMatrix)
 LinearAlgebra.rotate!
-translate
+translate(::AbstractParticles, ::AbstractMatrix)
+translate(::AbstractParticleCollection, ::AbstractMatrix)
 translate!
 translate_periodic
 translate_periodic!

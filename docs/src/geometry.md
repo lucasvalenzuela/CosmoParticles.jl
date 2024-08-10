@@ -43,4 +43,10 @@ CosmoDiffGeometry
 Base.union(::AbstractCosmoGeometry...)
 Base.intersect(::AbstractCosmoGeometry...)
 Base.setdiff(::Any, ::AbstractCosmoGeometry...)
+Rotated
+rotate(::AbstractCosmoGeometry, ::AbstractMatrix)
+rotation_matrix
+rotation_matrix_inv
+Translated
+translate(::AbstractCosmoGeometry, ::AbstractMatrix)
 ```
