@@ -8,6 +8,7 @@ using LinearAlgebra
 using Statistics
 using StatsBase
 using Tables
+using Tables.DataAPI: nrow, ncol
 using Unitful
 
 export
@@ -64,7 +65,11 @@ export
     coldot,
     angmom,
     angmomtot,
-    angmomtot_stable
+    angmomtot_stable,
+
+    # tables
+    nrow,
+    ncol
 
 
 include("abstractparticles.jl")
@@ -78,5 +83,6 @@ include("utils.jl")
 include("transformations.jl")
 include("miscoperations.jl")
 include("properties.jl")
+include("tables.jl")
 
 end

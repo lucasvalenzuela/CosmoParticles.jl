@@ -5,6 +5,7 @@ using LinearAlgebra
 using Rotations
 using SortingAlgorithms
 using StatsBase
+using Tables
 using Test
 using Unitful
 
@@ -1981,6 +1982,29 @@ const CP = CosmoParticles
                     @test func(gas; origin, velorigin) ≈ func(gas.pos, gas.vel, gas.mass; origin, velorigin)
                 end
             end
+        end
+    end
+
+
+    @testset "Tables" begin
+        n = 20
+        p = Particles(:gas)
+        p.pos = rand(3, n)
+        p.temp = rand(n)
+        p.mass = rand()
+
+        @test Tables.istable(typeof(p))
+        @test Tables.columnaccess(typeof(p))
+        @test Tables.columns(p) === p
+
+        @test Tables.getcolumn(p, :temp) == p.temp
+        @test Tables.getcolumn(p, :mass) == fill(p.mass, n)
+        @test Tables.getcolumn(p, :pos) == eachcol(p.pos)
+
+        ks = collect(keys(p))
+        @test Tables.columnnames(p) == ks
+        for i in 1:3
+            @test Tables.getcolumn(p, i) == Tables.getcolumn(p, ks[i])
         end
     end
 end
