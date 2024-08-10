@@ -96,6 +96,18 @@ const CP = CosmoParticles
         @test CP.particle_number(Particles(:gas)) == 0
         @test CP.particle_number(Particles(:gas, Dict{Symbol,Any}(:mass => 3))) == 0
 
+        p1 = deepcopy(p)
+        p1.test = rand()
+        p2 = deepcopy(p1)
+        pv = vcat(p1, p2)
+        @test CP.particle_number(pv) == CP.particle_number(p1) + CP.particle_number(p2)
+        @test pv.pos == hcat(p1.pos, p2.pos)
+        @test pv.id == vcat(p1.id, p2.id)
+        @test pv.test == fill(p1.test, CP.particle_number(pv))
+        append!(p1, p2)
+        @test p1 == pv
+        @test append!(p1, p2) === p1
+
         @test isnothing(Base.@invoke(CP.particle_name(p::AbstractParticles)))
 
         io = IOBuffer()

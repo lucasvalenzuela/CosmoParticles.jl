@@ -85,6 +85,56 @@ deleteat(p::AbstractParticles, ind::AbstractVector) = removeind(p, ind)
 # Base.empty(p::AbstractParticles) = AbstractParticles(empty(p.props))
 # Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = isequal(p1.props, p2.props)
 
+function Base.vcat(p::AbstractParticles, ps::AbstractParticles...; affect=keys(p))
+    pout = empty(p)
+
+    for key in affect
+        dims = _get_prop_dims(key, p, ps...)
+        vals = _get_prop_scaled.(key, dims, [p, ps...])
+        pout[key] = dims == 1 ? reduce(vcat, vals) : reduce(hcat, vals)
+    end
+
+    return pout
+end
+
+function Base.append!(p::AbstractParticles, ps::AbstractParticles...)
+    n = particle_number.([p, ps...])
+    for key in keys(p)
+        dims = _get_prop_dims(key, p, ps...)
+        vals = _get_prop_scaled.(key, dims, [p, ps...], n)
+        p[key] = dims == 1 ? reduce(vcat, vals) : reduce(hcat, vals)
+    end
+
+    return p
+end
+
+function _get_prop_dims(prop::Symbol, ps::AbstractParticles...)
+    for p in ps
+        vals = p[prop]
+        if vals isa AbstractVector
+            return 1
+        elseif vals isa AbstractMatrix
+            return size(vals, 1)
+        end
+    end
+
+    return 1
+end
+
+function _get_prop_scaled(prop::Symbol, dims::Integer, p::AbstractParticles, n=particle_number(p))
+    vals = get(get_props(p), prop, missing)
+
+    if vals isa AbstractVecOrMat
+        return vals
+    else
+        if dims == 1
+            return fill(vals, n)
+        else
+            return fill(vals, dims, n)
+        end
+    end
+end
+
 """
     CosmoParticles.particle_name(p::AbstractParticles)
 
