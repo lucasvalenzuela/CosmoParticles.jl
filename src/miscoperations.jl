@@ -273,27 +273,27 @@ end
 
 
 """
-    Base.delete!(p::AbstractParticles; ids)
-    Base.delete!(pc::AbstractParticleCollection; ids)
+    Base.delete!(p::AbstractParticles; ids, idprop=:id)
+    Base.delete!(pc::AbstractParticleCollection; ids, idprop=:id)
 
 Filter the particles or collection in-place by removing all particles with the given IDs.
 """
-function Base.delete!(p::AbstractParticles; ids)
-    ind = findall_in(p.id, ids)
+function Base.delete!(p::AbstractParticles; ids, idprop=:id)
+    ind = findall_in(p[idprop], ids)
     return removeind!(p, ind)
 end
 
-function Base.delete!(pc::AbstractParticleCollection; ids)
+function Base.delete!(pc::AbstractParticleCollection; ids, idprop=:id)
     Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
-        delete!(pc[ptype]; ids)
+        delete!(pc[ptype]; ids, idprop)
     end
 
     return pc
 end
 
 """
-    delete(p::AbstractParticles, ids; affect=keys(p))
-    delete(pc::AbstractParticleCollection; ids[, affect])
+    delete(p::AbstractParticles; ids, idprop=:id, affect=keys(p))
+    delete(pc::AbstractParticleCollection; ids, idprop=:id[, affect])
 
 Create new particles or collection with them filtered by keeping only the particles with the given IDs.
 
@@ -304,25 +304,25 @@ For collections of [`Particles`](@ref), `affect` can alternatively be a vector o
 `[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
 `[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
-function delete(p::AbstractParticles; ids, affect=keys(p))
-    ind = findall_in(p.id, ids)
+function delete(p::AbstractParticles; ids, idprop=:id, affect=keys(p))
+    ind = findall_in(p[idprop], ids)
     return removeind(p, ind; affect)
 end
 
-function delete(pc::AbstractParticleCollection; ids, affect=nothing)
+function delete(pc::AbstractParticleCollection; ids, idprop=:id, affect=nothing)
     # preallocate particle collection (to avoid threading issues)
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Union{Tuple,Pair}}
         Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
-            pcnew[ptype] = delete(pc[ptype]; ids, affect=props)
+            pcnew[ptype] = delete(pc[ptype]; ids, idprop, affect=props)
         end
     else
         Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
-                pcnew[ptype] = delete(pc[ptype]; ids)
+                pcnew[ptype] = delete(pc[ptype]; ids, idprop)
             else
-                pcnew[ptype] = delete(pc[ptype]; ids, affect)
+                pcnew[ptype] = delete(pc[ptype]; ids, idprop, affect)
             end
         end
     end
