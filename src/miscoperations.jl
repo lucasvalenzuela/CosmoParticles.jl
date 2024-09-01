@@ -147,27 +147,27 @@ end
 
 
 """
-    Base.filter!(p::AbstractParticles; ids)
-    Base.filter!(pc::AbstractParticleCollection; ids)
+    Base.filter!(p::AbstractParticles; ids, idprop=:id)
+    Base.filter!(pc::AbstractParticleCollection; ids, idprop=:id)
 
 Filter the particles or collection in-place by keeping only the particles with the given IDs.
 """
-function Base.filter!(p::AbstractParticles; ids)
-    ind = findall_in(p.id, ids)
+function Base.filter!(p::AbstractParticles; ids, idprop=:id)
+    ind = findall_in(p[idprop], ids)
     return applyind!(p, ind)
 end
 
-function Base.filter!(pc::AbstractParticleCollection; ids)
+function Base.filter!(pc::AbstractParticleCollection; ids, idprop=:id)
     Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
-        filter!(pc[ptype]; ids)
+        filter!(pc[ptype]; ids, idprop)
     end
 
     return pc
 end
 
 """
-    Base.filter(p::AbstractParticles, ids; affect=keys(p))
-    Base.filter(pc::AbstractParticleCollection; ids[, affect])
+    Base.filter(p::AbstractParticles; ids, affect=keys(p), idprop=:id)
+    Base.filter(pc::AbstractParticleCollection; ids, idprop=:id[, affect])
 
 Create new particles or collection with them filtered by keeping only the particles with the given IDs.
 
@@ -178,25 +178,25 @@ For collections of [`Particles`](@ref), `affect` can alternatively be a vector o
 `[(:dm, [:id, :pos, :mass]), (:gas, [:id, :pos, :mass, :temp])]`,
 `[:dm => [:id, :pos, :mass], :gas => [:id, :pos, :mass, :temp]]`.
 """
-function Base.filter(p::AbstractParticles; ids, affect=keys(p))
-    ind = findall_in(p.id, ids)
+function Base.filter(p::AbstractParticles; ids, idprop=:id, affect=keys(p))
+    ind = findall_in(p[idprop], ids)
     return applyind(p, ind; affect)
 end
 
-function Base.filter(pc::AbstractParticleCollection; ids, affect=nothing)
+function Base.filter(pc::AbstractParticleCollection; ids, idprop=:id, affect=nothing)
     # preallocate particle collection (to avoid threading issues)
     pcnew = _preallocate_particle_collection(pc, affect)
 
     if affect isa AbstractVector{<:Union{Tuple,Pair}}
         Threads.@threads for (ptype, props) in affect |> collect # collect used for compatibility with threads
-            pcnew[ptype] = filter(pc[ptype]; ids, affect=props)
+            pcnew[ptype] = filter(pc[ptype]; ids, idprop, affect=props)
         end
     else
         Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
             if isnothing(affect)
-                pcnew[ptype] = filter(pc[ptype]; ids)
+                pcnew[ptype] = filter(pc[ptype]; ids, idprop)
             else
-                pcnew[ptype] = filter(pc[ptype]; ids, affect)
+                pcnew[ptype] = filter(pc[ptype]; ids, idprop, affect)
             end
         end
     end
