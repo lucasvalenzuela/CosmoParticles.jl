@@ -42,11 +42,11 @@ CosmoIntersectGeometry
 CosmoDiffGeometry
 Base.union(::AbstractCosmoGeometry...)
 Base.intersect(::AbstractCosmoGeometry...)
-Base.setdiff(::Any, ::AbstractCosmoGeometry...)
+Base.setdiff(::AbstractCosmoGeometry, ::AbstractCosmoGeometry...)
 Rotated
-rotate(::AbstractCosmoGeometry, ::AbstractMatrix)
+rotate(::AbstractCosmoGeometry, ::AbstractMatrix{<:Real})
 rotation_matrix
 rotation_matrix_inv
 Translated
-translate(::AbstractCosmoGeometry, ::AbstractMatrix)
+translate(::AbstractCosmoGeometry, ::AbstractVector{<:Number})
 ```
