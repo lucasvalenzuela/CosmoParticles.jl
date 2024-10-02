@@ -59,7 +59,7 @@ version = "1.1.1+0"
 deps = ["FastUnitfulOperations", "FillArrays", "LazyArrays", "LinearAlgebra", "Statistics", "StatsBase", "Tables", "Unitful"]
 path = ".."
 uuid = "b2fead7a-f6ae-4e5b-9c3d-9b85ace3042d"
-version = "0.2.22"
+version = "0.2.23"
 
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
@@ -106,7 +106,7 @@ version = "2.6.2+0"
 
 [[deps.FastUnitfulOperations]]
 deps = ["LinearAlgebra", "Unitful"]
-path = "../../FastUnitfulOperations"
+git-tree-sha1 = "9d9979425733df277234b14808d69481d529f41f"
 uuid = "b031420d-871e-4e9c-8878-33bec386257e"
 version = "0.1.2"
 
