@@ -83,8 +83,13 @@ jobs:
         run: |
           julia -e "using Pkg; Registry.add(RegistrySpec(url=ARGS[1]))" "git@gitlab.com:juliacosmosims/CosmoSimsRegistry.git"
       - uses: julia-actions/julia-buildpkg@v1
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - uses: julia-actions/julia-docdeploy@v1
         env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - run: |
