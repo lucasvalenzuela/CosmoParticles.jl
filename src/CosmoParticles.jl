@@ -67,6 +67,7 @@ export
     meanvel,
     colnorm,
     colnorm2,
+    colnormell,
     colnormell2,
     colcross,
     coldot,

@@ -5,11 +5,13 @@ Returns a new `Vector` with the columnwise squared elliptical norms of `a`.
 
 In the 2D case: ``x^2 + \frac{y^2}{q^2}``.
 In the 3D case: ``x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}``.
+
+See also [`colnormell`](@ref).
 """
 function colnormell2(a::AbstractMatrix{T}, q::S, _::Nothing=nothing) where {T,S}
     Tnew = float(promote_type(T, S))
     dst = Vector{Tnew}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q)
+    return _colnormell2_unsafe!(dst, a, q)
 end
 
 function colnormell2(a::AbstractMatrix{Q}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
@@ -17,7 +19,7 @@ function colnormell2(a::AbstractMatrix{Q}, q::S, _::Nothing=nothing) where {T,Q<
     u = unit(Q)^2
     Q² = Quantity{Tnew,dimension(u),typeof(u)}
     dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q)
+    return _colnormell2_unsafe!(dst, a, q)
 end
 
 function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
@@ -25,13 +27,13 @@ function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, _::Nothing=nothi
     u = unit(Q)^2
     Q² = Quantity{Tnew,dimension(u),typeof(u)}
     dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q)
+    return _colnormell2_unsafe!(dst, a, q)
 end
 
 function colnormell2(a::AbstractMatrix{T}, q::S, s::R) where {T,S,R}
     Tnew = float(promote_type(T, S, R))
     dst = Vector{Tnew}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q, s)
+    return _colnormell2_unsafe!(dst, a, q, s)
 end
 
 function colnormell2(a::AbstractMatrix{Q}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
@@ -39,7 +41,7 @@ function colnormell2(a::AbstractMatrix{Q}, q::S, s::R) where {T,Q<:Quantity{T},S
     u = unit(Q)^2
     Q² = Quantity{Tnew,dimension(u),typeof(u)}
     dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q, s)
+    return _colnormell2_unsafe!(dst, a, q, s)
 end
 
 function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
@@ -47,10 +49,10 @@ function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q
     u = unit(Q)^2
     Q² = Quantity{Tnew,dimension(u),typeof(u)}
     dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, q, s)
+    return _colnormell2_unsafe!(dst, a, q, s)
 end
 
-function _colnorm2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
+function _colnormell2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
     invq² = 1 / q^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = a[1, i]^2 + a[2, i]^2 * invq²
@@ -58,10 +60,82 @@ function _colnorm2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
     return dst
 end
 
-function _colnorm2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
+function _colnormell2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
     invq², invs² = 1 / q^2, 1 / s^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = a[1, i]^2 + a[2, i]^2 * invq² + a[3, i]^2 * invs²
+    end
+    return dst
+end
+
+
+
+@doc raw"""
+    colnormell(a::AbstractMatrix, q[, s])
+
+Returns a new `Vector` with the columnwise elliptical norms of `a`.
+
+In the 2D case: ``\sqrt{x^2 + \frac{y^2}{q^2}}``.
+In the 3D case: ``\sqrt{x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}}``.
+
+See also [`colnormell2`](@ref).
+"""
+function colnormell(a::AbstractMatrix{T}, q::S, _::Nothing=nothing) where {T,S}
+    Tnew = float(promote_type(T, S))
+    dst = Vector{Tnew}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q)
+end
+
+function colnormell(a::AbstractMatrix{Q}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
+    Tnew = float(promote_type(T, S))
+    u = unit(Q)
+    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
+    dst = Vector{Qnew}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q)
+end
+
+function colnormell(a::AbstractMatrix{Union{Missing,Q}}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
+    Tnew = float(promote_type(T, S))
+    u = unit(Q)
+    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
+    dst = Vector{Union{Missing,Qnew}}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q)
+end
+
+function colnormell(a::AbstractMatrix{T}, q::S, s::R) where {T,S,R}
+    Tnew = float(promote_type(T, S, R))
+    dst = Vector{Tnew}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q, s)
+end
+
+function colnormell(a::AbstractMatrix{Q}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
+    Tnew = float(promote_type(T, S, R))
+    u = unit(Q)
+    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
+    dst = Vector{Qnew}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q, s)
+end
+
+function colnormell(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
+    Tnew = float(promote_type(T, S, R))
+    u = unit(Q)
+    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
+    dst = Vector{Union{Missing,Qnew}}(undef, size(a, 2))
+    return _colnormell_unsafe!(dst, a, q, s)
+end
+
+function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
+    invq² = 1 / q^2
+    @inbounds @simd for i in axes(a, 2)
+        dst[i] = sqrt(a[1, i]^2 + a[2, i]^2 * invq²)
+    end
+    return dst
+end
+
+function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
+    invq², invs² = 1 / q^2, 1 / s^2
+    @inbounds @simd for i in axes(a, 2)
+        dst[i] = sqrt(a[1, i]^2 + a[2, i]^2 * invq² + a[3, i]^2 * invs²)
     end
     return dst
 end

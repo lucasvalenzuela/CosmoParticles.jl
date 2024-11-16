@@ -61,6 +61,7 @@ CosmoHomoeoid(::Number, ::Number, ::Number)
 ### Utils
 
 ```@docs
+colnormell
 colnormell2
 triaxiality
 ellipticity
