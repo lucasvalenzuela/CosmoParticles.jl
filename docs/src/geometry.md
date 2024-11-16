@@ -37,6 +37,40 @@ CosmoCylinder
 CosmoCylinder(::CosmoStandingCylinder)
 CosmoStandingCylinder
 CosmoStandingCylinder(::CosmoCylinder)
+```
+
+
+## Ellipsoids
+
+
+### Geometries
+
+```@docs
+CosmoEllipse
+CosmoEllipse(::Number)
+CosmoEllipsoid
+CosmoEllipsoid(::Any)
+CosmoEllipsoid(::Number, ::Number, c::Number)
+CosmoHomoeoid2D
+CosmoHomoeoid2D(::Any, ::Any)
+CosmoHomoeoid
+CosmoHomoeoid(::Any, ::Any)
+CosmoHomoeoid(::Number, ::Number, ::Number)
+```
+
+### Utils
+
+```@docs
+colnormell2
+triaxiality
+ellipticity
+eccentricity
+```
+
+
+## Special Geometries
+
+```@docs
 CosmoUnionGeometry
 CosmoIntersectGeometry
 CosmoDiffGeometry

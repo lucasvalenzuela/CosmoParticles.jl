@@ -34,6 +34,12 @@ export
     CosmoCylinder,
     CosmoStandingCylinder,
 
+    # cosmo geometry
+    CosmoEllipse,
+    CosmoEllipsoid,
+    CosmoHomoeoid2D,
+    CosmoHomoeoid,
+
     # getters
     redshift,
 
@@ -61,11 +67,17 @@ export
     meanvel,
     colnorm,
     colnorm2,
+    colnormell2,
     colcross,
     coldot,
     angmom,
     angmomtot,
     angmomtot_stable,
+    
+    # ellipsoids
+    triaxiality,
+    ellipticity,
+    eccentricity,
 
     # tables
     nrow,
@@ -78,6 +90,7 @@ include("abstractparticlecollection.jl")
 include("particlecollection.jl")
 include("allparticles.jl")
 include("geometry.jl")
+include("ellipsoids.jl")
 
 include("utils.jl")
 include("transformations.jl")
