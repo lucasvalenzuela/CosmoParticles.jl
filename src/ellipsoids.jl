@@ -175,6 +175,13 @@ function CosmoEllipse(a::T; q::U=1, constant_area=false) where {T<:Number,U<:Rea
     end
 end
 
+"""
+    CosmoEllipse(a::Number, b::Number)
+
+Returns an ellipse around the origin with semi-major axis `a` and semi-minor axis `b`.
+
+The semi-minor axis has to be smaller than the semi-major axis.
+"""
 function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
     @assert a ≥ b
     q = b / a
@@ -251,9 +258,6 @@ end
     CosmoEllipsoid(a::Number, b::Number, c::Number)
 
 Returns an ellipsoid around the origin with semi axes `a`, `b`, and `c`, with `a ≥ b ≥ c`.
-
-If `constant_volume=true`, the semi-major axis of the ellipsoid is picked such that its volume is equal to that
-of a sphere with radius `a`.
 
 If `c` is `nothing`, a [`CosmoEllipse`](@ref) is created instead.
 """
