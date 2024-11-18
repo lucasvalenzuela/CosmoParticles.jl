@@ -2,6 +2,7 @@ using CosmoParticles
 using FillArrays
 using LazyArrays
 using LinearAlgebra
+using NamedRowArrays
 using Rotations
 using SortingAlgorithms
 using StatsBase
@@ -113,6 +114,36 @@ const CP = CosmoParticles
         io = IOBuffer()
         CP.show_properties(io, "text/plain", p)
         @test String(take!(io)) == "100 Particles\n id pos"
+    end
+
+    @testset "Underscore access" begin
+        dm = Particles(:dm)
+        dm.pos = rand(3, 100)
+        dm.mass = rand(100)
+        dm.a = NamedRowArray(rand(4, 100), [:a, :b, :c, :d_a])
+        dm.pos_2d = rand(2, 100)
+        dm.pos_4d = rand(4, 100)
+
+        for key in [:pos, :mass, :a, :pos_2d, :pos_4d, :pos_1, :pos_2, :pos_3, :pos_x, :pos_y, :pos_z, :a_a, :a_d_a, :a_1, :a_4, :pos_2d_x, :pos_2d_y, :pos_2d_1, :pos_2d_2, :pos_4d_1, :pos_4d_4]
+            @test haskey(dm, key)
+            dm[key] # just to make sure this does not throw
+        end
+
+        for key in [:test, :pos_0, :pos_4, :pos1, :posx, :pos_y_y, :a_e, :a_d_3, :pos_2d_3, :pos_2d_z, :pos_4d_x, :pos_4d_z, :pos_4d_5]
+            @test !haskey(dm, key)
+            @test_throws KeyError dm[key]
+        end
+
+        @test dm.pos_1 == dm.pos_x == @view dm.pos[1, :]
+        @test dm.pos_2 == dm.pos_y == @view dm.pos[2, :]
+        @test dm.pos_3 == dm.pos_z == @view dm.pos[3, :]
+        @test dm.pos_2d_1 == dm.pos_2d_x == @view dm.pos_2d[1, :]
+        @test dm.a_1 == dm.a_a == @view dm.a[:a]
+        @test dm.a_4 == dm.a_d_a == @view dm.a[:d_a]
+        @test dm.pos_4d_1 == @view dm.pos_4d[1, :]
+        @test dm.pos_4d_2 == @view dm.pos_4d[2, :]
+        @test dm.pos_4d_3 == @view dm.pos_4d[3, :]
+        @test dm.pos_4d_4 == @view dm.pos_4d[4, :]
     end
 
     @testset "AllParticles" begin

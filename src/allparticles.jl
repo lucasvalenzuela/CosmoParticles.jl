@@ -43,6 +43,8 @@ the concatenated arrays.
     already created `AllParticles` objects from that collection may have lazy arrays pointing to the old,
     non-modified arrays. When this happens, create a new object through `pc.all` or `AllParticles(pc)`.
 
+Note that the simplified access with underscore notation for matrices is not available for `AllParticles`.
+
 # Example
 ```julia
 julia> pc::ParticleCollection

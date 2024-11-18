@@ -5,6 +5,7 @@ using FillArrays
 using FillArrays: AbstractFill, AbstractFillVector, AbstractFillMatrix
 using LazyArrays
 using LinearAlgebra
+using NamedRowArrays
 using Statistics
 using StatsBase
 using Tables

@@ -24,6 +24,20 @@ If the struct has additional fields, these can also be accessed by `p.field`, bu
 
 Any arrays may be of the type `AbstractArray`, provided the arrays are 1-indexed.
 
+For matrix properties, a simplified syntax with underscores can be used to access the matrix rows. These are
+returned as views into the array, so `collect` them if necessary. This can also be used with the row names of
+[`NamedRowArray`s](https://lucasvalenzuela.github.io/NamedRowArrays.jl/dev/).
+```julia
+# access by number always works, and by x, y, z for 2- and 3-dimensional matrices
+p.pos = rand(3, 100)
+p.pos_1 == p.pos_x == @view p.pos[1, :]
+p.pos_2 == p.pos_y == @view p.pos[2, :]
+p.pos_3 == p.pos_z == @view p.pos[3, :]
+
+p.arr = NamedRowArray(rand(4, 100), [:a, :b, :c, :d])
+p.arr_1 == p.arr_a == @view p.arr[1, :] == @view p.arr[:a]
+```
+
 # Methods
 The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, `Base.isempty`,
 and `Base.copy!` are forwarded to the property `Dict`.
@@ -66,10 +80,79 @@ function Base.setproperty!(p::AP, sym::Symbol, val) where {AP<:AbstractParticles
     end
 end
 
-Base.getindex(p::AbstractParticles, sym::Symbol) = getindex(get_props(p), sym)
+function Base.getindex(p::AbstractParticles, sym::Symbol)
+    props = get_props(p)
+    if !haskey(props, sym)
+        symsplit = split(String(sym), '_')
+        for i in 1:(length(symsplit) - 1)
+            symtest = join(symsplit[1:i], "_") |> Symbol
+
+            # key exists
+            if haskey(props, symtest)
+                vals = getindex(props, symtest)
+                key = join(symsplit[i+1:end], "_")
+                key_sym = Symbol(key)
+                key_int = tryparse(Int, key)
+
+                if vals isa AbstractMatrix && !isnothing(key_int)
+                    1 ≤ key_int ≤ size(vals, 1) && return @view vals[key_int, :]
+                end
+
+                if vals isa NamedRowMatrix
+                    key_sym in names(vals) && return @view vals[key_sym]
+                end
+
+                if vals isa AbstractMatrix && 2 ≤ size(vals, 1) ≤ 3 && key_sym in (:x, :y, :z)
+                    key_int = findfirst(==(key_sym), (:x, :y, :z))
+                    1 ≤ key_int ≤ size(vals, 1) && return @view vals[key_int, :]
+                end
+            end
+        end
+    end
+
+    return getindex(props, sym)
+end
+
 Base.setindex!(p::AbstractParticles, val, sym::Symbol) = (setindex!(get_props(p), val, sym); p)
 Base.keys(p::AbstractParticles) = keys(get_props(p))
-Base.haskey(p::AbstractParticles, key) = key in keys(p)
+
+function Base.haskey(p::AbstractParticles, key)
+    if key in keys(p)
+        return true
+    end
+
+    key isa Symbol || return false
+
+    props = get_props(p)
+    symsplit = split(String(key), '_')
+    for i in 1:(length(symsplit) - 1)
+        symtest = join(symsplit[1:i], "_") |> Symbol
+
+        # key exists
+        if haskey(props, symtest)
+            vals = getindex(props, symtest)
+            key = join(symsplit[i+1:end], "_")
+            key_sym = Symbol(key)
+            key_int = tryparse(Int, key)
+
+            if vals isa AbstractMatrix && !isnothing(key_int)
+                1 ≤ key_int ≤ size(vals, 1) && return true
+            end
+
+            if vals isa NamedRowMatrix
+                key_sym in names(vals) && return true
+            end
+
+            if vals isa AbstractMatrix && 2 ≤ size(vals, 1) ≤ 3 && key_sym in (:x, :y, :z)
+                key_int = findfirst(==(key_sym), (:x, :y, :z))
+                1 ≤ key_int ≤ size(vals, 1) && return true
+            end
+        end
+    end
+
+    return false
+end
+
 Base.values(p::AbstractParticles) = values(get_props(p))
 Base.propertynames(p::AbstractParticles) = keys(p) |> collect
 Base.empty!(p::AbstractParticles) = (empty!(get_props(p)); p)
