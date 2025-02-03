@@ -337,7 +337,7 @@ function geometry_enclosing_corners(rot::Rotated)
     end
 
     # rotate the hypercuboid corners by the matrix
-    posrot = pos * rot.rotmat
+    posrot = rot.rotmat * pos
 
     # extract the extrema along each dimension as the lower left and upper right corners
     return minimum(posrot; dims=2), maximum(posrot; dims=2)
