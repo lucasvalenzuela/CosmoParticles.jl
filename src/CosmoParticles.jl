@@ -6,6 +6,7 @@ using FillArrays: AbstractFill, AbstractFillVector, AbstractFillMatrix
 using LazyArrays
 using LinearAlgebra
 using NamedRowArrays
+using NamedRowArrays: rownames
 using Statistics
 using StatsBase
 using Tables
@@ -75,7 +76,7 @@ export
     angmom,
     angmomtot,
     angmomtot_stable,
-    
+
     # ellipsoids
     triaxiality,
     ellipticity,

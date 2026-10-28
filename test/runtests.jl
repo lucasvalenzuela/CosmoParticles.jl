@@ -1,4 +1,7 @@
 using CosmoParticles
+using Aqua
+using ExplicitImports
+using JET
 using FillArrays
 using LazyArrays
 using LinearAlgebra
@@ -13,6 +16,14 @@ using Unitful
 const CP = CosmoParticles
 
 @testset "CosmoParticles.jl" begin
+    @testset "Code quality" begin
+        Aqua.test_all(CosmoParticles)
+        @test check_no_stale_explicit_imports(CosmoParticles) === nothing
+        @test check_no_self_qualified_accesses(CosmoParticles) === nothing
+        if JET.JET_AVAILABLE
+            JET.test_package(CosmoParticles; target_modules=(CosmoParticles,))
+        end
+    end
 
     @testset "Particles" begin
         p = Particles(:dm)
@@ -124,12 +135,48 @@ const CP = CosmoParticles
         dm.pos_2d = rand(2, 100)
         dm.pos_4d = rand(4, 100)
 
-        for key in [:pos, :mass, :a, :pos_2d, :pos_4d, :pos_1, :pos_2, :pos_3, :pos_x, :pos_y, :pos_z, :a_a, :a_d_a, :a_1, :a_4, :pos_2d_x, :pos_2d_y, :pos_2d_1, :pos_2d_2, :pos_4d_1, :pos_4d_4]
+        for key in [
+            :pos,
+            :mass,
+            :a,
+            :pos_2d,
+            :pos_4d,
+            :pos_1,
+            :pos_2,
+            :pos_3,
+            :pos_x,
+            :pos_y,
+            :pos_z,
+            :a_a,
+            :a_d_a,
+            :a_1,
+            :a_4,
+            :pos_2d_x,
+            :pos_2d_y,
+            :pos_2d_1,
+            :pos_2d_2,
+            :pos_4d_1,
+            :pos_4d_4,
+        ]
             @test haskey(dm, key)
             dm[key] # just to make sure this does not throw
         end
 
-        for key in [:test, :pos_0, :pos_4, :pos1, :posx, :pos_y_y, :a_e, :a_d_3, :pos_2d_3, :pos_2d_z, :pos_4d_x, :pos_4d_z, :pos_4d_5]
+        for key in [
+            :test,
+            :pos_0,
+            :pos_4,
+            :pos1,
+            :posx,
+            :pos_y_y,
+            :a_e,
+            :a_d_3,
+            :pos_2d_3,
+            :pos_2d_z,
+            :pos_4d_x,
+            :pos_4d_z,
+            :pos_4d_5,
+        ]
             @test !haskey(dm, key)
             @test_throws KeyError dm[key]
         end
@@ -1522,8 +1569,7 @@ const CP = CosmoParticles
             pos3notin = pos3[:, .~CP.mask_in(pos3, scyl)]
             @test @views all(
                 vec(sum(abs2, pos3notin[1:2, :] .- center[1:2]; dims=1) .> r^2) .|
-                (18 // 100 .> pos3notin[3, :]) .|
-                (pos3notin[3, :] .> 42 // 100),
+                (18 // 100 .> pos3notin[3, :]) .| (pos3notin[3, :] .> 42 // 100),
             )
             @test_throws AssertionError CP.mask_in(pos2, scyl)
 
@@ -1651,9 +1697,12 @@ const CP = CosmoParticles
             gintersect = intersect(sph, cyl, rect)
             gdiff = setdiff(sph, cyl, rect)
 
-            @test CP.mask_in(pos3, gunion) == CP.mask_in(pos3, sph) .| CP.mask_in(pos3, cyl) .| CP.mask_in(pos3, rect)
-            @test CP.mask_in(pos3, gintersect) == CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl) .& CP.mask_in(pos3, rect)
-            @test CP.mask_in(pos3, gdiff) == CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl) .& .~CP.mask_in(pos3, rect)
+            @test CP.mask_in(pos3, gunion) ==
+                  CP.mask_in(pos3, sph) .| CP.mask_in(pos3, cyl) .| CP.mask_in(pos3, rect)
+            @test CP.mask_in(pos3, gintersect) ==
+                  CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl) .& CP.mask_in(pos3, rect)
+            @test CP.mask_in(pos3, gdiff) ==
+                  CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl) .& .~CP.mask_in(pos3, rect)
         end
 
         @testset "Transforming geometries" begin

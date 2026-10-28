@@ -1,12 +1,15 @@
 using CosmoParticles
 using Documenter
+using DocumenterInterLinks
 
 DocMeta.setdocmeta!(CosmoParticles, :DocTestSetup, :(using CosmoParticles); recursive=true)
 
+links = InterLinks("Julia" => "https://docs.julialang.org/en/v1/")
+
 makedocs(;
+    plugins=[links],
     modules=[CosmoParticles],
     authors="Lucas Valenzuela",
-    repo="https://github.com/lucasvalenzuela/CosmoParticles.jl/blob/{commit}{path}#{line}",
     sitename="CosmoParticles.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
@@ -25,7 +28,4 @@ makedocs(;
     ],
 )
 
-deploydocs(;
-    repo="github.com/lucasvalenzuela/CosmoParticles.jl",
-    devbranch="main",
-)
+deploydocs(; repo="github.com/lucasvalenzuela/CosmoParticles.jl", devbranch="main")

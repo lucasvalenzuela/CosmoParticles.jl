@@ -6,7 +6,7 @@ Works for any dimensions and is optimized for unitful arrays.
 
 This is not exported.
 """
-matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = rotmat *ᵘ vals
+matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = rotmat*ᵘvals
 
 """
     CosmoParticles.matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
@@ -35,7 +35,11 @@ In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `dst`.
 
 This is not exported.
 """
-function matrix_rotate!(dst::AbstractMatrix{<:Number}, vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
+function matrix_rotate!(
+    dst::AbstractMatrix{<:Number},
+    vals::AbstractMatrix{<:Number},
+    rotmat::AbstractMatrix{<:Real},
+)
     uproduct!(dst, rotmat, vals)
 end
 
