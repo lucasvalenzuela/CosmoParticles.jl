@@ -79,6 +79,7 @@ _applyind(a::ApplyMatrix{<:Any,F}, mask::AbstractVector{Bool}) where {F<:Union{t
     a[:, mask]
 
 function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+    checkbounds(a, ind)
     anew = similar(a, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
         anew[i] = a[indi]
@@ -87,6 +88,8 @@ function _applyind(a::ApplyVector{<:Any,F}, ind::AbstractVector) where {F<:Union
 end
 
 function _applyind(a::ApplyMatrix{<:Any,F}, ind::AbstractVector) where {F<:Union{typeof(hcat),typeof(vcat)}}
+    Base.require_one_based_indexing(a)
+    checkbounds(a, :, ind)
     n = size(a, 1)
     anew = similar(a, n, length(ind))
     @inbounds for (i, indi) in enumerate(ind)
@@ -163,7 +166,17 @@ _removeind(a::Union{Number,Nothing}, _::AbstractVector) = a
 
 _removeind(a::AbstractFillVector, ind::AbstractVector) = a[begin:(end - length(ind))]
 
+# The removal loops step through `a` and `ind` from index 1 and require `ind` to hold valid indices of `a` in
+# strictly increasing order.
+function _check_removeind(a::AbstractArray, ind::AbstractVector)
+    Base.require_one_based_indexing(a, ind)
+    issorted(ind; lt=(≤)) || throw(ArgumentError("the indices to remove must be sorted and unique"))
+    return nothing
+end
+
 function _removeind(a::AbstractVector, ind::AbstractVector)
+    _check_removeind(a, ind)
+    checkbounds(a, ind)
     na = length(a)
     nind = length(ind)
     nanew = na - nind
@@ -188,6 +201,8 @@ function _removeind(a::AbstractVector, ind::AbstractVector)
 end
 
 function _removeind(a::AbstractMatrix, ind::AbstractVector)
+    _check_removeind(a, ind)
+    checkbounds(a, :, ind)
     n = size(a, 1)
     na = size(a, 2)
     nind = length(ind)
@@ -289,6 +304,7 @@ This uses an optimized algorithm that is faster than creating a `Set` from `set`
 This is not exported.
 """
 function findall_in_sorted(a::AbstractVector, set::AbstractVector)
+    Base.require_one_based_indexing(a, set)
     if isempty(a) || isempty(set)
         return Int64[]
     end

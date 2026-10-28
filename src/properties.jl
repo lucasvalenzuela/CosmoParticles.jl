@@ -41,13 +41,15 @@ _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
     sumprop(p::AbstractParticles, prop::Symbol)
 
 Returns the sum of the specified property over all particles.
+
+For a matrix property, the sums of its rows are returned as a `Vector`.
 """
 sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p, p[prop])
 
 _sumprop(p::AbstractParticles, a::Number) = particle_number(p) * a
 _sumprop(::AbstractParticles, a::AbstractVecOrMat) = _sumprop(a)
 _sumprop(a::AbstractVector) = sum(a)
-_sumprop(a::AbstractMatrix) = sum(a; dims=2)
+_sumprop(a::AbstractMatrix) = [sum(@view a[i, :]) for i in axes(a, 1)]
 
 
 """
@@ -123,7 +125,7 @@ function angmomtot(
     massprop=:mass,
     angmomprop=nothing,
 )
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
     return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin)
 end
 
@@ -132,8 +134,8 @@ end
 
 Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
 
-Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
-[`angmomtot`](@ref).
+Sums with `Base.sum`, which adds the terms pairwise and accumulates less rounding error than the running sum
+of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.
 """
@@ -146,7 +148,7 @@ function angmomtot_stable(
     massprop=:mass,
     angmomprop=nothing,
 )
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
     return angmomtot_stable(p[posprop], p[velprop], p[massprop]; origin, velorigin)
 end
 
@@ -227,6 +229,7 @@ function _colnorm2_unsafe! end
 for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2), :(zero(T))])
     quote
         function $(Symbol(name, "!"))(dst::AbstractVector{T}, a::AbstractMatrix) where {T}
+            Base.require_one_based_indexing(dst, a)
             dims = size(a, 1)
             if dims == 2
                 return $(Symbol(name, "_2D!"))(dst, a)
@@ -242,6 +245,7 @@ for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2)
             a::AbstractMatrix,
             origin::AbstractVector,
         ) where {T}
+            Base.require_one_based_indexing(dst, a, origin)
             dims = size(a, 1)
             if dims == 2
                 return $(Symbol(name, "_2D!"))(dst, a, origin)
@@ -417,6 +421,7 @@ function _coldot_unsafe(
 end
 
 function _coldot_unsafe!(dst::AbstractVector, a::AbstractMatrix, b::AbstractMatrix)
+    Base.require_one_based_indexing(dst, a, b)
     dims = size(a, 1)
     if dims == 2
         return _coldot_unsafe_2D!(dst, a, b)
@@ -506,6 +511,7 @@ function _colcross_unsafe(
 end
 
 function _colcross_unsafe!(dst::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix)
+    Base.require_one_based_indexing(dst, a, b)
     @inbounds @simd for i in axes(dst, 2)
         dst[1, i] = a[2, i] * b[3, i] - a[3, i] * b[2, i]
         dst[2, i] = a[3, i] * b[1, i] - a[1, i] * b[3, i]
@@ -537,12 +543,14 @@ function angmom(
 )
     @assert size(pos, 2) == size(vel, 2) == length(mass)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
 function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
     @assert size(pos, 2) == size(vel, 2)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -551,6 +559,24 @@ function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass, origin, 
     return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
 end
 
+
+# The angular momentum kernels index the rows of the positions, velocities, and origins as 1 to 3, and the
+# particles from 1.
+function _check_angmom_args(pos, vel, mass, origin, velorigin)
+    Base.require_one_based_indexing(pos, vel)
+    mass isa AbstractArray && Base.require_one_based_indexing(mass)
+    _check_origin(origin, "origin")
+    _check_origin(velorigin, "velorigin")
+    return nothing
+end
+
+_check_origin(::Nothing, _) = nothing
+function _check_origin(origin::AbstractVector, name)
+    Base.require_one_based_indexing(origin)
+    length(origin) == 3 ||
+        throw(DimensionMismatch("`$name` must have length 3, got length $(length(origin))"))
+    return nothing
+end
 
 _help_convert_origin(::Type{T}, origin::AbstractVector) where {T} = convert(Vector{T}, origin)
 _help_convert_origin(::Type{T}, origin::Nothing) where {T} = nothing
@@ -690,12 +716,14 @@ function angmomtot(
 )
     @assert size(pos, 2) == size(vel, 2) == length(mass)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
 
 function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
     @assert size(pos, 2) == size(vel, 2)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -729,8 +757,8 @@ end
 
 Returns the total angular momentum based on the positions, velocities, and masses, like [`angmomtot`](@ref).
 
-Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
-[`angmomtot`](@ref).
+Sums with `Base.sum`, which adds the terms pairwise and accumulates less rounding error than the running sum
+of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.
 """
@@ -745,6 +773,7 @@ function angmomtot_stable(
 )
     @assert size(pos, 2) == size(vel, 2) == length(mass)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -757,6 +786,7 @@ function angmomtot_stable(
 )
     @assert size(pos, 2) == size(vel, 2)
     @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -851,9 +881,9 @@ for (T1, T2) in zip(
             velorigin::$T2,
         )
             return [
-                m * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
-                m * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
-                m * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
+                m * sum(i -> $p2 * $v3 - $p3 * $v2, axes(p, 2))
+                m * sum(i -> $p3 * $v1 - $p1 * $v3, axes(p, 2))
+                m * sum(i -> $p1 * $v2 - $p2 * $v1, axes(p, 2))
             ]
         end
 
@@ -866,9 +896,9 @@ for (T1, T2) in zip(
         )
             mval = m[1]
             return [
-                mval * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
-                mval * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
-                mval * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
+                mval * sum(i -> $p2 * $v3 - $p3 * $v2, axes(p, 2))
+                mval * sum(i -> $p3 * $v1 - $p1 * $v3, axes(p, 2))
+                mval * sum(i -> $p1 * $v2 - $p2 * $v1, axes(p, 2))
             ]
         end
 
@@ -880,9 +910,9 @@ for (T1, T2) in zip(
             velorigin::$T2,
         )
             return [
-                sum(m[i] * ($p2 * $v3 - $p3 * $v2) for i in axes(p, 2))
-                sum(m[i] * ($p3 * $v1 - $p1 * $v3) for i in axes(p, 2))
-                sum(m[i] * ($p1 * $v2 - $p2 * $v1) for i in axes(p, 2))
+                sum(i -> m[i] * ($p2 * $v3 - $p3 * $v2), axes(p, 2))
+                sum(i -> m[i] * ($p3 * $v1 - $p1 * $v3), axes(p, 2))
+                sum(i -> m[i] * ($p1 * $v2 - $p2 * $v1), axes(p, 2))
             ]
         end
     end |> eval

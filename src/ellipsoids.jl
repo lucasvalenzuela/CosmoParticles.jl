@@ -52,7 +52,19 @@ function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q
     return _colnormell2_unsafe!(dst, a, q, s)
 end
 
+# The elliptical-norm kernels index the rows of `a` from 1: two rows for `q`, three for `q` and `s`.
+function _check_ellnorm_rows(a::AbstractMatrix, nrows)
+    Base.require_one_based_indexing(a)
+    size(a, 1) == nrows || throw(
+        DimensionMismatch(
+            "expected a matrix with $nrows rows for the given axis ratios, got $(size(a, 1)) rows",
+        ),
+    )
+    return nothing
+end
+
 function _colnormell2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
+    _check_ellnorm_rows(a, 2)
     invq² = 1 / q^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = a[1, i]^2 + a[2, i]^2 * invq²
@@ -61,6 +73,7 @@ function _colnormell2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
 end
 
 function _colnormell2_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
+    _check_ellnorm_rows(a, 3)
     invq², invs² = 1 / q^2, 1 / s^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = a[1, i]^2 + a[2, i]^2 * invq² + a[3, i]^2 * invs²
@@ -125,6 +138,7 @@ function colnormell(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q<
 end
 
 function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
+    _check_ellnorm_rows(a, 2)
     invq² = 1 / q^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = sqrt(a[1, i]^2 + a[2, i]^2 * invq²)
@@ -133,6 +147,7 @@ function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q)
 end
 
 function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
+    _check_ellnorm_rows(a, 3)
     invq², invs² = 1 / q^2, 1 / s^2
     @inbounds @simd for i in axes(a, 2)
         dst[i] = sqrt(a[1, i]^2 + a[2, i]^2 * invq² + a[3, i]^2 * invs²)
@@ -141,6 +156,26 @@ function _colnormell_unsafe!(dst::AbstractVector, a::AbstractMatrix, q, s)
 end
 
 
+
+function _check_axis_ratios(q)
+    0 ≤ q ≤ 1 || throw(ArgumentError("the axis ratio q must be between 0 and 1, got q = $q"))
+    return nothing
+end
+
+function _check_axis_ratios(q, s)
+    _check_axis_ratios(q)
+    0 ≤ s ≤ q || throw(ArgumentError("the axis ratio s must be between 0 and q, got q = $q and s = $s"))
+    return nothing
+end
+
+function _check_semimajor_axes(a1, a2)
+    a1 ≤ a2 || throw(
+        ArgumentError(
+            "the inner semi-major axis a1 must not exceed the outer one a2, got a1 = $a1 and a2 = $a2",
+        ),
+    )
+    return nothing
+end
 
 """
     struct CosmoEllipse{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
@@ -153,6 +188,12 @@ Ellipse around the origin given by the semi-major axis `a` and the axis ratio `q
 struct CosmoEllipse{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
     a::T
     q::U
+
+    function CosmoEllipse{T,U}(a, q) where {T,U}
+        e = new{T,U}(a, q)
+        _check_axis_ratios(e.q)
+        return e
+    end
 end
 
 """
@@ -166,7 +207,6 @@ circle with radius `a`.
 The axis ratio `q` has to be between 0 and 1.
 """
 function CosmoEllipse(a::T; q::U=1, constant_area=false) where {T<:Number,U<:Real}
-    @assert 0 ≤ q ≤ 1
     if constant_area
         anew = a / sqrt(q)
         CosmoEllipse{float(typeof(anew)),float(U)}(anew, q)
@@ -183,7 +223,6 @@ Returns an ellipse around the origin with semi-major axis `a` and semi-minor axi
 The semi-minor axis has to be smaller than the semi-major axis.
 """
 function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
-    @assert a ≥ b
     q = b / a
     Tnew = float(promote_type(T1, T2))
     return CosmoEllipse{float(Tnew),typeof(q)}(a, q)
@@ -200,6 +239,7 @@ CosmoParticles.geometry_enclosing_center(::CosmoEllipse{T}) where {T} = T[0, 0]
 function CosmoParticles.mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipse{T}) where {T}
     @assert size(pos, 1) == 2
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = e.a^2
     if e.q == 1
         return @inbounds @views @. mask = pos[1, :]^2 + pos[2, :]^2 ≤ r²
@@ -225,6 +265,12 @@ struct CosmoEllipsoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
     a::T
     q::U
     s::U
+
+    function CosmoEllipsoid{T,U}(a, q, s) where {T,U}
+        e = new{T,U}(a, q, s)
+        _check_axis_ratios(e.q, e.s)
+        return e
+    end
 end
 
 
@@ -243,8 +289,6 @@ function CosmoEllipsoid(a; q=1, s=1, constant_volume=false)
 end
 
 function _create_cosmoellipsoid_qs(a::T, q::U1, s::U2, constant_volume) where {T<:Number,U1<:Real,U2<:Real}
-    @assert q ≥ s
-    @assert 0 ≤ q ≤ 1 && 0 ≤ s ≤ 1
     Unew = float(promote_type(U1, U2))
     if constant_volume
         anew = a / cbrt(q * s)
@@ -262,7 +306,6 @@ Returns an ellipsoid around the origin with semi axes `a`, `b`, and `c`, with `a
 If `c` is `nothing`, a [`CosmoEllipse`](@ref) is created instead.
 """
 function CosmoEllipsoid(a::T1, b::T2, c::T3) where {T1<:Number,T2<:Number,T3<:Number}
-    @assert a ≥ b ≥ c
     q, s = b / a, c / a
     Tnew = float(promote_type(T1, T2, T3))
     U = promote_type(typeof(q), typeof(s))
@@ -285,6 +328,7 @@ function CosmoParticles.mask_in!(
 ) where {T}
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = e.a^2
     if e.q == 1 && e.s == 1
         return @inbounds @views @. mask = pos[1, :]^2 + pos[2, :]^2 + pos[3, :]^2 ≤ r²
@@ -316,7 +360,16 @@ struct CosmoHomoeoid2D{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
     a1::T
     a2::T
     q::U
+
+    function CosmoHomoeoid2D{T,U}(a1, a2, q) where {T,U}
+        e = new{T,U}(a1, a2, q)
+        _check_semimajor_axes(e.a1, e.a2)
+        _check_axis_ratios(e.q)
+        return e
+    end
 end
+
+CosmoHomoeoid2D(a1::T, a2::T, q::U) where {T,U} = CosmoHomoeoid2D{T,U}(a1, a2, q)
 
 """
     CosmoHomoeoid2D(a1::Number, a2::Number; q::Real=1, constant_area=false)
@@ -341,8 +394,6 @@ function CosmoHomoeoid2D(a1, a2_or_b; a2=nothing, q=1, constant_area=false)
 end
 
 function _cosmo_homoeoid_2d(a1::T1, a2::T2, q::U, constant_area) where {T1<:Number,T2<:Number,U<:Real}
-    @assert a1 < a2
-    @assert 0 ≤ q ≤ 1
     if constant_area
         a1new = a1 / sqrt(q)
         a2new = a2 / sqrt(q)
@@ -355,7 +406,6 @@ function _cosmo_homoeoid_2d(a1::T1, a2::T2, q::U, constant_area) where {T1<:Numb
 end
 
 function _cosmo_homoeoid_2d(a::T1, b::Number, a2::T2) where {T1<:Number,T2<:Number}
-    @assert a ≥ b
     q = b / a
     a1, a2 = minmax(a, a2)
     Tnew = float(promote_type(T1, T2))
@@ -377,6 +427,7 @@ function CosmoParticles.mask_in!(
 ) where {T}
     @assert size(pos, 1) == 2
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r1² = e.a1^2
     r2² = e.a2^2
     if e.q == 1
@@ -405,7 +456,16 @@ struct CosmoHomoeoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
     a2::T
     q::U
     s::U
+
+    function CosmoHomoeoid{T,U}(a1, a2, q, s) where {T,U}
+        e = new{T,U}(a1, a2, q, s)
+        _check_semimajor_axes(e.a1, e.a2)
+        _check_axis_ratios(e.q, e.s)
+        return e
+    end
 end
+
+CosmoHomoeoid(a1::T, a2::T, q::U, s::U) where {T,U} = CosmoHomoeoid{T,U}(a1, a2, q, s)
 
 
 """
@@ -429,8 +489,6 @@ function _create_cosmohomoeoid_qs(
     s::U2,
     constant_volume,
 ) where {T1<:Number,T2<:Number,U1<:Real,U2<:Real}
-    @assert q ≥ s
-    @assert 0 ≤ q ≤ 1 && 0 ≤ s ≤ 1
     Unew = float(promote_type(U1, U2))
     if constant_volume
         factor = 1 / cbrt(q * s)
@@ -455,7 +513,6 @@ The semi-major axis `a2` can be smaller or larger than `a`.
 If `c` is `nothing`, a [`CosmoHomoeoid2D`](@ref) is created instead.
 """
 function CosmoHomoeoid(a::T1, b::Number, c::Number; a2::T2) where {T1<:Number,T2<:Number}
-    @assert a ≥ b ≥ c
     q, s = b / a, c / a
     a1, a2 = minmax(a, a2)
     Tnew = float(promote_type(T1, T2))
@@ -479,6 +536,7 @@ function CosmoParticles.mask_in!(
 ) where {T}
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r1² = e.a1^2
     r2² = e.a2^2
     if e.q == 1 && e.s == 1

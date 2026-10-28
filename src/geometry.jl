@@ -522,6 +522,7 @@ end
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoCuboid{T}) where {T}
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     @inbounds @views @. mask = (
         (r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) & (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]) &
         (r.lowerleft[3] ≤ pos[3, :] ≤ r.upperright[3])
@@ -531,6 +532,7 @@ end
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoRectangle{T}) where {T}
     @assert size(pos, 1) == 2
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     @inbounds @views @. mask =
         ((r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) & (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]))
 end
@@ -538,6 +540,7 @@ end
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoHyperrectangle{T,N}) where {T,N}
     @assert size(pos, 1) == N
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     @inbounds @views @. mask = r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]
     for i in 2:N
         mask .&= @inbounds @views @. r.lowerleft[i] ≤ pos[i, :] ≤ r.upperright[i]
@@ -638,6 +641,7 @@ geometry_enclosing_center(s::CosmoHypersphere) = s.center
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoSphere)
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = s.radius^2
     if all(==(0), s.center)
         @inbounds @views @. mask = pos[1, :]^2 + pos[2, :]^2 + pos[3, :]^2 ≤ r²
@@ -650,6 +654,7 @@ end
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, circle::CosmoCircle)
     @assert size(pos, 1) == 2
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = circle.radius^2
     if all(==(0), circle.center)
         @inbounds @views @. mask = pos[1, :]^2 + pos[2, :]^2 ≤ r²
@@ -661,6 +666,7 @@ end
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoHypersphere{T,N}) where {T,N}
     @assert size(pos, 1) == N
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = s.radius^2
     center = s.center
     if all(==(0), center)
@@ -742,6 +748,7 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoCylind
     # https://stackoverflow.com/questions/47932955/how-to-check-if-a-3d-point-is-inside-a-cylinder
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     pos1 = @view pos[1, :]
     pos2 = @view pos[2, :]
     pos3 = @view pos[3, :]
@@ -816,6 +823,7 @@ geometry_enclosing_center(c::CosmoStandingCylinder) = c.center
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoStandingCylinder)
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
+    Base.require_one_based_indexing(pos)
     r² = c.radius^2
     halfheight = 1 // 2 * c.height
     @inbounds @views @. mask =

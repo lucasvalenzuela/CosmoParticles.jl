@@ -104,6 +104,18 @@ This is not exported.
 particle_collection(p::AllParticles) = p.particle_collection
 
 
+# The concatenated array requires vectors for all particle types, or matrices with the same number of rows.
+function _check_alldims(arr::AbstractArray, dims, sym, ptype, dims_ptype)
+    arrdims = arr isa AbstractVector ? 0 : size(arr, 1)
+    arrdims == dims && return nothing
+    desc(d) = d == 0 ? "a vector" : "a matrix with $d rows"
+    throw(
+        DimensionMismatch(
+            "property :$sym is $(desc(arrdims)) for the :$ptype particles, but $(desc(dims)) for the :$dims_ptype particles",
+        ),
+    )
+end
+
 function Base.getindex(ap::AllParticles, sym::Symbol)
     # get property index if property already saved or if key does not exist at all to raise Dict error
     if haskey(ap.props, sym) || !haskey(ap, sym)
@@ -114,12 +126,17 @@ function Base.getindex(ap::AllParticles, sym::Symbol)
 
     # get array dimensions
     dims = 0 # 0 for vectors; for arrays: size(arr, 1)
+    dims_ptype = nothing # particle type that determines `dims`
     for key in ap.ptypes
         p = pc[key]
         if haskey(p, sym)
-            p[sym] isa AbstractVector && break
+            if p[sym] isa AbstractVector
+                dims_ptype = key
+                break
+            end
             if p[sym] isa AbstractMatrix
                 dims = size(p[sym], 1)
+                dims_ptype = key
                 break
             end
         end
@@ -136,6 +153,7 @@ function Base.getindex(ap::AllParticles, sym::Symbol)
             # fill array with scalar value if property is not an array
             if p[sym] isa AbstractArray
                 arr = p[sym]
+                _check_alldims(arr, dims, sym, key, dims_ptype)
             else
                 if dims == 0
                     arr = Fill(p[sym], particle_number(p))

@@ -6,6 +6,7 @@ using FillArrays
 using LazyArrays
 using LinearAlgebra
 using NamedRowArrays
+using OffsetArrays
 using Rotations
 using SortingAlgorithms
 using StatsBase
@@ -329,6 +330,13 @@ const CP = CosmoParticles
 
         pcoll_empty = ParticleCollection(dm, gas, stars, Particles(:empty))
         @test isempty(AllParticles(pcoll_empty, [:empty]))
+
+        pcoll_dims =
+            ParticleCollection(Particles(:dm, :pos => rand(3, 4)), Particles(:gas, :pos => rand(2, 5)))
+        @test_throws DimensionMismatch pcoll_dims.all.pos
+        @test_throws "property :pos is a matrix with" pcoll_dims.all.pos
+        pcoll_dims = ParticleCollection(Particles(:dm, :pos => rand(3, 4)), Particles(:gas, :pos => rand(5)))
+        @test_throws "property :pos is a" pcoll_dims.all.pos
     end
 
 
@@ -543,6 +551,12 @@ const CP = CosmoParticles
             ind = findall(mask)
 
             @test CP._removeind(3, ind) == 3
+            @test_throws "sorted and unique" CP._removeind(p.id, [3, 2])
+            @test_throws "sorted and unique" CP._removeind(p.pos, [2, 2])
+            @test_throws BoundsError CP._removeind(p.id, [101])
+            @test_throws BoundsError CP._removeind(p.pos, [0, 1])
+            @test_throws "offset arrays are not supported" CP._removeind(OffsetArray(p.id, -1), [1])
+            @test_throws "offset arrays are not supported" CP._removeind(OffsetArray(p.pos, 0, -1), [1])
             @test CP._removeind(p.mass, ind) == p.mass
             @test CP._removeind(p.mass2, ind) == deleteat!(collect(p.mass2), ind)
             @test CP._removeind(p.id, ind) == deleteat!(copy(p.id), ind)
@@ -630,6 +644,11 @@ const CP = CosmoParticles
             @test CP.findall_in([], Set([])) |> isempty
             @test CP.findall_in(a, Set([])) |> isempty
             @test CP.findall_in([], Set(set)) |> isempty
+
+            @test_throws "offset arrays are not supported" CP.findall_in_sorted(
+                OffsetArray([1, 2, 3], -1),
+                [2],
+            )
         end
 
         @testset "Unitful operations" begin
@@ -829,6 +848,12 @@ const CP = CosmoParticles
                 rotate!(pc, rotmat)
                 @test pc.pos == aurot
                 @test pc.vel == arot
+
+                pn = Particles(:dm, :pos => NamedRowArray(copy(au), [:a, :b, :c]))
+                pnrot = rotate(pn, rotmat)
+                @test pnrot.pos isa NamedRowMatrix
+                @test pnrot.pos == aurot
+                @test pnrot.pos_b == aurot[2, :]
             end
 
 
@@ -1740,6 +1765,53 @@ const CP = CosmoParticles
             @test CP.mask_in(pos3, sph_shift_dx) == CP.mask_in(pos3_dx, sph_shift)
             @test CP.mask_in(pos3, cyl_dx) == CP.mask_in(pos3_dx, cyl)
         end
+
+        @testset "Ellipsoid constructors" begin
+            @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0)
+            @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0, 0.5, 0.5)
+            @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0, 0.5)
+            @test_throws "q must be between 0 and 1" CosmoHomoeoid2D(1.0, 2.0, 1.5)
+            @test_throws "s must be between 0 and q" CosmoHomoeoid(1.0, 2.0, 0.2, 0.5)
+            @test_throws "s must be between 0 and q" CosmoEllipsoid{Float64,Float64}(1.0, 0.5, 0.8)
+            @test_throws "q must be between 0 and 1" CosmoEllipse{Float64,Float64}(1.0, -0.5)
+            @test_throws "q must be between 0 and 1" CosmoEllipse(1.0; q=1.5)
+            @test_throws "q must be between 0 and 1" CosmoEllipse(1.0, 1.5)
+            @test_throws "s must be between 0 and q" CosmoEllipsoid(1.0; q=0.5, s=0.8)
+            @test_throws "s must be between 0 and q" CosmoEllipsoid(1.0, 0.5, 0.8)
+            @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0; q=0.5)
+            @test_throws "q must be between 0 and 1" CosmoHomoeoid2D(1.0, 1.5; a2=2.0)
+            @test_throws "s must be between 0 and q" CosmoHomoeoid(1.0, 0.5, 0.8; a2=2.0)
+            @test_throws "q must be between 0 and 1" CosmoHomoeoid(1.0, 2.0; q=1.2, s=0.5, constant_volume=true)
+
+            h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.2)
+            @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
+            h = CosmoHomoeoid(1.0, 2.0, 0.5, 0.2)
+            @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
+            h2 = CosmoHomoeoid2D(1.0, 2.0, 0.5)
+            @test (h2.a1, h2.a2, h2.q) == (1.0, 2.0, 0.5)
+        end
+
+        @testset "Offset arrays" begin
+            geos = [
+                CosmoCuboid([0.5, 0.5, 0.5], 1, 1, 1),
+                CosmoRectangle([0.5, 0.5], 1, 1),
+                CosmoHyperrectangle(fill(0.5, 4), 1, 1, 1, 1),
+                CosmoSphere(zeros(3), 1.0),
+                CosmoCircle(zeros(2), 1.0),
+                CosmoHypersphere(zeros(4), 1.0),
+                CosmoCylinder(zeros(3), ones(3), 0.5),
+                CosmoStandingCylinder(zeros(3), 1.0, 0.5),
+                CosmoEllipse(1.0; q=0.5),
+                CosmoEllipsoid(1.0; q=0.5, s=0.5),
+                CosmoHomoeoid2D(0.5, 1.0; q=0.5),
+                CosmoHomoeoid(0.5, 1.0; q=0.5, s=0.5),
+            ]
+            for geo in geos
+                n = length(CP.geometry_enclosing_center(geo))
+                pos = OffsetArray(rand(n, 10), 0:(n - 1), 0:9)
+                @test_throws "offset arrays are not supported" CP.mask_in(pos, geo)
+            end
+        end
     end
 
 
@@ -1995,6 +2067,47 @@ const CP = CosmoParticles
         end
 
 
+        @testset "Offset arrays and dimensions" begin
+            a = rand(3, 5)
+            b = rand(3, 5)
+            ao = OffsetArray(a, 1:3, 0:4)
+            for f in (colnorm, colnorm2)
+                @test_throws "offset arrays are not supported" f(ao)
+                @test_throws "offset arrays are not supported" f(ao, zeros(3))
+            end
+            @test_throws "offset arrays are not supported" coldot(ao, b)
+            @test_throws "offset arrays are not supported" colcross(ao, b)
+            for f in (angmom, angmomtot, angmomtot_stable)
+                @test_throws "offset arrays are not supported" f(ao, b, 1.0)
+                @test_throws "offset arrays are not supported" f(a, b, OffsetArray(rand(5), -1))
+            end
+            @test_throws "`origin` must have length 3" angmom(a, b, rand(5); origin=[0.0])
+            @test_throws "`velorigin` must have length 3" angmomtot(a, b, 1.0; velorigin=[0.0, 0.0])
+            @test_throws "`origin` must have length 3" angmomtot_stable(a, b, 1.0; origin=zeros(4))
+
+            @test_throws "expected a matrix with 3 rows" colnormell2(ones(2, 3), 0.5, 0.5)
+            @test_throws "expected a matrix with 2 rows" colnormell(ones(3, 3), 0.5)
+            @test_throws "offset arrays are not supported" colnormell2(OffsetArray(ones(2, 3), 1:2, 0:2), 0.5)
+        end
+
+        @testset "Summation accuracy" begin
+            # Summing these Float32 values one after another gives a relative error of about 1e-2.
+            n = 10^6
+            pos = zeros(Float32, 3, n)
+            pos[1, :] .= 1
+            vel = zeros(Float32, 3, n)
+            vel[2, :] .= 0.1f0
+            jtot = [0, 0, n / 10]
+            @test isapprox(angmomtot_stable(pos, vel, 1.0f0), jtot; rtol=1e-5)
+            @test isapprox(angmomtot_stable(pos, vel, ones(Float32, n)), jtot; rtol=1e-5)
+            @test isapprox(angmomtot_stable(pos, vel, Fill(1.0f0, n)), jtot; rtol=1e-5)
+
+            p = Particles(:gas, :vel => vel, :j => angmom(pos, vel, 1.0f0))
+            @test sumprop(p, :vel) isa Vector{Float32}
+            @test isapprox(sumprop(p, :vel), [0, n / 10, 0]; rtol=1e-5)
+            @test isapprox(angmomtot(p; angmomprop=:j), jtot; rtol=1e-5)
+        end
+
         @testset "Particles properties" begin
             dm = Particles(:dm, :pos => rand(3, 100), :vel => rand(Float32, 3, 100), :mass => 2)
             gas = Particles(
@@ -2048,8 +2161,8 @@ const CP = CosmoParticles
                 @test meanvel(gas; massweighted=false) ≈ mean(gas.vel; dims=2)
                 @test meanvel(ap) ≈ meanvel(p)
 
-                @test sumprop(dm, :pos) ≈ sum(dm.pos; dims=2)
-                @test sumprop(gas, :pos) ≈ sum(gas.pos; dims=2)
+                @test sumprop(dm, :pos) ≈ vec(sum(dm.pos; dims=2))
+                @test sumprop(gas, :pos) ≈ vec(sum(gas.pos; dims=2))
                 @test sumprop(dm, :mass) ≈ CP.particle_number(dm) * dm.mass
                 @test sumprop(gas, :mass2) ≈ sum(gas.mass2)
                 @test sumprop(ap, :pos) ≈ sumprop(p, :pos)
@@ -2092,6 +2205,9 @@ const CP = CosmoParticles
         @test Tables.getcolumn(p, :temp) == p.temp
         @test Tables.getcolumn(p, :mass) == fill(p.mass, n)
         @test Tables.getcolumn(p, :pos) == eachcol(p.pos)
+
+        pn = Particles(:gas, :arr => NamedRowArray(rand(2, n), [:a, :b]), :temp => rand(n))
+        @test issetequal(collect(Tables.columnnames(pn)), [:arr_a, :arr_b, :temp])
 
         ks = collect(keys(p))
         @test Tables.columnnames(p) == ks

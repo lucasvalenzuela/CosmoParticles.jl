@@ -8,6 +8,11 @@ This is not exported.
 """
 matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = rotmat*ᵘvals
 
+# A product keeps the row names of a `NamedRowMatrix` only as its left factor, and the fast unitful product
+# applies to the wrapped data, not to the `NamedRowMatrix` itself.
+matrix_rotate(vals::NamedRowMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) =
+    NamedRowArray(matrix_rotate(parent(vals), rotmat), rownames(vals))
+
 """
     CosmoParticles.matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 

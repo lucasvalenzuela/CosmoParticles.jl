@@ -69,54 +69,39 @@ Base.isempty(pk::ParticlesColumnKeySet) = isempty(pk.particles)
 
 function Base.iterate(pk::ParticlesColumnKeySet)
     isempty(pk) && return nothing
-
-    p = pk.particles
-    dkey, dkey_state = iterate(keys(p))
-
-    vals = p[dkey]
-    if vals isa AbstractMatrix
-        dims = size(vals, 1)
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, dims)
-        return key_col, (dkey, dkey_state, dims)
-    end
-
-    return dkey, (dkey, dkey_state, 1) # 1 is how many dimensions the dkey has
+    dkey, dkey_state = iterate(keys(pk.particles))
+    return _first_column_key(pk.particles, dkey, dkey_state)
 end
 
-function Base.iterate(pk::ParticlesColumnKeySet, (dkey, dkey_state, state))
-    p = pk.particles
-
+function Base.iterate(pk::ParticlesColumnKeySet, (dkey, dkey_state, dims, state, names))
     if state > 1
-        vals = p[dkey]
-        dims = size(vals, 1)
         state -= 1
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, state)
-        return key_col, (dkey, dkey_state, state)
+        return _matrix_column_key(dkey, names, dims, state), (dkey, dkey_state, dims, state, names)
     end
 
-
-    it = iterate(keys(p), dkey_state)
+    it = iterate(keys(pk.particles), dkey_state)
     isnothing(it) && return nothing
-
-    dkey, dkey_state = it
-
-    vals = p[dkey]
-    if vals isa AbstractMatrix
-        dims = size(vals, 1)
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, dims)
-        return key_col, (dkey, dkey_state, dims)
-    end
-
-    return dkey, (dkey, dkey_state, 1) # 1 is how many dimensions the dkey has
+    return _first_column_key(pk.particles, it...)
 end
 
-function _get_current_matrix_column_key(vals::AbstractMatrix, dkey, dims, i)
+# The iteration state holds the number of rows of a matrix property, how many of its columns are left, and its row
+# names (`nothing` if it has none), so the row names are only retrieved once per matrix.
+function _first_column_key(p, dkey::Symbol, dkey_state)
+    vals = p[dkey]
+    vals isa AbstractMatrix || return dkey, (dkey, dkey_state, 1, 1, nothing)
+
+    dims = size(vals, 1)
+    names = vals isa NamedRowMatrix ? rownames(vals) : nothing
+    return _matrix_column_key(dkey, names, dims, dims), (dkey, dkey_state, dims, dims, names)
+end
+
+function _matrix_column_key(dkey, names, dims, i)
     ind = dims - i + 1
 
-    if vals isa NamedRowMatrix
-        postfix = string("_", rownames(vals)[ind])
-    else
+    if isnothing(names)
         postfix = dims ≤ 3 ? ("_x", "_y", "_z")[ind] : "_$ind"
+    else
+        postfix = string("_", names[ind])
     end
 
     return Symbol(dkey, postfix)
