@@ -39,17 +39,20 @@ p.arr_1 == p.arr_a == @view p.arr[1, :] == @view p.arr[:a]
 ```
 
 # Methods
-The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, `Base.isempty`,
-and `Base.copy!` are forwarded to the property `Dict`.
+The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref), [`Base.empty`](@extref),
+[`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the property
+`Dict`.
 
 Concrete types of `AbstractParticles` should have the following methods implemented
 (also see the implementation of [`Particles`](@ref)):
-- `Base.copy`: returns new object containing a copy of the `Dict`
-- `Base.empty`: returns an identical object, but with an empty `Dict`
-- `Base.:(==)`: should call `Base.isequal` to prevent obtaining `missing` results for properties with missing values (relevant for [`AllParticles`](@ref))
-- [`CosmoParticles.particle_name`](@ref): returns the name of the struct to be printed via `Base.show`
-- `Base.propertynames`: implement this if there are additional struct fields
-- `Base.show(io, mime, p)`
+- [`Base.copy`](@extref): returns new object containing a copy of the `Dict`
+- [`Base.empty`](@extref): returns an identical object, but with an empty `Dict`
+- [`Base.:(==)`](@extref): should call [`Base.isequal`](@extref) to prevent obtaining `missing` results for
+  properties with missing values (relevant for [`AllParticles`](@ref))
+- [`CosmoParticles.particle_name`](@ref): returns the name of the struct to be printed via
+  [`Base.show`](@extref Base.show-Tuple{IO, Any, Any})
+- [`Base.propertynames`](@extref): implement this if there are additional struct fields
+- [`Base.show(io, mime, p)`](@extref Base.show-Tuple{IO, Any, Any})
 """
 abstract type AbstractParticles end
 
@@ -222,7 +225,7 @@ end
     CosmoParticles.particle_name(p::AbstractParticles)
 
 Returns the name of the particle type, which is used when printing an object of this type via
-`Base.show`.
+[`Base.show`](@extref Base.show-Tuple{IO, Any, Any}).
 
 This is not exported.
 """
@@ -249,8 +252,8 @@ end
 
 Prints the number of particles, the name of the type, and the property names.
 
-Should be used internally when overriding `Base.show` for concrete implementations of
-`AbstractParticles`.
+Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
+implementations of `AbstractParticles`.
 
 This is not exported.
 """

@@ -134,7 +134,7 @@ end
 
 Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
 
-Sums with `Base.sum`, which adds the terms pairwise and accumulates less rounding error than the running sum
+Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates less rounding error than the running sum
 of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.
@@ -757,7 +757,7 @@ end
 
 Returns the total angular momentum based on the positions, velocities, and masses, like [`angmomtot`](@ref).
 
-Sums with `Base.sum`, which adds the terms pairwise and accumulates less rounding error than the running sum
+Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates less rounding error than the running sum
 of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.

@@ -4,7 +4,7 @@
 Sort the particles in-place according to the specified property.
 
 All property arrays of the particles are rearranged in-place according to the property being sorted.
-The keyword arguments are passed on to [`Base.sortperm`](https://docs.julialang.org/en/v1/base/sort/#Base.sortperm).
+The keyword arguments are passed on to [`Base.sortperm`](@extref).
 
 The sorting algorithm for unitful properties may also be `RadixSort` from
 [SortingAlgorithms.jl](https://github.com/JuliaCollections/SortingAlgorithms.jl).
@@ -19,7 +19,8 @@ end
 """
     Base.sort!(pc::AbstractParticleCollection, prop::Symbol; kwargs...)
 
-Sort the particles in the collection in-place by calling `Base.sort!` on each of the [`Particles`](@ref) objects.
+Sort the particles in the collection in-place by calling [`Base.sort!`](@extref) on each of the [`Particles`](@ref)
+objects.
 """
 function Base.sort!(pc::AbstractParticleCollection, prop::Symbol; kwargs...)
     Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
@@ -37,7 +38,7 @@ Create new particles with the particles sorted according to the specified proper
 All property arrays of the particles are rearranged according to the property being sorted.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are rearranged and added
 to the newly created particles object.
-The other keyword arguments are passed on to [`Base.sortperm`](https://docs.julialang.org/en/v1/base/sort/#Base.sortperm).
+The other keyword arguments are passed on to [`Base.sortperm`](@extref).
 
 The sorting algorithm for unitful properties may also be `RadixSort` from
 [SortingAlgorithms.jl](https://github.com/JuliaCollections/SortingAlgorithms.jl).
@@ -52,7 +53,8 @@ end
 """
     Base.sort(pc::AbstractParticleCollection, prop::Symbol; [affect,] kwargs...)
 
-Create new particle collection with the particles in the collection sorted by calling `Base.sort` on each of the particles objects.
+Create new particle collection with the particles in the collection sorted by calling [`Base.sort`](@extref) on each
+of the particles objects.
 
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only the affected properties are kept for the particles.
 The specified affected properties do not have to be available for all particles.

@@ -22,17 +22,18 @@ If the struct has additional fields, these can also be accessed by `pc.field`, b
 `pc[:field]`. The latter syntax can only be used to access the particles.
 
 # Methods
-The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, `Base.isempty`, and
-`Base.copy!` are forwarded to the particle `Dict`.
+The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref), [`Base.empty`](@extref),
+[`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the particle
+`Dict`.
 
 Concrete types of `AbstractParticleCollection` should have the following methods implemented
 (also see the implementation of [`ParticleCollection`](@ref)):
-- `Base.copy`: returns new object containing a copy of the `Dict`
-- `Base.empty`: returns an identical object, but with an empty `Dict`
-- `Base.:(==)`
+- [`Base.copy`](@extref): returns new object containing a copy of the `Dict`
+- [`Base.empty`](@extref): returns an identical object, but with an empty `Dict`
+- [`Base.:(==)`](@extref)
 - [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
-- `Base.propertynames`: implement this if there are additional struct fields
-- `Base.show(io, mime, pc)`
+- [`Base.propertynames`](@extref): implement this if there are additional struct fields
+- [`Base.show(io, mime, pc)`](@extref Base.show-Tuple{IO, Any, Any})
 """
 abstract type AbstractParticleCollection{AP} end
 
@@ -102,8 +103,8 @@ redshift(pc::AbstractParticleCollection) = 0
 
 Prints the properties of the particles in the collection.
 
-Should be used internally when overriding `Base.show` for concrete implementations of
-`AbstractParticleCollection`.
+Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
+implementations of `AbstractParticleCollection`.
 
 This is not exported.
 """
