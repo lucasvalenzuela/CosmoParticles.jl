@@ -114,7 +114,7 @@ function _get_current_matrix_column_key(vals::AbstractMatrix, dkey, dims, i)
     ind = dims - i + 1
 
     if vals isa NamedRowMatrix
-        postfix = string("_", names(vals)[ind])
+        postfix = string("_", rownames(vals)[ind])
     else
         postfix = dims ≤ 3 ? ("_x", "_y", "_z")[ind] : "_$ind"
     end

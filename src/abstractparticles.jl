@@ -99,7 +99,7 @@ function Base.getindex(p::AbstractParticles, sym::Symbol)
                 end
 
                 if vals isa NamedRowMatrix
-                    key_sym in names(vals) && return @view vals[key_sym]
+                    key_sym in rownames(vals) && return @view vals[key_sym]
                 end
 
                 if vals isa AbstractMatrix && 2 ≤ size(vals, 1) ≤ 3 && key_sym in (:x, :y, :z)
@@ -140,7 +140,7 @@ function Base.haskey(p::AbstractParticles, key)
             end
 
             if vals isa NamedRowMatrix
-                key_sym in names(vals) && return true
+                key_sym in rownames(vals) && return true
             end
 
             if vals isa AbstractMatrix && 2 ≤ size(vals, 1) ≤ 3 && key_sym in (:x, :y, :z)
