@@ -39,6 +39,9 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
+      - name: Add General and CosmoAnalysisRegistry
+        shell: bash
+        run: julia --color=yes -e 'using Pkg; Pkg.Registry.add("General"); Pkg.Registry.add(url="https://github.com/lucasvalenzuela/CosmoAnalysisRegistry")'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
@@ -65,6 +68,9 @@ jobs:
         with:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v3
+      - name: Add General and CosmoAnalysisRegistry
+        shell: bash
+        run: julia --color=yes -e 'using Pkg; Pkg.Registry.add("General"); Pkg.Registry.add(url="https://github.com/lucasvalenzuela/CosmoAnalysisRegistry")'
       - uses: julia-actions/julia-downgrade-compat@v2
         with:
           julia_version: ${{ matrix.version }}
@@ -102,6 +108,9 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/cache@v3
+      - name: Add General and CosmoAnalysisRegistry
+        shell: bash
+        run: julia --color=yes -e 'using Pkg; Pkg.Registry.add("General"); Pkg.Registry.add(url="https://github.com/lucasvalenzuela/CosmoAnalysisRegistry")'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:

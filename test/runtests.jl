@@ -1,4 +1,7 @@
 using CosmoParticles
+using Aqua
+using ExplicitImports
+using JET
 using FillArrays
 using LazyArrays
 using LinearAlgebra
@@ -13,6 +16,14 @@ using Unitful
 const CP = CosmoParticles
 
 @testset "CosmoParticles.jl" begin
+    @testset "Code quality" begin
+        Aqua.test_all(CosmoParticles)
+        @test check_no_stale_explicit_imports(CosmoParticles) === nothing
+        @test check_no_self_qualified_accesses(CosmoParticles) === nothing
+        if JET.JET_AVAILABLE
+            JET.test_package(CosmoParticles; target_modules=(CosmoParticles,))
+        end
+    end
 
     @testset "Particles" begin
         p = Particles(:dm)
