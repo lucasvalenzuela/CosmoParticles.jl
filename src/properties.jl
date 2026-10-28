@@ -233,7 +233,7 @@ for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2)
             elseif dims == 3
                 return $(Symbol(name, "_3D!"))(dst, a)
             else
-                return $(Symbol(name, "_ND!"))(dst, a; zeroT2=$zeroT2)
+                return $(Symbol(name, "_ND!"))(dst, a; zeroT2=($zeroT2))
             end
         end
 
@@ -248,7 +248,7 @@ for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2)
             elseif dims == 3
                 return $(Symbol(name, "_3D!"))(dst, a, origin)
             else
-                return $(Symbol(name, "_ND!"))(dst, a, origin; zeroT2=$zeroT2)
+                return $(Symbol(name, "_ND!"))(dst, a, origin; zeroT2=($zeroT2))
             end
         end
     end |> eval

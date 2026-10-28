@@ -17,7 +17,11 @@ function get_dims(projection::Symbol)
     elseif projection === :faceon || projection === :xy
         return [1, 2]
     else
-        throw(ArgumentError("The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."))
+        throw(
+            ArgumentError(
+                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`.",
+            ),
+        )
     end
 end
 get_dims(dims) = dims
@@ -41,7 +45,11 @@ function get_losdim(projection::Symbol)
     elseif projection === :faceon || projection === :xy
         return 3
     else
-        throw(ArgumentError("The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`."))
+        throw(
+            ArgumentError(
+                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`.",
+            ),
+        )
     end
 end
 get_losdim(dims) = setdiff(1:3, dims)[1]
@@ -153,7 +161,7 @@ This is not exported.
 """
 _removeind(a::Union{Number,Nothing}, _::AbstractVector) = a
 
-_removeind(a::AbstractFillVector, ind::AbstractVector) = a[begin:(end-length(ind))]
+_removeind(a::AbstractFillVector, ind::AbstractVector) = a[begin:(end - length(ind))]
 
 function _removeind(a::AbstractVector, ind::AbstractVector)
     na = length(a)
@@ -423,7 +431,7 @@ ustrip_lazy(_::Unitful.Units, a::AbstractArray{<:Number}) = a
 ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = ustrip.(u, a)
 # ustrip_lazy(u::Unitful.Units, a::AbstractVector{<:Quantity{T}}) where {T<:AbstractFloat} = ustrip_lazy.(u, a)
 ustrip_lazy(u::Unitful.Units, a::Quantity{T}) where {T<:Real} = ustrip_lazy(uconvert_lazy(u, a))
-function ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity{T}}) where {T<:AbstractFloat} 
+function ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity{T}}) where {T<:AbstractFloat}
     unit(eltype(a)) == u ? ustrip_lazy(a) : ustrip_lazy.(u, a)
 end
 

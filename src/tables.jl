@@ -1,6 +1,6 @@
 Tables.istable(::Type{<:AbstractParticles}) = true
 
-function Tables.schema(p::AbstractParticles) 
+function Tables.schema(p::AbstractParticles)
     t = _get_eltype.(values(p))
     return Tables.Schema(Tables.columnnames(p), t)
 end

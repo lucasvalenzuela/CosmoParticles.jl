@@ -28,7 +28,4 @@ makedocs(;
     ],
 )
 
-deploydocs(;
-    repo="github.com/lucasvalenzuela/CosmoParticles.jl",
-    devbranch="main",
-)
+deploydocs(; repo="github.com/lucasvalenzuela/CosmoParticles.jl", devbranch="main")

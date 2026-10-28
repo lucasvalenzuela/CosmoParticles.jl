@@ -75,7 +75,7 @@ export
     angmom,
     angmomtot,
     angmomtot_stable,
-    
+
     # ellipsoids
     triaxiality,
     ellipticity,

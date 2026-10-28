@@ -90,7 +90,7 @@ function Base.getindex(p::AbstractParticles, sym::Symbol)
             # key exists
             if haskey(props, symtest)
                 vals = getindex(props, symtest)
-                key = join(symsplit[i+1:end], "_")
+                key = join(symsplit[(i + 1):end], "_")
                 key_sym = Symbol(key)
                 key_int = tryparse(Int, key)
 
@@ -131,7 +131,7 @@ function Base.haskey(p::AbstractParticles, key)
         # key exists
         if haskey(props, symtest)
             vals = getindex(props, symtest)
-            key = join(symsplit[i+1:end], "_")
+            key = join(symsplit[(i + 1):end], "_")
             key_sym = Symbol(key)
             key_int = tryparse(Int, key)
 

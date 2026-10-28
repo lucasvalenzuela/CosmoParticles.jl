@@ -239,7 +239,8 @@ function Base.isempty(p::AllParticles)
     return true
 end
 
-Base.:(==)(p1::AllParticles, p2::AllParticles) = p1.particle_collection == p2.particle_collection && p1.ptypes == p2.ptypes
+Base.:(==)(p1::AllParticles, p2::AllParticles) =
+    p1.particle_collection == p2.particle_collection && p1.ptypes == p2.ptypes
 
 particle_name(::AllParticles) = "Particles"
 

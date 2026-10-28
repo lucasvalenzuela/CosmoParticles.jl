@@ -325,7 +325,7 @@ function geometry_enclosing_corners(rot::Rotated)
     # create matrix of positions of the hypercuboid corners
     pos = Matrix{eltype(bounding_corners[1])}(undef, n, 2^n)
     @inbounds for bitval in axes(pos, 2)
-        for i in 0:n-1
+        for i in 0:(n - 1)
             # bitval defines which corner vector it should take the corners from,
             # e.g. bitval = 1 for 3D space represents 100,
             # i.e. [upperright[1], lowerleft[2], lowerleft[3]]
@@ -523,8 +523,7 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoCuboid
     @assert size(pos, 1) == 3
     @assert size(pos, 2) == length(mask)
     @inbounds @views @. mask = (
-        (r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) &
-        (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]) &
+        (r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) & (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]) &
         (r.lowerleft[3] ≤ pos[3, :] ≤ r.upperright[3])
     )
 end
@@ -753,8 +752,7 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoCylind
     r² = c.radius^2
     @inbounds @. mask =
         ((pos1 - p1[1]) * Δ[1] + (pos2 - p1[2]) * Δ[2] + (pos3 - p1[3]) * Δ[3] ≥ 0) &
-        ((pos1 - p2[1]) * Δ[1] + (pos2 - p2[2]) * Δ[2] + (pos3 - p2[3]) * Δ[3] ≤ 0) &
-        (
+        ((pos1 - p2[1]) * Δ[1] + (pos2 - p2[2]) * Δ[2] + (pos3 - p2[3]) * Δ[3] ≤ 0) & (
             (
                 ((pos2 - p1[2]) * Δ[3] - (pos3 - p1[3]) * Δ[2])^2 +
                 ((pos3 - p1[3]) * Δ[1] - (pos1 - p1[1]) * Δ[3])^2 +
