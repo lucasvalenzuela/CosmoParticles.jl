@@ -6,7 +6,6 @@ DocMeta.setdocmeta!(CosmoParticles, :DocTestSetup, :(using CosmoParticles); recu
 makedocs(;
     modules=[CosmoParticles],
     authors="Lucas Valenzuela",
-    repo="https://github.com/lucasvalenzuela/CosmoParticles.jl/blob/{commit}{path}#{line}",
     sitename="CosmoParticles.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",

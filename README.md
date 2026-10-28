@@ -13,16 +13,16 @@ with the data extracted from cosmological simulations.
 
 ## Installation
 
-The latest version of the package is available for Julia 1.9 and newer versions and can be installed with:
+This package is available through the public registry
+[CosmoAnalysisRegistry](https://github.com/lucasvalenzuela/CosmoAnalysisRegistry). Add the registry
+once per Julia installation, together with the General registry, which provides the dependencies:
 ```julia
 using Pkg
-Pkg.add("https://github.com/lucasvalenzuela/CosmoParticles.jl")
+Pkg.Registry.add("General")
+Pkg.Registry.add(url="https://github.com/lucasvalenzuela/CosmoAnalysisRegistry")
 ```
 
-For users of the JuliaCosmoSims repository, follow
-[these instructions](https://gitlab.com/juliacosmosims/JuliaCosmoSimsDocs) to install the local registry,
-after which the package can be regularly installed with:
+The package requires Julia 1.12 or newer and can then be installed with:
 ```julia
-using Pkg
 Pkg.add("CosmoParticles")
 ```
