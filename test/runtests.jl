@@ -1823,6 +1823,16 @@ const CP = CosmoParticles
             @test_throws TypeError AllParticles{Int}
         end
 
+        @testset "Ellipsoid centers" begin
+            km = u"km"
+            @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0km; q=0.5)) == [0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoEllipsoid(2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid2D(1.0km, 2.0km; q=0.5)) == [0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid(1.0km, 2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0; q=0.5)) == [0.0, 0.0]
+            @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0f0; q=0.5f0)) isa Vector{Float32}
+        end
+
         @testset "Offset arrays" begin
             geos = [
                 CosmoCuboid([0.5, 0.5, 0.5], 1, 1, 1),

@@ -235,7 +235,7 @@ function CosmoParticles.geometry_enclosing_corners(e::CosmoEllipse)
     return [-a, -b], [a, b]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoEllipse{T}) where {T} = T[0, 0]
+CosmoParticles.geometry_enclosing_center(::CosmoEllipse{T}) where {T} = zeros(T, 2)
 
 function CosmoParticles.mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipse{T}) where {T}
     @assert size(pos, 1) == 2
@@ -321,7 +321,7 @@ function CosmoParticles.geometry_enclosing_corners(e::CosmoEllipsoid)
     return [-a, -b, -c], [a, b, c]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = T[0, 0, 0]
+CosmoParticles.geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zeros(T, 3)
 
 function CosmoParticles.mask_in!(
     mask::BitVector,
@@ -421,7 +421,7 @@ function CosmoParticles.geometry_enclosing_corners(e::CosmoHomoeoid2D)
     return [-a, -b], [a, b]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = T[0, 0]
+CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zeros(T, 2)
 
 function CosmoParticles.mask_in!(
     mask::BitVector,
@@ -531,7 +531,7 @@ function CosmoParticles.geometry_enclosing_corners(e::CosmoHomoeoid)
     return [-a, -b, -c], [a, b, c]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = T[0, 0, 0]
+CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zeros(T, 3)
 
 function CosmoParticles.mask_in!(
     mask::BitVector,
