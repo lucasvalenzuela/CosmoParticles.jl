@@ -117,6 +117,12 @@ const CP = CosmoParticles
         @test pv.pos == hcat(p1.pos, p2.pos)
         @test pv.id == vcat(p1.id, p2.id)
         @test pv.test == fill(p1.test, CP.particle_number(pv))
+
+        pa = Particles(:gas, :id => [1, 2], :mass => 1.0)
+        pb = Particles(:gas, :id => [3, 4])
+        pab = vcat(pa, pb)
+        @test pab.id == [1, 2, 3, 4]
+        @test isequal(pab.mass, [1.0, 1.0, missing, missing])
         append!(p1, p2)
         @test p1 == pv
         @test append!(p1, p2) === p1
@@ -645,6 +651,18 @@ const CP = CosmoParticles
             @test CP.findall_in(a, Set([])) |> isempty
             @test CP.findall_in([], Set(set)) |> isempty
 
+            # repeated values
+            @test CP.findall_in([1, 2, 2, 3], [2]) == [2, 3]
+            @test CP.findall_in([3, 2, 2, 1], [2]) == [2, 3]
+            @test CP.findall_in([1, 2, 3], [2, 2, 3]) == [2, 3]
+            @test CP.findall_in([1, 2, 3, 3], [3, 3]) == [3, 4]
+            arep = sort!(rand(1:1000, 2000))
+            setrep = sort!(rand(1:1000, 500))
+            @test CP.findall_in(arep, setrep) == findall(in(Set(setrep)), arep)
+
+            # more than 10^6 values in `a`, all larger than the values in `set`
+            @test CP.findall_in_sorted(collect(11:1_000_011), [1, 2, 3]) |> isempty
+
             @test_throws "offset arrays are not supported" CP.findall_in_sorted(
                 OffsetArray([1, 2, 3], -1),
                 [2],
@@ -1144,6 +1162,16 @@ const CP = CosmoParticles
                 ap = pccc.all
                 to_physical!(ap, z; propexp)
                 @test pccc == to_physical(pc; propexp)
+            end
+
+            @testset "Integer redshift" begin
+                p = Particles(:dm, :pos => ones(3, 2), :n => ones(2))
+                @test to_comoving(p, 1; propexp).n ≈ fill(1 / 8, 2)
+                @test to_physical(p, 1; propexp).n ≈ fill(8.0, 2)
+                pc = RedshiftParticleCollection(1, :dm => p)
+                @test to_comoving(pc; propexp).dm.n ≈ fill(1 / 8, 2)
+                @test CP.factor_to_comoving(1, -3) ≈ 1 / 8
+                @test CP.factor_to_physical(1, -3) ≈ 8
             end
         end
     end
@@ -1875,6 +1903,12 @@ const CP = CosmoParticles
             @test colnorm(a3 * u"m") ≈ n3 * u"m"
             @test colnorm(a4 * u"m") ≈ n4 * u"m"
 
+            @test colnorm([1 1; 1 0]) ≈ [sqrt(2), 1]
+            @test colnorm([1 1; 1 0]) isa Vector{Float64}
+            @test colnorm([1 1; 1 0] * u"m") ≈ [sqrt(2), 1] * u"m"
+            @test colnorm([1 1; 1 0], [1, 0]) ≈ [1, 0]
+            @test colnorm(Any[3 0; 4 1.0]) == [5.0, 1.0]
+
             @test colnorm2(a2) ≈ n2 .^ 2
             @test colnorm2(a3) ≈ n3 .^ 2
             @test colnorm2(a4) ≈ n4 .^ 2
@@ -2106,8 +2140,41 @@ const CP = CosmoParticles
                 am .= a
                 @test angmom(am, b, m) ≈ j
             end
+
+            @testset "Fill masses" begin
+                pos, vel = rand(3, 10) * u"m", rand(3, 10) * u"m/s"
+                mfill = Fill(2.0u"kg", 10)
+                @test angmomtot(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
+                @test angmomtot_stable(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
+                pf = Particles(:dm, :pos => Fill(1.0u"m", 3, 10), :mass => mfill)
+                @test meanprop(pf, :pos) == fill(1.0u"m", 3)
+            end
         end
 
+
+        @testset "Element types" begin
+            allm = Matrix{Missing}(missing, 3, 4)
+            b = rand(3, 4)
+            @test isequal(coldot(allm, b), fill(missing, 4))
+            @test colcross(allm, b) isa Matrix{Missing}
+            @test angmom(allm, b, rand(4)) isa Matrix{Missing}
+            @test angmom(allm, b, rand(4); origin=[1.0, 2.0, 3.0]) isa Matrix{Missing}
+            @test colnorm2(allm) isa Vector{Missing}
+            @test colnorm2(allm, [1.0, 2.0, 3.0]) isa Vector{Missing}
+            @test colnormell(Matrix{Missing}(missing, 2, 4), 0.5) isa Vector{Missing}
+            @test colnormell2(allm, 0.5, 0.5) isa Vector{Missing}
+
+            bm = Matrix{Union{Missing,typeof(1.0u"m")}}(b * u"m")
+            @test colnorm2(bm) isa Vector{Union{Missing,typeof(1.0u"m^2")}}
+            @test all(colnorm2(bm, [1, 2, 3]u"cm") .≈ colnorm2(b * u"m", [0.01, 0.02, 0.03]u"m"))
+            @test colnormell(bm, 0.5, 0.5) isa Vector{Union{Missing,typeof(1.0u"m")}}
+
+            @test coldot(rand(Float32, 3, 4), rand(Float32, 3, 4)) isa Vector{Float32}
+            @test colnormell2(rand(Float32, 2, 4), 1) isa Vector{Float32}
+            @test colnormell2(rand(1:5, 2, 4), 1) isa Vector{Float64}
+            @test colnormell(rand(Float32, 3, 4), 0.5, 0.5) isa Vector{Float64}
+            @test angmom(rand(3, 4) * u"m", rand(3, 4) * u"m/s", 2.0u"kg") isa Matrix{typeof(1.0u"kg*m^2/s")}
+        end
 
         @testset "Offset arrays and dimensions" begin
             a = rand(3, 5)

@@ -338,7 +338,7 @@ Returns ``(1 + z)^n``.
 This is not exported.
 """
 function factor_to_comoving(z::Real, n::Real)
-    (1 + z)^n
+    float(1 + z)^n
 end
 
 """
@@ -349,7 +349,7 @@ Returns ``(1 + z)^{-n}``.
 This is not exported.
 """
 function factor_to_physical(z::Real, n::Real)
-    1 / (1 + z)^n
+    1 / float(1 + z)^n
 end
 
 
@@ -401,7 +401,7 @@ In-place version of [`to_physical`](@ref).
 """
 function to_physical! end
 
-for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(1 + z), :(1 / (1 + z))])
+for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(float(1 + z)), :(1 / (1 + z))])
     quote
         function $(Symbol(name))(p::AbstractParticles, z::Real; propexp=[(:pos, 1), (:vel, 1)])
             p = copy(p)

@@ -196,7 +196,7 @@ end
 
 function _get_prop_dims(prop::Symbol, ps::AbstractParticles...)
     for p in ps
-        vals = p[prop]
+        vals = get(get_props(p), prop, missing)
         if vals isa AbstractVector
             return 1
         elseif vals isa AbstractMatrix

@@ -32,6 +32,7 @@ function _meanprop(a::AbstractMatrix, m::AbstractVector)
 end
 _meanprop(a::AbstractFillMatrix) = Fill(a[1, 1], size(a, 1))
 _meanprop(a::AbstractFillMatrix, ::AbstractVector) = _meanprop(a)
+_meanprop(a::AbstractFillMatrix, ::AbstractFillVector) = _meanprop(a)
 _meanprop(a::AbstractArray, ::Number) = _meanprop(a)
 _meanprop(a::AbstractVector, ::AbstractFillVector) = _meanprop(a)
 _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
@@ -162,14 +163,14 @@ Returns a new `Vector` with the columnwise norms of `a` around `origin`.
 This method does not check for overflow of the squared norm.
 """
 function colnorm(a::AbstractMatrix{T}) where {T}
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a)
 end
 
 function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
     @assert size(a, 1) == length(origin)
     T === T0 || (origin = convert(Vector{T}, origin))
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a, origin)
 end
 
@@ -179,47 +180,14 @@ end
 Returns a new `Vector` with the columnwise squared norms of `a` around `origin`.
 """
 function colnorm2(a::AbstractMatrix{T}) where {T}
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
     return _colnorm2_unsafe!(dst, a)
 end
 
-function colnorm2(a::AbstractMatrix{Q}) where {T,Q<:Quantity{T}}
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a)
-end
-
-function colnorm2(a::AbstractMatrix{Union{Missing,Q}}) where {T,Q<:Quantity{T}}
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a)
-end
-
-function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
+function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector) where {T}
     @assert size(a, 1) == length(origin)
-    T === T0 || (origin = convert(Vector{T}, origin))
-    dst = Vector{T}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
-end
-
-function colnorm2(a::AbstractMatrix{Q}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
-    @assert size(a, 1) == length(origin)
-    Q === Q0 || (origin = convert(Vector{Q}, origin))
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
-end
-
-function colnorm2(a::AbstractMatrix{Union{Missing,Q}}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
-    @assert size(a, 1) == length(origin)
-    Q === Q0 || (origin = convert(Vector{Q}, origin))
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
+    dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
+    return _colnorm2_unsafe!(dst, a, _help_convert_origin(T, origin))
 end
 
 
@@ -383,40 +351,8 @@ function coldot(a::AbstractMatrix, b::AbstractMatrix)
 end
 
 function _coldot_unsafe(a::AbstractMatrix, b::AbstractMatrix)
-    dst = similar(a, Any, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
+    T = Base.promote_op((x, y) -> x * y + x * y, eltype(a), eltype(b))
     dst = similar(a, T, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{T2},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(
-    a::AbstractMatrix{T1},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
     return _coldot_unsafe!(dst, a, b)
 end
 
@@ -473,40 +409,8 @@ function colcross(a::AbstractMatrix, b::AbstractMatrix)
 end
 
 function _colcross_unsafe(a::AbstractMatrix, b::AbstractMatrix)
-    dst = similar(a, Any)
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
+    T = Base.promote_op((x, y) -> x * y - x * y, eltype(a), eltype(b))
     dst = similar(a, T)
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{T2},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(
-    a::AbstractMatrix{T1},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
     return _colcross_unsafe!(dst, a, b)
 end
 
@@ -554,11 +458,6 @@ function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=n
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
-function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass, origin, velorigin)
-    dst = similar(pos, Any)
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
-end
-
 
 # The angular momentum kernels index the rows of the positions, velocities, and origins as 1 to 3, and the
 # particles from 1.
@@ -578,63 +477,23 @@ function _check_origin(origin::AbstractVector, name)
     return nothing
 end
 
-_help_convert_origin(::Type{T}, origin::AbstractVector) where {T} = convert(Vector{T}, origin)
-_help_convert_origin(::Type{T}, origin::Nothing) where {T} = nothing
+# An origin takes the element type of the positions or velocities, without `Missing`.
+_help_convert_origin(::Type{T}, origin::AbstractVector) where {T} = convert(Vector{nonmissingtype(T)}, origin)
+_help_convert_origin(::Type{Missing}, origin::AbstractVector) = origin
+_help_convert_origin(::Type, ::Nothing) = nothing
 
 
-function _angmom_unsafe(
-    pos::AbstractMatrix{T1},
-    vel::AbstractMatrix{T2},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass, origin, velorigin)
+    T = Base.promote_op((x, y, m) -> m * (x * y - x * y), eltype(pos), eltype(vel), _eltype_of(mass))
     dst = similar(pos, T)
     return _angmom_unsafe!(
         dst,
         pos,
         vel,
         mass,
-        _help_convert_origin(T1, origin),
-        _help_convert_origin(T2, velorigin),
+        _help_convert_origin(eltype(pos), origin),
+        _help_convert_origin(eltype(vel), velorigin),
     )
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{Union{T1,Missing}},
-    vel::AbstractMatrix{T2},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{T1},
-    vel::AbstractMatrix{Union{T2,Missing}},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{Union{T1,Missing}},
-    vel::AbstractMatrix{Union{T2,Missing}},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
 end
 
 for (T1, T2) in zip(
@@ -687,8 +546,8 @@ for (T1, T2) in zip(
 end
 
 
-_zero_of(::T) where {T<:Number} = zero(T)
-_zero_of(::AbstractArray{T}) where {T<:Number} = zero(T)
+_eltype_of(m::AbstractArray) = eltype(m)
+_eltype_of(m) = typeof(m)
 
 
 
@@ -749,6 +608,11 @@ function _type_and_zero_of_summed_angmomtot(
 ) where {T1,T2,T3}
     z = zero(T1) * zero(T2) * zero(T3)
     return typeof(z), z
+end
+
+# The kernels for a `Fill` mass, like those for a scalar mass, sum without the mass and multiply by it at the end.
+function _type_and_zero_of_summed_angmomtot(p::AbstractMatrix, v::AbstractMatrix, m::AbstractFillVector)
+    return _type_and_zero_of_summed_angmomtot(p, v, zero(eltype(m)))
 end
 
 

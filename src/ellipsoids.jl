@@ -8,47 +8,17 @@ In the 3D case: ``x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}``.
 
 See also [`colnormell`](@ref).
 """
-function colnormell2(a::AbstractMatrix{T}, q::S, _::Nothing=nothing) where {T,S}
-    Tnew = float(promote_type(T, S))
+function colnormell2(a::AbstractMatrix{T}, q, ::Nothing=nothing) where {T}
+    # the floating-point type of the elements of `a` promoted with the axis ratios
+    Tnew = Base.promote_op((x, q) -> float(x^2 + x^2 * q), T, typeof(q))
     dst = Vector{Tnew}(undef, size(a, 2))
     return _colnormell2_unsafe!(dst, a, q)
 end
 
-function colnormell2(a::AbstractMatrix{Q}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
-    Tnew = float(promote_type(T, S))
-    u = unit(Q)^2
-    Q² = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnormell2_unsafe!(dst, a, q)
-end
-
-function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
-    Tnew = float(promote_type(T, S))
-    u = unit(Q)^2
-    Q² = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnormell2_unsafe!(dst, a, q)
-end
-
-function colnormell2(a::AbstractMatrix{T}, q::S, s::R) where {T,S,R}
-    Tnew = float(promote_type(T, S, R))
+function colnormell2(a::AbstractMatrix{T}, q, s) where {T}
+    # the floating-point type of the elements of `a` promoted with the axis ratios
+    Tnew = Base.promote_op((x, q, s) -> float(x^2 + x^2 * q + x^2 * s), T, typeof(q), typeof(s))
     dst = Vector{Tnew}(undef, size(a, 2))
-    return _colnormell2_unsafe!(dst, a, q, s)
-end
-
-function colnormell2(a::AbstractMatrix{Q}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
-    Tnew = float(promote_type(T, S, R))
-    u = unit(Q)^2
-    Q² = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnormell2_unsafe!(dst, a, q, s)
-end
-
-function colnormell2(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
-    Tnew = float(promote_type(T, S, R))
-    u = unit(Q)^2
-    Q² = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
     return _colnormell2_unsafe!(dst, a, q, s)
 end
 
@@ -93,47 +63,17 @@ In the 3D case: ``\sqrt{x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}}``.
 
 See also [`colnormell2`](@ref).
 """
-function colnormell(a::AbstractMatrix{T}, q::S, _::Nothing=nothing) where {T,S}
-    Tnew = float(promote_type(T, S))
+function colnormell(a::AbstractMatrix{T}, q, ::Nothing=nothing) where {T}
+    # the floating-point type of the elements of `a` promoted with the axis ratios
+    Tnew = Base.promote_op((x, q) -> sqrt(x^2 + x^2 * q), T, typeof(q))
     dst = Vector{Tnew}(undef, size(a, 2))
     return _colnormell_unsafe!(dst, a, q)
 end
 
-function colnormell(a::AbstractMatrix{Q}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
-    Tnew = float(promote_type(T, S))
-    u = unit(Q)
-    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Qnew}(undef, size(a, 2))
-    return _colnormell_unsafe!(dst, a, q)
-end
-
-function colnormell(a::AbstractMatrix{Union{Missing,Q}}, q::S, _::Nothing=nothing) where {T,Q<:Quantity{T},S}
-    Tnew = float(promote_type(T, S))
-    u = unit(Q)
-    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Qnew}}(undef, size(a, 2))
-    return _colnormell_unsafe!(dst, a, q)
-end
-
-function colnormell(a::AbstractMatrix{T}, q::S, s::R) where {T,S,R}
-    Tnew = float(promote_type(T, S, R))
+function colnormell(a::AbstractMatrix{T}, q, s) where {T}
+    # the floating-point type of the elements of `a` promoted with the axis ratios
+    Tnew = Base.promote_op((x, q, s) -> sqrt(x^2 + x^2 * q + x^2 * s), T, typeof(q), typeof(s))
     dst = Vector{Tnew}(undef, size(a, 2))
-    return _colnormell_unsafe!(dst, a, q, s)
-end
-
-function colnormell(a::AbstractMatrix{Q}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
-    Tnew = float(promote_type(T, S, R))
-    u = unit(Q)
-    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Qnew}(undef, size(a, 2))
-    return _colnormell_unsafe!(dst, a, q, s)
-end
-
-function colnormell(a::AbstractMatrix{Union{Missing,Q}}, q::S, s::R) where {T,Q<:Quantity{T},S,R}
-    Tnew = float(promote_type(T, S, R))
-    u = unit(Q)
-    Qnew = Quantity{Tnew,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Qnew}}(undef, size(a, 2))
     return _colnormell_unsafe!(dst, a, q, s)
 end
 
