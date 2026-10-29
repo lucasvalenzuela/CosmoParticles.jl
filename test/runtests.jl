@@ -2313,15 +2313,50 @@ const CP = CosmoParticles
 
         @test Tables.getcolumn(p, :temp) == p.temp
         @test Tables.getcolumn(p, :mass) == fill(p.mass, n)
-        @test Tables.getcolumn(p, :pos) == eachcol(p.pos)
+        @test Tables.getcolumn(p, :pos_y) == p.pos[2, :]
+        @test_throws "its rows are the columns :pos_x, :pos_y, :pos_z" Tables.getcolumn(p, :pos)
+        @test_throws "there is no table column :rho" Tables.getcolumn(p, :rho)
+
+        names = Tables.columnnames(p)
+        @test names isa Vector{Symbol}
+        @test issetequal(names, [:pos_x, :pos_y, :pos_z, :temp, :mass])
+        @test ncol(p) == 5
+        @test nrow(p) == n
+        for (i, nm) in enumerate(names)
+            @test Tables.getcolumn(p, i) == Tables.getcolumn(p, nm)
+            @test Tables.getcolumn(p, Float64, i, nm) == Tables.getcolumn(p, nm)
+        end
+
+        sch = Tables.schema(p)
+        @test sch.names == Tuple(names)
+        @test all(==(Float64), sch.types)
+
+        ct = Tables.columntable(p)
+        @test ct.pos_z == p.pos[3, :]
+        @test ct.temp == p.temp
+        @test ct.mass == fill(p.mass, n)
+        rt = Tables.rowtable(p)
+        @test length(rt) == n
+        @test rt[2].pos_x == p.pos[1, 2]
+        @test size(Tables.matrix(p)) == (n, 5)
 
         pn = Particles(:gas, :arr => NamedRowArray(rand(2, n), [:a, :b]), :temp => rand(n))
-        @test issetequal(collect(Tables.columnnames(pn)), [:arr_a, :arr_b, :temp])
+        @test issetequal(Tables.columnnames(pn), [:arr_a, :arr_b, :temp])
+        @test Tables.getcolumn(pn, :arr_b) == pn.arr[2, :]
 
-        ks = collect(keys(p))
-        @test Tables.columnnames(p) == ks
-        for i in 1:3
-            @test Tables.getcolumn(p, i) == Tables.getcolumn(p, ks[i])
-        end
+        p4 = Particles(:gas, :arr => rand(4, n), :ids => collect(1:n))
+        @test issetequal(Tables.columnnames(p4), [:arr_1, :arr_2, :arr_3, :arr_4, :ids])
+        @test Tables.columntable(p4).arr_4 == p4.arr[4, :]
+        @test Tables.schema(p4).types[findfirst(==(:ids), Tables.schema(p4).names)] == Int
+
+        pc = ParticleCollection(
+            Particles(:dm, :pos => rand(3, 4), :mass => 1.0),
+            Particles(:gas, :pos => rand(3, 6), :mass => rand(6)),
+        )
+        ap = pc.all
+        ct = Tables.columntable(ap)
+        @test length(ct.pos_x) == 10
+        @test ct.pos_y == ap.pos[2, :]
+        @test ct.mass == ap.mass
     end
 end

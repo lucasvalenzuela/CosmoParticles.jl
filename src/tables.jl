@@ -1,108 +1,69 @@
 Tables.istable(::Type{<:AbstractParticles}) = true
-
-function Tables.schema(p::AbstractParticles)
-    t = _get_eltype.(values(p))
-    return Tables.Schema(Tables.columnnames(p), t)
-end
-
-_get_eltype(::T) where {T} = T
-_get_eltype(::AbstractVector{T}) where {T} = T
-_get_eltype(::AbstractMatrix{T}) where {T} = Vector{T}
-
 Tables.columnaccess(::Type{<:AbstractParticles}) = true
 Tables.columns(p::AbstractParticles) = p
 
-function Tables.getcolumn(p::AbstractParticles, ::Type{T}, col::Int, nm::Symbol) where {T}
-    val = p[nm]
-    return val isa AbstractVector ? val : fill(val, nrow(p))
+# The table has one column per vector property, per scalar property (repeated for every particle) and per row of a
+# matrix property. The rows of a matrix are named as in the underscore access of `getindex`: by their row names for a
+# `NamedRowMatrix`, by `x`, `y`, `z` for two or three rows, and by their numbers otherwise.
+function _table_columns(p::AbstractParticles)
+    cols = Tuple{Symbol,Symbol,Int}[] # column name, property, and row of a matrix property (0 for others)
+    for key in keys(p)
+        vals = p[key]
+        if vals isa AbstractMatrix
+            for (row, suffix) in zip(1:size(vals, 1), _row_suffixes(vals))
+                push!(cols, (Symbol(key, "_", suffix), key, row))
+            end
+        else
+            push!(cols, (key, key, 0))
+        end
+    end
+    return cols
 end
 
-function Tables.getcolumn(p::AbstractParticles, ::Type{<:Vector}, col::Int, nm::Symbol)
-    eachcol(p[nm])
+_row_suffixes(vals::NamedRowMatrix) = rownames(vals)
+_row_suffixes(vals::AbstractMatrix) = 2 ≤ size(vals, 1) ≤ 3 ? (:x, :y, :z) : 1:size(vals, 1)
+
+function _table_column(p::AbstractParticles, key::Symbol, row::Int)
+    vals = p[key]
+    row == 0 || return @view vals[row, :]
+    return vals isa AbstractVector ? vals : Fill(vals, particle_number(p))
+end
+
+_table_column_eltype(vals::AbstractArray) = eltype(vals)
+_table_column_eltype(val) = typeof(val)
+
+Tables.columnnames(p::AbstractParticles) = [name for (name, _, _) in _table_columns(p)]
+
+function Tables.schema(p::AbstractParticles)
+    cols = _table_columns(p)
+    names = [name for (name, _, _) in cols]
+    types = [_table_column_eltype(p[key]) for (_, key, _) in cols]
+    return Tables.Schema(names, types)
 end
 
 function Tables.getcolumn(p::AbstractParticles, nm::Symbol)
-    val = p[nm]
-    T = _get_eltype(val)
-    if T <: Vector
-        return eachcol(val)
-    else
-        return val isa AbstractVector ? val : fill(val, nrow(p))
+    cols = _table_columns(p)
+    i = findfirst(col -> col[1] === nm, cols)
+    if isnothing(i)
+        matrix_cols = [name for (name, key, row) in cols if key === nm && row > 0]
+        isempty(matrix_cols) || throw(
+            ArgumentError(
+                "the matrix property :$nm is not a table column, its rows are the columns " *
+                join(repr.(matrix_cols), ", "),
+            ),
+        )
+        throw(ArgumentError("there is no table column :$nm"))
     end
+    _, key, row = cols[i]
+    return _table_column(p, key, row)
 end
 
 function Tables.getcolumn(p::AbstractParticles, i::Int)
-    j = 0
-    for key in Tables.columnnames(p)
-        j += 1
-        i == j && return Tables.getcolumn(p, key)
-    end
-
-    error("Column $(i) is out of bounds, only $j columns available.")
+    _, key, row = _table_columns(p)[i]
+    return _table_column(p, key, row)
 end
 
-Tables.columnnames(p::AbstractParticles) = ParticlesColumnKeySet(p)
+Tables.getcolumn(p::AbstractParticles, ::Type, i::Int, ::Symbol) = Tables.getcolumn(p, i)
 
-Tables.DataAPI.ncol(p::AbstractParticles) = length(Tables.columnnames(p))
+Tables.DataAPI.ncol(p::AbstractParticles) = length(_table_columns(p))
 Tables.DataAPI.nrow(p::AbstractParticles) = particle_number(p)
-
-
-# iterate columns as vector accessors
-struct ParticlesColumnKeySet{P<:AbstractParticles} <: AbstractSet{Symbol}
-    particles::P
-end
-
-function Base.show(io::IO, mime::MIME"text/plain", pk::ParticlesColumnKeySet)
-    print(io, "ParticlesColumnKeySet for a ")
-    summary(io, pk.particles)
-end
-
-function Base.length(pk::ParticlesColumnKeySet)
-    i = 0
-    for _ in pk
-        i += 1
-    end
-    return i
-end
-
-Base.isempty(pk::ParticlesColumnKeySet) = isempty(pk.particles)
-
-function Base.iterate(pk::ParticlesColumnKeySet)
-    isempty(pk) && return nothing
-    dkey, dkey_state = iterate(keys(pk.particles))
-    return _first_column_key(pk.particles, dkey, dkey_state)
-end
-
-function Base.iterate(pk::ParticlesColumnKeySet, (dkey, dkey_state, dims, state, names))
-    if state > 1
-        state -= 1
-        return _matrix_column_key(dkey, names, dims, state), (dkey, dkey_state, dims, state, names)
-    end
-
-    it = iterate(keys(pk.particles), dkey_state)
-    isnothing(it) && return nothing
-    return _first_column_key(pk.particles, it...)
-end
-
-# The iteration state holds the number of rows of a matrix property, how many of its columns are left, and its row
-# names (`nothing` if it has none), so the row names are only retrieved once per matrix.
-function _first_column_key(p, dkey::Symbol, dkey_state)
-    vals = p[dkey]
-    vals isa AbstractMatrix || return dkey, (dkey, dkey_state, 1, 1, nothing)
-
-    dims = size(vals, 1)
-    names = vals isa NamedRowMatrix ? rownames(vals) : nothing
-    return _matrix_column_key(dkey, names, dims, dims), (dkey, dkey_state, dims, dims, names)
-end
-
-function _matrix_column_key(dkey, names, dims, i)
-    ind = dims - i + 1
-
-    if isnothing(names)
-        postfix = dims ≤ 3 ? ("_x", "_y", "_z")[ind] : "_$ind"
-    else
-        postfix = string("_", names[ind])
-    end
-
-    return Symbol(dkey, postfix)
-end
