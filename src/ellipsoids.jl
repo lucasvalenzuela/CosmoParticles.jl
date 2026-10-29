@@ -158,13 +158,13 @@ end
 
 
 function _check_axis_ratios(q)
-    0 ≤ q ≤ 1 || throw(ArgumentError("the axis ratio q must be between 0 and 1, got q = $q"))
+    0 < q ≤ 1 || throw(ArgumentError("the axis ratio q must satisfy 0 < q ≤ 1, got q = $q"))
     return nothing
 end
 
 function _check_axis_ratios(q, s)
     _check_axis_ratios(q)
-    0 ≤ s ≤ q || throw(ArgumentError("the axis ratio s must be between 0 and q, got q = $q and s = $s"))
+    0 < s ≤ q || throw(ArgumentError("the axis ratio s must satisfy 0 < s ≤ q, got q = $q and s = $s"))
     return nothing
 end
 
@@ -204,10 +204,11 @@ Returns an ellipse around the origin with semi-major axis `a` and the axis ratio
 If `constant_area=true`, the semi-major axis of the ellipse is picked such that its area is equal to that of a
 circle with radius `a`.
 
-The axis ratio `q` has to be between 0 and 1.
+The axis ratio `q` has to satisfy `0 < q ≤ 1`.
 """
 function CosmoEllipse(a::T; q::U=1, constant_area=false) where {T<:Number,U<:Real}
     if constant_area
+        _check_axis_ratios(q) # before `sqrt`, which throws for negative q
         anew = a / sqrt(q)
         CosmoEllipse{float(typeof(anew)),float(U)}(anew, q)
     else
@@ -223,7 +224,7 @@ Returns an ellipse around the origin with semi-major axis `a` and semi-minor axi
 The semi-minor axis has to be smaller than the semi-major axis.
 """
 function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
-    q = b / a
+    q = uconvert(NoUnits, b / a)
     Tnew = float(promote_type(T1, T2))
     return CosmoEllipse{float(Tnew),typeof(q)}(a, q)
 end
@@ -275,16 +276,17 @@ end
 
 
 """
-    CosmoEllipsoid(a::Number; q::Real=1, s::Real=1, constant_volume=false)
+    CosmoEllipsoid(a::Number; q::Real=1, s::Real=q, constant_volume=false)
 
 Returns an ellipsoid around the origin with semi-major axis `a` and the axis ratios `q` and `s`.
 
 If `constant_volume=true`, the semi-major axis of the ellipsoid is picked such that its volume is equal to that
 of a sphere with radius `a`.
 
-Both `q` and `s` have to be between 0 and 1, and `q ≥ s` has to hold.
+The axis ratios have to satisfy `0 < s ≤ q ≤ 1`. By default, `s = q`: passing only `q` gives a prolate shape
+and passing only `s` an oblate one.
 """
-function CosmoEllipsoid(a; q=1, s=1, constant_volume=false)
+function CosmoEllipsoid(a; q=1, s=q, constant_volume=false)
     _create_cosmoellipsoid_qs(a, q, s, constant_volume)
 end
 
@@ -306,7 +308,7 @@ Returns an ellipsoid around the origin with semi axes `a`, `b`, and `c`, with `a
 If `c` is `nothing`, a [`CosmoEllipse`](@ref) is created instead.
 """
 function CosmoEllipsoid(a::T1, b::T2, c::T3) where {T1<:Number,T2<:Number,T3<:Number}
-    q, s = b / a, c / a
+    q, s = uconvert(NoUnits, b / a), uconvert(NoUnits, c / a)
     Tnew = float(promote_type(T1, T2, T3))
     U = promote_type(typeof(q), typeof(s))
     return CosmoEllipsoid{float(Tnew),U}(a, q, s)
@@ -380,7 +382,7 @@ Returns a 2D homoeoid around the origin with semi-major axes `a1 ≤ a2` and the
 If `constant_area=true`, the semi-major axes of the ellipse are picked such that the enclosed area is equal to
 that enclosed by two circles with radii `a1` and `a2`.
 
-The axis ratio `q` has to be between 0 and 1.
+The axis ratio `q` has to satisfy `0 < q ≤ 1`.
 
 For the second method, `a2` can also be smaller than `a1`. It is only important that `a` and `b` both either
 correspond to the inner or outer ellipse.
@@ -395,6 +397,7 @@ end
 
 function _cosmo_homoeoid_2d(a1::T1, a2::T2, q::U, constant_area) where {T1<:Number,T2<:Number,U<:Real}
     if constant_area
+        _check_axis_ratios(q) # before `sqrt`, which throws for negative q
         a1new = a1 / sqrt(q)
         a2new = a2 / sqrt(q)
         T = promote_type(float(typeof(a1new)), float(typeof(a2new)))
@@ -406,7 +409,7 @@ function _cosmo_homoeoid_2d(a1::T1, a2::T2, q::U, constant_area) where {T1<:Numb
 end
 
 function _cosmo_homoeoid_2d(a::T1, b::Number, a2::T2) where {T1<:Number,T2<:Number}
-    q = b / a
+    q = uconvert(NoUnits, b / a)
     a1, a2 = minmax(a, a2)
     Tnew = float(promote_type(T1, T2))
     return CosmoHomoeoid2D{Tnew,typeof(q)}(a1, a2, q)
@@ -469,16 +472,17 @@ CosmoHomoeoid(a1::T, a2::T, q::U, s::U) where {T,U} = CosmoHomoeoid{T,U}(a1, a2,
 
 
 """
-    CosmoHomoeoid(a1::Number, a2::Number; q::Real=1, s::Real=1, constant_volume=false)
+    CosmoHomoeoid(a1::Number, a2::Number; q::Real=1, s::Real=q, constant_volume=false)
 
 Returns a 3D homoeoid around the origin with semi-major axes `a1 ≤ a2` and the axis ratios `q` and `s`.
 
 If `constant_volume=true`, the semi-major axes of the ellipsoids are picked such that the enclosed volume is
 equal to that enclosed by two spheres with radii `a1` and `a2`.
 
-The axis ratios `q` and `s` have to be between 0 and 1.
+The axis ratios have to satisfy `0 < s ≤ q ≤ 1`. By default, `s = q`: passing only `q` gives a prolate shape
+and passing only `s` an oblate one.
 """
-function CosmoHomoeoid(a1, a2; q=1, s=1, constant_volume=false)
+function CosmoHomoeoid(a1, a2; q=1, s=q, constant_volume=false)
     _create_cosmohomoeoid_qs(a1, a2, q, s, constant_volume)
 end
 
@@ -513,7 +517,7 @@ The semi-major axis `a2` can be smaller or larger than `a`.
 If `c` is `nothing`, a [`CosmoHomoeoid2D`](@ref) is created instead.
 """
 function CosmoHomoeoid(a::T1, b::Number, c::Number; a2::T2) where {T1<:Number,T2<:Number}
-    q, s = b / a, c / a
+    q, s = uconvert(NoUnits, b / a), uconvert(NoUnits, c / a)
     a1, a2 = minmax(a, a2)
     Tnew = float(promote_type(T1, T2))
     U = promote_type(typeof(q), typeof(s))

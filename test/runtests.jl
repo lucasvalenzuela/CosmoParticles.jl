@@ -1770,18 +1770,18 @@ const CP = CosmoParticles
             @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0)
             @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0, 0.5, 0.5)
             @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0, 0.5)
-            @test_throws "q must be between 0 and 1" CosmoHomoeoid2D(1.0, 2.0, 1.5)
-            @test_throws "s must be between 0 and q" CosmoHomoeoid(1.0, 2.0, 0.2, 0.5)
-            @test_throws "s must be between 0 and q" CosmoEllipsoid{Float64,Float64}(1.0, 0.5, 0.8)
-            @test_throws "q must be between 0 and 1" CosmoEllipse{Float64,Float64}(1.0, -0.5)
-            @test_throws "q must be between 0 and 1" CosmoEllipse(1.0; q=1.5)
-            @test_throws "q must be between 0 and 1" CosmoEllipse(1.0, 1.5)
-            @test_throws "s must be between 0 and q" CosmoEllipsoid(1.0; q=0.5, s=0.8)
-            @test_throws "s must be between 0 and q" CosmoEllipsoid(1.0, 0.5, 0.8)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 2.0, 1.5)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoHomoeoid(1.0, 2.0, 0.2, 0.5)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoEllipsoid{Float64,Float64}(1.0, 0.5, 0.8)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse{Float64,Float64}(1.0, -0.5)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0; q=1.5)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0, 1.5)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoEllipsoid(1.0; q=0.5, s=0.8)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoEllipsoid(1.0, 0.5, 0.8)
             @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0; q=0.5)
-            @test_throws "q must be between 0 and 1" CosmoHomoeoid2D(1.0, 1.5; a2=2.0)
-            @test_throws "s must be between 0 and q" CosmoHomoeoid(1.0, 0.5, 0.8; a2=2.0)
-            @test_throws "q must be between 0 and 1" CosmoHomoeoid(1.0, 2.0; q=1.2, s=0.5, constant_volume=true)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 1.5; a2=2.0)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoHomoeoid(1.0, 0.5, 0.8; a2=2.0)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid(1.0, 2.0; q=1.2, s=0.5, constant_volume=true)
 
             h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.2)
             @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
@@ -1789,6 +1789,25 @@ const CP = CosmoParticles
             @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
             h2 = CosmoHomoeoid2D(1.0, 2.0, 0.5)
             @test (h2.a1, h2.a2, h2.q) == (1.0, 2.0, 0.5)
+
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0; q=-0.5, constant_area=true)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 2.0; q=-0.5, constant_area=true)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0; q=0, constant_area=true)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse{Float64,Float64}(1.0, 0.0)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoEllipsoid(1.0; q=0.5, s=0.0)
+
+            e = CosmoEllipsoid(1.0; q=0.5)
+            @test (e.q, e.s) == (0.5, 0.5)
+            e = CosmoEllipsoid(1.0; s=0.5)
+            @test (e.q, e.s) == (1.0, 0.5)
+            h = CosmoHomoeoid(1.0, 2.0; q=0.5)
+            @test (h.q, h.s) == (0.5, 0.5)
+
+            e = CosmoEllipse(2.0u"km", 1.0u"m")
+            @test e.q isa Float64
+            @test e.q ≈ 5e-4
+            @test ellipticity(e) ≈ 1 - 5e-4
+            @test CosmoEllipsoid(2.0u"km", 1.0u"km", 500.0u"m").s ≈ 0.25
         end
 
         @testset "Offset arrays" begin
