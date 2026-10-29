@@ -1766,6 +1766,16 @@ const CP = CosmoParticles
             @test CP.mask_in(pos3, cyl_dx) == CP.mask_in(pos3_dx, cyl)
         end
 
+        @testset "Type parameters" begin
+            @test_throws TypeError CosmoHyperrectangle{String,2}
+            @test_throws TypeError CosmoHypersphere{Symbol,3}
+            @test_throws TypeError CosmoCylinder{String}
+            @test_throws TypeError CosmoStandingCylinder{String}
+            @test_throws TypeError CP.Rotated{Int,Matrix{Float64}}
+            @test_throws TypeError CP.Rotated{CosmoSphere{Float64},Vector{Float64}}
+            @test_throws TypeError CP.Translated{CosmoSphere{Float64},Float64}
+        end
+
         @testset "Ellipsoid constructors" begin
             @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0)
             @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0, 0.5, 0.5)
@@ -1808,6 +1818,9 @@ const CP = CosmoParticles
             @test e.q ≈ 5e-4
             @test ellipticity(e) ≈ 1 - 5e-4
             @test CosmoEllipsoid(2.0u"km", 1.0u"km", 500.0u"m").s ≈ 0.25
+            @test_throws TypeError CosmoEllipse{String,Symbol}("a", :b)
+            @test_throws TypeError CosmoHomoeoid{Float64,typeof(1.0u"m")}
+            @test_throws TypeError AllParticles{Int}
         end
 
         @testset "Offset arrays" begin

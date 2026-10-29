@@ -281,7 +281,7 @@ end
 
 
 """
-    struct Rotated{G,R} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,R<:AbstractMatrix}
+    struct Rotated{G<:AbstractCosmoGeometry,R<:AbstractMatrix} <: AbstractCosmoGeometry
         geo::G
         rotmat::R
     end
@@ -292,7 +292,7 @@ This can be created by [`rotate`](@ref) applied to a geometry.
 
 This is not exported.
 """
-struct Rotated{G,R} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,R<:AbstractMatrix}
+struct Rotated{G<:AbstractCosmoGeometry,R<:AbstractMatrix} <: AbstractCosmoGeometry
     geo::G
     rotmat::R
 end
@@ -360,7 +360,7 @@ rotate(rot::Rotated, rotmat::AbstractMatrix{<:Real}) = Rotated(rot.geo, rotmat *
 
 
 """
-    struct Translated{G,L} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,L<:AbstractVector}
+    struct Translated{G<:AbstractCosmoGeometry,L<:AbstractVector} <: AbstractCosmoGeometry
         geo::G
         Δx::L
     end
@@ -371,7 +371,7 @@ This can be created by [`translate`](@ref) applied to a geometry.
 
 This is not exported.
 """
-struct Translated{G,L} <: AbstractCosmoGeometry where {G<:AbstractCosmoGeometry,L<:AbstractVector}
+struct Translated{G<:AbstractCosmoGeometry,L<:AbstractVector} <: AbstractCosmoGeometry
     geo::G
     Δx::L
 end
@@ -404,7 +404,7 @@ translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, 
 
 
 """
-    struct CosmoHyperrectangle{T,N} <: AbstractCosmoGeometry where {T<:Number}
+    struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
         lowerleft::Vector{T}
         upperright::Vector{T}
     end
@@ -413,7 +413,7 @@ translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, 
 
 The dimensions of space are given by `N`.
 """
-struct CosmoHyperrectangle{T,N} <: AbstractCosmoGeometry where {T<:Number}
+struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
     lowerleft::Vector{T}
     upperright::Vector{T}
 
@@ -554,7 +554,7 @@ end
 
 
 """
-    struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
+    struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
         center::Vector{T}
         radius::T
     end
@@ -563,7 +563,7 @@ end
 
 If different types are passed to the constructor, the types will be promoted without throwing an error.
 """
-struct CosmoHypersphere{T,N} <: AbstractCosmoGeometry where {T<:Number}
+struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
     center::Vector{T}
     radius::T
 
@@ -699,7 +699,7 @@ end
 
 
 """
-    struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
+    struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
         startpos::Vector{T}
         endpos::Vector{T}
         radius::T
@@ -709,7 +709,7 @@ Cylinder given by its end points `startpos` and `endpos` and `radius`.
 
 If different types are passed to the constructor, the types will be promoted without throwing an error.
 """
-struct CosmoCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
+struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
     startpos::Vector{T}
     endpos::Vector{T}
     radius::T
@@ -778,7 +778,7 @@ end
 
 
 """
-    struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
+    struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
         center::Vector{T}
         height::T
         radius::T
@@ -789,7 +789,7 @@ Standing cylinder given by its `center`, `height`, and `radius`.
 Standing means that the cylinder is oriented such that its axis is aligned with the z axis.
 If different types are passed to the constructor, the types will be promoted without throwing an error.
 """
-struct CosmoStandingCylinder{T} <: AbstractCosmoGeometry where {T<:Number}
+struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
     center::Vector{T}
     height::T
     radius::T

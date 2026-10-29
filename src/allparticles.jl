@@ -70,7 +70,7 @@ all: 150 Particles
 
 ```
 """
-struct AllParticles{APC} <: AbstractParticles where {APC<:AbstractParticleCollection}
+struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
     particle_collection::APC
     ptypes::Vector{Symbol}
     props::Dict{Symbol,Any}

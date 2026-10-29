@@ -178,14 +178,14 @@ function _check_semimajor_axes(a1, a2)
 end
 
 """
-    struct CosmoEllipse{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+    struct CosmoEllipse{T<:Number,U<:Real} <: AbstractCosmoGeometry
         a::T
         q::U
     end
 
 Ellipse around the origin given by the semi-major axis `a` and the axis ratio `q = b/a` (where `b` is the semi-minor axis).
 """
-struct CosmoEllipse{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+struct CosmoEllipse{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
     q::U
 
@@ -253,7 +253,7 @@ end
 
 
 """
-    struct CosmoEllipsoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+    struct CosmoEllipsoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
         a::T
         q::U
         s::U
@@ -262,7 +262,7 @@ end
 Ellipsoid around the origin given by the largest semi-major axis `a`, and the axis ratios `q = b/a` and `s = c/a`
 (where `b` and `c` are the semi-minor axes with `b ≥ c`).
 """
-struct CosmoEllipsoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+struct CosmoEllipsoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
     q::U
     s::U
@@ -349,7 +349,7 @@ end
 
 
 """
-    struct CosmoHomoeoid2D{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+    struct CosmoHomoeoid2D{T<:Number,U<:Real} <: AbstractCosmoGeometry
         a1::T
         a2::T
         q::U
@@ -358,7 +358,7 @@ end
 Homoeoid in two dimensions around the origin given by the inner and outer semi-major axes `a1` and `a2`, and the
 axis ratio `q = b/a`.
 """
-struct CosmoHomoeoid2D{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+struct CosmoHomoeoid2D{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
     a2::T
     q::U
@@ -444,7 +444,7 @@ end
 
 
 """
-    struct CosmoHomoeoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+    struct CosmoHomoeoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
         a1::T
         a2::T
         q::U
@@ -454,7 +454,7 @@ end
 Homoeoid in three dimensions around the origin given by the inner and outer semi-major axes `a1` and `a2`, and the
 axis ratios `q = b/a` and `s = c/a`.
 """
-struct CosmoHomoeoid{T,U} <: AbstractCosmoGeometry where {T<:Number,U<:Real}
+struct CosmoHomoeoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
     a2::T
     q::U
