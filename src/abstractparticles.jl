@@ -50,6 +50,7 @@ Concrete types of `AbstractParticles` should have the following methods implemen
 - [`Base.empty`](@extref): returns an identical object, but with an empty dictionary
 - [`Base.:(==)`](@extref): should call [`Base.isequal`](@extref) to prevent obtaining `missing` results for
   properties with missing values (relevant for [`AllParticles`](@ref))
+- [`Base.hash`](@extref): equal objects must have equal hashes
 - [`CosmoParticles.particle_name`](@ref): returns the name of the struct to be printed via
   [`Base.show`](@extref Base.show-Tuple{IO, Any, Any})
 - [`Base.propertynames`](@extref): implement this if there are additional struct fields

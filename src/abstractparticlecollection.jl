@@ -32,6 +32,7 @@ Concrete types of `AbstractParticleCollection` should have the following methods
 - [`Base.copy`](@extref): returns new object containing a copy of the dictionary
 - [`Base.empty`](@extref): returns an identical object, but with an empty dictionary
 - [`Base.:(==)`](@extref)
+- [`Base.hash`](@extref): equal objects must have equal hashes
 - [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
 - [`Base.propertynames`](@extref): implement this if there are additional struct fields
 - [`Base.show(io, mime, pc)`](@extref Base.show-Tuple{IO, Any, Any})

@@ -69,6 +69,9 @@ function _check_mask_dims(mask::AbstractVector, pos::AbstractMatrix, N)
     return nothing
 end
 
+# Adding zero turns -0.0 into 0.0, which `==` treats as equal to 0.0 but `hash` does not.
+_hash_normalized(x, h::UInt) = hash(x .+ zero.(x), h)
+
 
 
 """
@@ -456,6 +459,10 @@ function Base.:(==)(r1::CosmoHyperrectangle, r2::CosmoHyperrectangle)
     return r1.lowerleft == r2.lowerleft && r1.upperright == r2.upperright
 end
 
+function Base.hash(r::CosmoHyperrectangle, h::UInt)
+    return _hash_normalized(r.upperright, _hash_normalized(r.lowerleft, hash(:CosmoHyperrectangle, h)))
+end
+
 
 """
     CosmoCuboid{T} = CosmoHyperrectangle{T,3}
@@ -637,6 +644,10 @@ end
 
 function Base.:(==)(s1::CosmoHypersphere, s2::CosmoHypersphere)
     return s1.center == s2.center && s1.radius == s2.radius
+end
+
+function Base.hash(s::CosmoHypersphere, h::UInt)
+    return _hash_normalized(s.radius, _hash_normalized(s.center, hash(:CosmoHypersphere, h)))
 end
 
 
@@ -885,6 +896,20 @@ function Base.:(==)(c1::CosmoCylinder, c2::CosmoStandingCylinder)
            @views c1.startpos[1:2] == c1.endpos[1:2] # c1 is actually standing
 end
 Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoCylinder) = ==(c2, c1)
+
+# A cylinder along the z axis can equal a standing cylinder, so both hash its center, height, and radius.
+function Base.hash(c::CosmoCylinder, h::UInt)
+    if @views c.startpos[1:2] == c.endpos[1:2]
+        return _hash_standing_cylinder(geometry_enclosing_center(c), abs(c.endpos[3] - c.startpos[3]), c.radius, h)
+    end
+    return _hash_normalized(c.radius, _hash_normalized(c.endpos, _hash_normalized(c.startpos, hash(:CosmoCylinder, h))))
+end
+Base.hash(c::CosmoStandingCylinder, h::UInt) = _hash_standing_cylinder(c.center, c.height, c.radius, h)
+
+function _hash_standing_cylinder(center, height, radius, h::UInt)
+    h = _hash_normalized(center, hash(:CosmoStandingCylinder, h))
+    return _hash_normalized(radius, _hash_normalized(height, h))
+end
 
 function Base.isapprox(c1::CosmoCylinder, c2::CosmoStandingCylinder; kwargs...)
     return isapprox(geometry_enclosing_center(c1), geometry_enclosing_center(c2); kwargs...) &&

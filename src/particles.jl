@@ -38,6 +38,7 @@ Particles(type::Symbol, pairs::Pair...) = Particles(type, OrderedDict{Symbol,Any
 Base.copy(p::Particles) = Particles(p.type, copy(p.props))
 Base.empty(p::Particles) = Particles(p.type, empty(p.props))
 Base.:(==)(p1::Particles, p2::Particles) = p1.type == p2.type && isequal(p1.props, p2.props)
+Base.hash(p::Particles, h::UInt) = hash(p.props, hash(p.type, hash(:Particles, h)))
 particle_name(::Particles) = "Particles"
 
 function Base.propertynames(p::Particles, private::Bool=false)

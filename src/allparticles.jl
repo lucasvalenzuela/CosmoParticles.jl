@@ -259,6 +259,7 @@ end
 
 Base.:(==)(p1::AllParticles, p2::AllParticles) =
     p1.particle_collection == p2.particle_collection && p1.ptypes == p2.ptypes
+Base.hash(p::AllParticles, h::UInt) = hash(p.ptypes, hash(p.particle_collection, hash(:AllParticles, h)))
 
 particle_name(::AllParticles) = "Particles"
 

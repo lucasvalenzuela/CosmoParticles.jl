@@ -251,6 +251,47 @@ const CP = CosmoParticles
         @test collect(keys(RedshiftParticleCollection(0.5, gas, dm))) == [:gas, :dm]
     end
 
+    @testset "Hashing" begin
+        p1, p2 = Particles(:dm, :id => [1, 2], :mass => 1.0), Particles(:dm, :mass => 1.0, :id => [1, 2])
+        @test p1 == p2
+        @test hash(p1) == hash(p2)
+        @test length(Set([p1, p2])) == 1
+        @test Dict(p1 => 1)[p2] == 1
+        @test hash(p1) != hash(Particles(:gas, :id => [1, 2], :mass => 1.0))
+
+        pc1 = ParticleCollection(p1, Particles(:gas, :id => [3]))
+        pc2 = ParticleCollection(Particles(:gas, :id => [3]), p2)
+        @test pc1 == pc2
+        @test hash(pc1) == hash(pc2)
+        rpc = RedshiftParticleCollection(0, p1, Particles(:gas, :id => [3]))
+        @test rpc == pc1
+        @test hash(rpc) == hash(pc1)
+        rpc1 = RedshiftParticleCollection(1, p1, Particles(:gas, :id => [3]))
+        @test rpc1 != pc1
+        @test hash(rpc1) != hash(pc1)
+        @test hash(rpc1) == hash(RedshiftParticleCollection(1.0, p2, Particles(:gas, :id => [3])))
+        @test pc1.all == AllParticles(pc1, [:dm, :gas])
+        @test hash(pc1.all) == hash(AllParticles(pc1, [:dm, :gas]))
+        @test unique([pc1, pc2, rpc]) == [pc1]
+
+        s1, s2 = CosmoSphere([0.0, 0, 0], 1.0), CosmoSphere([0.0, 0, 0], 1.0)
+        @test length(Set([s1, s2])) == 1
+        @test hash(CosmoSphere([-0.0, 0, 0], 1.0)) == hash(s1)
+        @test hash(CosmoSphere([1.0, 0, 0], 1.0)) != hash(s1)
+        @test hash(CosmoCuboid([0, 0, 0], [1, 2, 3])) == hash(CosmoCuboid([0.0, 0, 0], [1.0, 2, 3]))
+        cyl = CosmoCylinder([1.0, 2.0, 0.0], [1.0, 2.0, 4.0], 0.5)
+        scyl = CosmoStandingCylinder([1.0, 2.0, 2.0], 4.0, 0.5)
+        @test cyl == scyl
+        @test hash(cyl) == hash(scyl)
+        @test length(Set([cyl, scyl, CosmoCylinder([1.0, 2.0, 0.0], [1.0, 2.0, 4.0], 0.5)])) == 1
+        @test hash(CosmoCylinder([1.0, 2.0, 4.0], [1.0, 2.0, 0.0], 0.5)) == hash(scyl)
+        tilted1 = CosmoCylinder([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.5)
+        tilted2 = CosmoCylinder([0.5, -0.5, 0.0], [0.5, 0.5, 0.0], 0.5)
+        @test tilted1 != tilted2
+        @test hash(tilted1) != hash(tilted2)
+        @test hash(tilted1) == hash(CosmoCylinder([0.0, 0.0, 0.0], [1, 0, 0], 1 // 2))
+    end
+
     @testset "AllParticles" begin
         dm = Particles(:dm)
         dm.id = sample(1:1000, 100; replace=false)

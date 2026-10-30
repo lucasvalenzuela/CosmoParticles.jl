@@ -182,3 +182,11 @@ function Base.:(==)(pc::ParticleCollection, rpc::RedshiftParticleCollection)
     return rpc.z == 0 && pc.particles == rpc.particles
 end
 Base.:(==)(rpc::RedshiftParticleCollection, pc::ParticleCollection) = ==(pc, rpc)
+
+# A `ParticleCollection` equals a `RedshiftParticleCollection` at redshift 0, so the redshift enters the hash only
+# when it is not zero.
+Base.hash(pc::ParticleCollection, h::UInt) = hash(pc.particles, hash(:ParticleCollection, h))
+function Base.hash(pc::RedshiftParticleCollection, h::UInt)
+    h = hash(pc.particles, hash(:ParticleCollection, h))
+    return iszero(pc.z) ? h : hash(pc.z, h)
+end
