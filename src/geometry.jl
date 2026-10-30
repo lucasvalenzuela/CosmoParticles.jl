@@ -597,33 +597,30 @@ for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(
 end
 
 """
-    CosmoHypersphere(N::Integer, radius::T)
+    CosmoHypersphere(N::Integer, radius::Number)
 
 Returns an `N`-dimensional hypersphere around the origin.
 """
-function CosmoHypersphere(N::Integer, radius::T) where {T<:Number}
-    Tfloat = float(T)
-    return CosmoHypersphere{Tfloat,N}(zeros(Tfloat, N), radius)
+function CosmoHypersphere(N::Integer, radius::Number)
+    return CosmoHypersphere(zeros(typeof(float(radius)), N), radius)
 end
 
 """
-    CosmoSphere(radius::T)
+    CosmoSphere(radius::Number)
 
 Returns a sphere around the origin.
 """
-function CosmoSphere(radius::T) where {T<:Number}
-    Tfloat = float(T)
-    return CosmoHypersphere{Tfloat,3}(zeros(Tfloat, 3), radius)
+function CosmoSphere(radius::Number)
+    return CosmoSphere(zeros(typeof(float(radius)), 3), radius)
 end
 
 """
-    CosmoCircle(radius::T)
+    CosmoCircle(radius::Number)
 
 Returns a circle around the origin.
 """
-function CosmoCircle(radius::T) where {T<:Number}
-    Tfloat = float(T)
-    return CosmoHypersphere{Tfloat,2}(zeros(Tfloat, 2), radius)
+function CosmoCircle(radius::Number)
+    return CosmoCircle(zeros(typeof(float(radius)), 2), radius)
 end
 
 

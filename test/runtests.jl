@@ -1588,6 +1588,9 @@ const CP = CosmoParticles
 
             hsphere = CosmoHypersphere(zeros(4), r)
             @test CosmoHypersphere(4, r) == hsphere
+            @test CosmoHypersphere(Int32(3), 1) isa CosmoSphere{Float64}
+            @test CosmoHypersphere(2, 1.0f0) isa CosmoCircle{Float32}
+            @test CosmoSphere(1) == CosmoSphere(zeros(3), 1.0)
             pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
             @test all(sum(abs2, pos4in; dims=1) .≤ r^2)
 
