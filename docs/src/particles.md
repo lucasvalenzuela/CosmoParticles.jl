@@ -13,7 +13,7 @@ For an example implementation of a concrete subtype of `AbstractParticles`, see 
 ```@docs
 AbstractParticles
 Particles
-Particles(type)
+Particles(type::Symbol)
 Particles(p::AllParticles, props=nothing)
 CosmoParticles.get_props
 CosmoParticles.particle_name

@@ -20,14 +20,14 @@ struct Particles <: AbstractParticles
 end
 
 """
-    Particles(type[, pairs::Pair...])
+    Particles(type::Symbol[, pairs::Pair...])
 
 Create a [`Particles`](@ref) object with the given `type` and pairs of `Symbol` to the property
 values. These are passed to the underlying `Dict`.
 If no pairs are passed to the method, an empty `Dict` is created.
 """
-Particles(type) = Particles(type, Dict{Symbol,Any}())
-Particles(type, pairs::Pair...) = Particles(type, Dict{Symbol,Any}(pairs...))
+Particles(type::Symbol) = Particles(type, Dict{Symbol,Any}())
+Particles(type::Symbol, pairs::Pair...) = Particles(type, Dict{Symbol,Any}(pairs...))
 
 
 Base.copy(p::Particles) = Particles(p.type, copy(p.props))
