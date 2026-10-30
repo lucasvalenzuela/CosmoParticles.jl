@@ -60,6 +60,15 @@ function mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
     return mask_in!(mask, pos, geo)
 end
 
+function _check_mask_dims(mask::AbstractVector, pos::AbstractMatrix, N)
+    size(pos, 1) == N ||
+        throw(DimensionMismatch("the geometry is $N-dimensional, but the positions have $(size(pos, 1)) rows"))
+    size(pos, 2) == length(mask) || throw(
+        DimensionMismatch("the mask has length $(length(mask)), but there are $(size(pos, 2)) positions"),
+    )
+    return nothing
+end
+
 
 
 """
@@ -421,7 +430,11 @@ struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
         lowerleft::AbstractVector{<:Number},
         upperright::AbstractVector{<:Number},
     ) where {T<:Number,N}
-        @assert length(lowerleft) == length(upperright) == N
+        length(lowerleft) == length(upperright) == N || throw(
+            DimensionMismatch(
+                "the corners must have length $N, got lengths $(length(lowerleft)) and $(length(upperright))",
+            ),
+        )
         new{T,N}(convert(Vector{T}, lowerleft), convert(Vector{T}, upperright))
     end
 end
@@ -520,8 +533,7 @@ function geometry_enclosing_center(r::CosmoHyperrectangle)
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoCuboid{T}) where {T}
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     @inbounds @views @. mask = (
         (r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) & (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]) &
@@ -530,16 +542,14 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoCuboid
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoRectangle{T}) where {T}
-    @assert size(pos, 1) == 2
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 2)
     Base.require_one_based_indexing(pos)
     @inbounds @views @. mask =
         ((r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]) & (r.lowerleft[2] ≤ pos[2, :] ≤ r.upperright[2]))
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, r::CosmoHyperrectangle{T,N}) where {T,N}
-    @assert size(pos, 1) == N
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, N)
     Base.require_one_based_indexing(pos)
     @inbounds @views @. mask = r.lowerleft[1] ≤ pos[1, :] ≤ r.upperright[1]
     for i in 2:N
@@ -568,7 +578,8 @@ struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
     radius::T
 
     function CosmoHypersphere{T,N}(center::AbstractVector{<:Number}, radius::Number) where {T<:Number,N}
-        @assert length(center) == N
+        length(center) == N ||
+            throw(DimensionMismatch("the center must have length $N, got length $(length(center))"))
         new{T,N}(convert(Vector{T}, center), convert(T, radius))
     end
 end
@@ -636,8 +647,7 @@ end
 geometry_enclosing_center(s::CosmoHypersphere) = s.center
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoSphere)
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r² = s.radius^2
     if all(==(0), s.center)
@@ -649,8 +659,7 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoSphere
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, circle::CosmoCircle)
-    @assert size(pos, 1) == 2
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 2)
     Base.require_one_based_indexing(pos)
     r² = circle.radius^2
     if all(==(0), circle.center)
@@ -661,8 +670,7 @@ function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, circle::CosmoC
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, s::CosmoHypersphere{T,N}) where {T,N}
-    @assert size(pos, 1) == N
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, N)
     Base.require_one_based_indexing(pos)
     r² = s.radius^2
     center = s.center
@@ -712,7 +720,11 @@ struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
     radius::T
 
     function CosmoCylinder{T}(startpos::AbstractVector, endpos::AbstractVector, radius) where {T<:Number}
-        @assert length(startpos) == 3 && length(endpos) == 3
+        length(startpos) == length(endpos) == 3 || throw(
+            DimensionMismatch(
+                "the start and end positions must have length 3, got lengths $(length(startpos)) and $(length(endpos))",
+            ),
+        )
         return new{T}(convert(Vector{T}, startpos), convert(Vector{T}, endpos), convert(T, radius))
     end
 end
@@ -743,8 +755,7 @@ geometry_enclosing_center(c::CosmoCylinder) = 1 // 2 .* (c.startpos .+ c.endpos)
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoCylinder)
     # https://stackoverflow.com/questions/47932955/how-to-check-if-a-3d-point-is-inside-a-cylinder
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     pos1 = @view pos[1, :]
     pos2 = @view pos[2, :]
@@ -792,7 +803,8 @@ struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
     radius::T
 
     function CosmoStandingCylinder{T}(center::AbstractVector, height, radius) where {T<:Number}
-        @assert length(center) == 3
+        length(center) == 3 ||
+            throw(DimensionMismatch("the center must have length 3, got length $(length(center))"))
         return new{T}(convert(Vector{T}, center), convert(T, height), convert(T, radius))
     end
 end
@@ -818,8 +830,7 @@ end
 geometry_enclosing_center(c::CosmoStandingCylinder) = c.center
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, c::CosmoStandingCylinder)
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r² = c.radius^2
     halfheight = 1 // 2 * c.height
@@ -857,7 +868,11 @@ Create a standing cylinder from a cylinder.
 The end positions of the cylinder have to have the same x and y coordinates.
 """
 function CosmoStandingCylinder(c::CosmoCylinder)
-    @assert c.startpos[1] == c.endpos[1] && c.startpos[2] == c.endpos[2]
+    c.startpos[1] == c.endpos[1] && c.startpos[2] == c.endpos[2] || throw(
+        ArgumentError(
+            "the cylinder must be aligned with the z axis, got start position $(c.startpos) and end position $(c.endpos)",
+        ),
+    )
     center = geometry_enclosing_center(c)
     height = abs(c.endpos[3] - c.startpos[3])
     return CosmoStandingCylinder(center, height, c.radius)

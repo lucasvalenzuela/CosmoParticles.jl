@@ -169,17 +169,16 @@ function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
     return CosmoEllipse{float(Tnew),typeof(q)}(a, q)
 end
 
-function CosmoParticles.geometry_enclosing_corners(e::CosmoEllipse)
+function geometry_enclosing_corners(e::CosmoEllipse)
     a = e.a
     b = a * e.q
     return [-a, -b], [a, b]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoEllipse{T}) where {T} = zeros(T, 2)
+geometry_enclosing_center(::CosmoEllipse{T}) where {T} = zeros(T, 2)
 
-function CosmoParticles.mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipse{T}) where {T}
-    @assert size(pos, 1) == 2
-    @assert size(pos, 2) == length(mask)
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipse{T}) where {T}
+    _check_mask_dims(mask, pos, 2)
     Base.require_one_based_indexing(pos)
     r² = e.a^2
     if e.q == 1
@@ -254,22 +253,21 @@ function CosmoEllipsoid(a::T1, b::T2, c::T3) where {T1<:Number,T2<:Number,T3<:Nu
     return CosmoEllipsoid{float(Tnew),U}(a, q, s)
 end
 
-function CosmoParticles.geometry_enclosing_corners(e::CosmoEllipsoid)
+function geometry_enclosing_corners(e::CosmoEllipsoid)
     a = e.a
     b = a * e.q
     c = a * e.s
     return [-a, -b, -c], [a, b, c]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zeros(T, 3)
+geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zeros(T, 3)
 
-function CosmoParticles.mask_in!(
+function mask_in!(
     mask::BitVector,
     pos::AbstractMatrix{<:Number},
     e::CosmoEllipsoid{T},
 ) where {T}
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r² = e.a^2
     if e.q == 1 && e.s == 1
@@ -355,21 +353,20 @@ function _cosmo_homoeoid_2d(a::T1, b::Number, a2::T2) where {T1<:Number,T2<:Numb
     return CosmoHomoeoid2D{Tnew,typeof(q)}(a1, a2, q)
 end
 
-function CosmoParticles.geometry_enclosing_corners(e::CosmoHomoeoid2D)
+function geometry_enclosing_corners(e::CosmoHomoeoid2D)
     a = e.a2
     b = a * e.q
     return [-a, -b], [a, b]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zeros(T, 2)
+geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zeros(T, 2)
 
-function CosmoParticles.mask_in!(
+function mask_in!(
     mask::BitVector,
     pos::AbstractMatrix{<:Number},
     e::CosmoHomoeoid2D{T},
 ) where {T}
-    @assert size(pos, 1) == 2
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 2)
     Base.require_one_based_indexing(pos)
     r1² = e.a1^2
     r2² = e.a2^2
@@ -464,22 +461,21 @@ function CosmoHomoeoid(a::T1, b::Number, c::Number; a2::T2) where {T1<:Number,T2
     return CosmoHomoeoid{Tnew,U}(a1, a2, q, s)
 end
 
-function CosmoParticles.geometry_enclosing_corners(e::CosmoHomoeoid)
+function geometry_enclosing_corners(e::CosmoHomoeoid)
     a = e.a2
     b = a * e.q
     c = a * e.s
     return [-a, -b, -c], [a, b, c]
 end
 
-CosmoParticles.geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zeros(T, 3)
+geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zeros(T, 3)
 
-function CosmoParticles.mask_in!(
+function mask_in!(
     mask::BitVector,
     pos::AbstractMatrix{<:Number},
     e::CosmoHomoeoid{T},
 ) where {T}
-    @assert size(pos, 1) == 3
-    @assert size(pos, 2) == length(mask)
+    _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r1² = e.a1^2
     r2² = e.a2^2

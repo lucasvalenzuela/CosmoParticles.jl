@@ -86,7 +86,7 @@ struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
         end
 
         for key in ptypes
-            @assert haskey(pc, key) "The particle collection does not have the particle type $key."
+            haskey(pc, key) || throw(ArgumentError("the particle collection does not have the particle type :$key"))
         end
 
         return new{APC}(pc, ptypes, Dict{Symbol,Any}())

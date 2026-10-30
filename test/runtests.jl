@@ -328,6 +328,7 @@ const CP = CosmoParticles
         @test_throws KeyError ap.temp
         @test_throws KeyError ap[:temp]
         @test ap == AllParticles(pcoll, ptypes)
+        @test_throws "the particle collection does not have the particle type :bh" AllParticles(pcoll, [:dm, :bh])
         @test ap != pcoll.all
         @test ap.pos == hcat(pcoll.dm.pos, pcoll.stars.pos)
         @test ap.id == vcat(pcoll.dm.id, pcoll.stars.id)
@@ -1482,12 +1483,12 @@ const CP = CosmoParticles
             @test CosmoHyperrectangle([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoHyperrectangle{Float64,3}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoHyperrectangle{Float64,3}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float64}
-            @test_throws AssertionError CosmoHyperrectangle{Float64,4}([0, 0, 0.0], [0.15, 0.25, 0.20])
+            @test_throws "the corners must have length" CosmoHyperrectangle{Float64,4}([0, 0, 0.0], [0.15, 0.25, 0.20])
             @test CosmoCuboid([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
-            @test_throws AssertionError CosmoCuboid([0, 0], [0.15, 0.25])
+            @test_throws "the corners must have length" CosmoCuboid([0, 0], [0.15, 0.25])
             @test CosmoRectangle([0, 0], [0.25, 0.20]) isa CosmoRectangle{Float64}
-            @test_throws AssertionError CosmoRectangle([0, 0, 0], [0.15, 0.25, 0.20])
-            @test_throws AssertionError CosmoRectangle([0, 0], [0.15, 0.25, 0.20])
+            @test_throws "the corners must have length" CosmoRectangle([0, 0, 0], [0.15, 0.25, 0.20])
+            @test_throws "the corners must have length" CosmoRectangle([0, 0], [0.15, 0.25, 0.20])
             @test CosmoCuboid{Float64}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoCuboid{Float32}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float32}
             @test CosmoRectangle{Float64}([0, 0.0], [0.25, 0.20]) isa CosmoRectangle{Float64}
@@ -1525,7 +1526,7 @@ const CP = CosmoParticles
                   all(0 .≤ pos4in[3, :] .≤ 0.19) &&
                   all(0 .≤ pos4in[4, :] .≤ 0.35)
 
-            @test_throws AssertionError CP.mask_in(pos3, hrect)
+            @test_throws "dimensional, but the positions have" CP.mask_in(pos3, hrect)
         end
 
         @testset "Hypersphere" begin
@@ -1542,11 +1543,11 @@ const CP = CosmoParticles
             @test CosmoHypersphere([0.15, 0.25, 0.20], 2) isa CosmoSphere{Float64}
             @test CosmoHypersphere{Float64,3}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
             @test CosmoHypersphere{Float32,3}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float32}
-            @test_throws AssertionError CosmoHypersphere{Float64,4}([0.15, 0.25, 0.20], 0.2)
+            @test_throws "the center must have length" CosmoHypersphere{Float64,4}([0.15, 0.25, 0.20], 0.2)
             @test CosmoSphere([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
-            @test_throws AssertionError CosmoSphere([0.15, 0.25], 0.3)
+            @test_throws "the center must have length" CosmoSphere([0.15, 0.25], 0.3)
             @test CosmoCircle([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
-            @test_throws AssertionError CosmoCircle([0.15, 0.25, 0.20], 0.2)
+            @test_throws "the center must have length" CosmoCircle([0.15, 0.25, 0.20], 0.2)
             @test CosmoSphere{Float64}([0.15, 0.25, 0.20], 0.2) isa CosmoSphere{Float64}
             @test CosmoSphere{Float32}([0.15, 0.25, 0.20], 1) isa CosmoSphere{Float32}
             @test CosmoCircle{Float64}([0.25, 0.20], 0.2) isa CosmoCircle{Float64}
@@ -1594,7 +1595,7 @@ const CP = CosmoParticles
             pos4in = pos4[:, CP.mask_in(pos4, hsphere)]
             @test all(sum(abs2, pos4in; dims=1) .≤ r^2)
 
-            @test_throws AssertionError CP.mask_in(pos3, hsphere)
+            @test_throws "dimensional, but the positions have" CP.mask_in(pos3, hsphere)
         end
 
         @testset "Cylinder" begin
@@ -1606,7 +1607,7 @@ const CP = CosmoParticles
 
             @test CosmoStandingCylinder(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float64}
             @test CosmoStandingCylinder{Float32}(rand(3), 1, 1 // 10) isa CosmoStandingCylinder{Float32}
-            @test_throws AssertionError CosmoStandingCylinder(rand(4), 1, 1 // 10)
+            @test_throws "the center must have length" CosmoStandingCylinder(rand(4), 1, 1 // 10)
 
             center = [1, 2, 3] .// 10
             h = 24 // 100
@@ -1627,7 +1628,7 @@ const CP = CosmoParticles
                 vec(sum(abs2, pos3notin[1:2, :] .- center[1:2]; dims=1) .> r^2) .|
                 (18 // 100 .> pos3notin[3, :]) .| (pos3notin[3, :] .> 42 // 100),
             )
-            @test_throws AssertionError CP.mask_in(pos2, scyl)
+            @test_throws "dimensional, but the positions have" CP.mask_in(pos2, scyl)
 
 
             cyl = CosmoCylinder(0.5rand(3), 0.5rand(3), 0.5)
@@ -1639,8 +1640,8 @@ const CP = CosmoParticles
             @test CosmoCylinder(rand(3), rand(3), 1 // 10) isa CosmoCylinder{Float64}
             @test CosmoCylinder(rand(3), [0, 0, 0], 1 // 10) isa CosmoCylinder{Float64}
             @test CosmoCylinder{Float32}(rand(3), [0, 0, 0], 1 // 10) isa CosmoCylinder{Float32}
-            @test_throws AssertionError CosmoCylinder(rand(4), rand(3), 0.1)
-            @test_throws AssertionError CosmoCylinder(rand(3), rand(2), 0.1)
+            @test_throws "the start and end positions must have length 3" CosmoCylinder(rand(4), rand(3), 0.1)
+            @test_throws "the start and end positions must have length 3" CosmoCylinder(rand(3), rand(2), 0.1)
 
             center = center
             startpos = [10, 20, 18] .// 100
@@ -1654,7 +1655,7 @@ const CP = CosmoParticles
             # right mask for standing cylinder
             @test scyl == cyl
             @test CP.mask_in(pos3, scyl) == CP.mask_in(pos3, cyl)
-            @test_throws AssertionError CP.mask_in(pos2, cyl)
+            @test_throws "dimensional, but the positions have" CP.mask_in(pos2, cyl)
 
             @test CosmoStandingCylinder(cyl) == scyl
             @test CosmoCylinder(scyl) == cyl
@@ -1669,7 +1670,7 @@ const CP = CosmoParticles
             @test all(CP.geometry_enclosing_corners(c1) .≈ CP.geometry_enclosing_corners(c2))
             @test CP.mask_in(pos3, c1) == CP.mask_in(pos3, c2)
 
-            @test_throws AssertionError CosmoStandingCylinder(c1)
+            @test_throws "the cylinder must be aligned with the z axis" CosmoStandingCylinder(c1)
 
 
             scyl = CosmoStandingCylinder([1, 2, 3] .// 10, 2 // 10, 1 // 10)
@@ -1862,6 +1863,22 @@ const CP = CosmoParticles
             @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid(1.0km, 2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
             @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0; q=0.5)) == [0.0, 0.0]
             @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0f0; q=0.5f0)) isa Vector{Float32}
+        end
+
+        @testset "Ellipsoid masks" begin
+            @test_throws "the geometry is 2-dimensional, but the positions have 3 rows" CP.mask_in(
+                rand(3, 4),
+                CosmoEllipse(1.0; q=0.5),
+            )
+            @test_throws "the geometry is 3-dimensional, but the positions have 2 rows" CP.mask_in(
+                rand(2, 4),
+                CosmoHomoeoid(1.0, 2.0; q=0.5),
+            )
+            @test_throws "the mask has length 3, but there are 4 positions" CP.mask_in!(
+                BitVector(undef, 3),
+                rand(3, 4),
+                CosmoEllipsoid(1.0; q=0.5),
+            )
         end
 
         @testset "Offset arrays" begin
@@ -2200,6 +2217,17 @@ const CP = CosmoParticles
             @test_throws "expected a matrix with 3 rows" colnormell2(ones(2, 3), 0.5, 0.5)
             @test_throws "expected a matrix with 2 rows" colnormell(ones(3, 3), 0.5)
             @test_throws "offset arrays are not supported" colnormell2(OffsetArray(ones(2, 3), 1:2, 0:2), 0.5)
+
+            @test_throws "the origin must have length 3 like the matrix rows" colnorm(a, [0.0])
+            @test_throws "the origin must have length 3 like the matrix rows" colnorm2(a, zeros(4))
+            @test_throws "the matrices must have the same size" coldot(a, rand(3, 4))
+            @test_throws "the matrices must have the same size" colcross(a, rand(2, 5))
+            @test_throws "the matrices must have 3 rows" colcross(rand(2, 5), rand(2, 5))
+            for f in (angmom, angmomtot, angmomtot_stable)
+                @test_throws "the positions must have 3 rows" f(rand(2, 5), rand(2, 5), 1.0)
+                @test_throws "the positions and velocities must have the same size" f(a, rand(3, 4), 1.0)
+                @test_throws "the masses must have length 5 like the positions" f(a, b, rand(4))
+            end
         end
 
         @testset "Summation accuracy" begin

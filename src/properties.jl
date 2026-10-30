@@ -168,7 +168,7 @@ function colnorm(a::AbstractMatrix{T}) where {T}
 end
 
 function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
-    @assert size(a, 1) == length(origin)
+    _check_origin_length(a, origin)
     T === T0 || (origin = convert(Vector{T}, origin))
     dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a, origin)
@@ -185,11 +185,23 @@ function colnorm2(a::AbstractMatrix{T}) where {T}
 end
 
 function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector) where {T}
-    @assert size(a, 1) == length(origin)
+    _check_origin_length(a, origin)
     dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
     return _colnorm2_unsafe!(dst, a, _help_convert_origin(T, origin))
 end
 
+
+function _check_origin_length(a::AbstractMatrix, origin::AbstractVector)
+    size(a, 1) == length(origin) || throw(
+        DimensionMismatch("the origin must have length $(size(a, 1)) like the matrix rows, got length $(length(origin))"),
+    )
+    return nothing
+end
+
+function _check_same_size(a::AbstractMatrix, b::AbstractMatrix)
+    size(a) == size(b) || throw(DimensionMismatch("the matrices must have the same size, got $(size(a)) and $(size(b))"))
+    return nothing
+end
 
 function _colnorm_unsafe! end
 function _colnorm2_unsafe! end
@@ -346,7 +358,7 @@ Returns the dot products of the matrix columns as a new matrix.
 Both input matrices need to have the same dimensions ``d × N``, representing ``N`` ``d``-dimensional vectors.
 """
 function coldot(a::AbstractMatrix, b::AbstractMatrix)
-    @assert size(a) == size(b)
+    _check_same_size(a, b)
     return _coldot_unsafe(a, b)
 end
 
@@ -403,8 +415,8 @@ Returns the cross products of the matrix columns as a new matrix.
 Both input matrices need to have the same dimensions ``3 × N``.
 """
 function colcross(a::AbstractMatrix, b::AbstractMatrix)
-    @assert size(a) == size(b)
-    @assert size(a, 1) == 3
+    _check_same_size(a, b)
+    size(a, 1) == 3 || throw(DimensionMismatch("the matrices must have 3 rows, got $(size(a, 1))"))
     return _colcross_unsafe(a, b)
 end
 
@@ -445,15 +457,11 @@ function angmom(
     origin=nothing,
     velorigin=nothing,
 )
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
 function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
@@ -462,6 +470,13 @@ end
 # The angular momentum kernels index the rows of the positions, velocities, and origins as 1 to 3, and the
 # particles from 1.
 function _check_angmom_args(pos, vel, mass, origin, velorigin)
+    size(pos, 1) == 3 || throw(DimensionMismatch("the positions must have 3 rows, got $(size(pos, 1))"))
+    size(pos) == size(vel) || throw(
+        DimensionMismatch("the positions and velocities must have the same size, got $(size(pos)) and $(size(vel))"),
+    )
+    mass isa AbstractVector && length(mass) != size(pos, 2) && throw(
+        DimensionMismatch("the masses must have length $(size(pos, 2)) like the positions, got length $(length(mass))"),
+    )
     Base.require_one_based_indexing(pos, vel)
     mass isa AbstractArray && Base.require_one_based_indexing(mass)
     _check_origin(origin, "origin")
@@ -573,15 +588,11 @@ function angmomtot(
     origin=nothing,
     velorigin=nothing,
 )
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
 
 function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
@@ -635,8 +646,6 @@ function angmomtot_stable(
     origin=nothing,
     velorigin=nothing,
 )
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
@@ -648,8 +657,6 @@ function angmomtot_stable(
     origin=nothing,
     velorigin=nothing,
 )
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
     _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
