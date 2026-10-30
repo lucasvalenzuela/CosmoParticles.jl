@@ -3,7 +3,8 @@
 
 Abstract supertype for storing data of multiple particle types.
 
-The particles are expected to be stored in a `Dict{Symbol,<:AbstractParticles}`.
+The particles are expected to be stored in an `AbstractDict{Symbol,<:AbstractParticles}`, such as the `OrderedDict`
+of [`ParticleCollection`](@ref).
 
 The inbuilt functionality of `AbstractParticleCollection` includes accessing and setting properties
 via the following syntax:
@@ -24,12 +25,12 @@ If the struct has additional fields, these can also be accessed by `pc.field`, b
 # Methods
 The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref), [`Base.empty`](@extref),
 [`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the particle
-`Dict`.
+dictionary.
 
 Concrete types of `AbstractParticleCollection` should have the following methods implemented
 (also see the implementation of [`ParticleCollection`](@ref)):
-- [`Base.copy`](@extref): returns new object containing a copy of the `Dict`
-- [`Base.empty`](@extref): returns an identical object, but with an empty `Dict`
+- [`Base.copy`](@extref): returns new object containing a copy of the dictionary
+- [`Base.empty`](@extref): returns an identical object, but with an empty dictionary
 - [`Base.:(==)`](@extref)
 - [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
 - [`Base.propertynames`](@extref): implement this if there are additional struct fields
@@ -40,7 +41,7 @@ abstract type AbstractParticleCollection{AP} end
 """
     get_particles(pc::AbstractParticleCollection)
 
-Return the particles `Dict` belonging to the particle collection.
+Return the particles dictionary belonging to the particle collection.
 
 This returns `pc.particles` by default if not overridden.
 

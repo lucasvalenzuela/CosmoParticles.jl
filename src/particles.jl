@@ -1,7 +1,7 @@
 """
     struct Particles <: AbstractParticles
         type::Symbol
-        props::Dict{Symbol,Any}
+        props::OrderedDict{Symbol,Any}
     end
 
 Particles of a certain type (typically something like `:dm` or `:gas` in the cosmological
@@ -16,18 +16,23 @@ The following naming convention is to be used for specific properties:
 """
 struct Particles <: AbstractParticles
     type::Symbol
-    props::Dict{Symbol,Any}
+    props::OrderedDict{Symbol,Any}
+
+    Particles(type::Symbol, props::AbstractDict) = new(type, _ordered_dict(Symbol, Any, props))
 end
 
 """
     Particles(type::Symbol[, pairs::Pair...])
 
 Create a [`Particles`](@ref) object with the given `type` and pairs of `Symbol` to the property
-values. These are passed to the underlying `Dict`.
-If no pairs are passed to the method, an empty `Dict` is created.
+values. These are passed to the underlying `OrderedDict`, which keeps the order of the properties.
+If no pairs are passed to the method, an empty `OrderedDict` is created.
+
+The properties can also be passed as an `AbstractDict`, as in `Particles(type, props)`. An `OrderedDict{Symbol,Any}`
+is stored as it is, and other dictionaries are copied into a new `OrderedDict`.
 """
-Particles(type::Symbol) = Particles(type, Dict{Symbol,Any}())
-Particles(type::Symbol, pairs::Pair...) = Particles(type, Dict{Symbol,Any}(pairs...))
+Particles(type::Symbol) = Particles(type, OrderedDict{Symbol,Any}())
+Particles(type::Symbol, pairs::Pair...) = Particles(type, OrderedDict{Symbol,Any}(pairs...))
 
 
 Base.copy(p::Particles) = Particles(p.type, copy(p.props))

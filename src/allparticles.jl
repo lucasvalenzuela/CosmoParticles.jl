@@ -73,11 +73,11 @@ all: 150 Particles
 struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
     particle_collection::APC
     ptypes::Vector{Symbol}
-    props::Dict{Symbol,Any}
+    props::OrderedDict{Symbol,Any}
 
     function AllParticles(pc::APC) where {APC}
         ptypes = collect(keys(pc))
-        return new{APC}(pc, ptypes, Dict{Symbol,Any}())
+        return new{APC}(pc, ptypes, OrderedDict{Symbol,Any}())
     end
 
     function AllParticles(pc::APC, ptypes) where {APC}
@@ -89,7 +89,7 @@ struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
             haskey(pc, key) || throw(ArgumentError("the particle collection does not have the particle type :$key"))
         end
 
-        return new{APC}(pc, ptypes, Dict{Symbol,Any}())
+        return new{APC}(pc, ptypes, OrderedDict{Symbol,Any}())
     end
 end
 

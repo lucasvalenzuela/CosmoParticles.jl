@@ -6,6 +6,7 @@ using FillArrays
 using LazyArrays
 using LinearAlgebra
 using NamedRowArrays
+using OrderedCollections: OrderedDict
 using OffsetArrays
 using Rotations
 using SortingAlgorithms
@@ -213,6 +214,41 @@ const CP = CosmoParticles
         @test ap.pos_3 == ap.pos_z == ap.pos[3, :]
         @test ap.pos_4d_4 == ap.pos_4d[4, :]
         @test Tables.columntable(ap).pos_y == ap.pos_y
+    end
+
+    @testset "Ordered dictionaries" begin
+        p = Particles(:dm, :pos => rand(3, 4), :id => 1:4, :mass => 2.0)
+        @test p.props isa OrderedDict{Symbol,Any}
+        @test collect(keys(p)) == [:pos, :id, :mass]
+        p.temp = rand(4)
+        @test collect(keys(p)) == [:pos, :id, :mass, :temp]
+        @test Tables.columnnames(p) == [:pos_x, :pos_y, :pos_z, :id, :mass, :temp]
+
+        # a `Dict` is copied into an `OrderedDict`, an `OrderedDict{Symbol,Any}` is shared
+        d = Dict{Symbol,Any}(:id => 1:4, :mass => 2.0)
+        pd = Particles(:dm, d)
+        @test pd.props isa OrderedDict{Symbol,Any}
+        @test pd.props == d
+        @test pd.props !== d
+        od = OrderedDict{Symbol,Any}(:id => 1:4)
+        @test Particles(:dm, od).props === od
+        @test Particles(:dm, Dict(:id => 1:4)).props isa OrderedDict{Symbol,Any}
+
+        dm, gas = Particles(:dm, :id => 1:2), Particles(:gas, :id => 3:4)
+        pc = ParticleCollection(gas, dm)
+        @test pc.particles isa OrderedDict{Symbol,Particles}
+        @test collect(keys(pc)) == [:gas, :dm]
+        @test collect(keys(ParticleCollection(:dm => dm, :gas => gas))) == [:dm, :gas]
+        @test pc.all.ptypes == [:gas, :dm]
+        @test pc.all.id == [3, 4, 1, 2]
+        pcd = ParticleCollection(Dict(:dm => dm, :gas => gas))
+        @test pcd.particles isa OrderedDict{Symbol,Particles}
+        @test pcd == pc
+        rpc = RedshiftParticleCollection(0.5, Dict(:dm => dm, :gas => gas))
+        @test rpc.particles isa OrderedDict{Symbol,Particles}
+        @test redshift(rpc) == 0.5
+        @test rpc.particles == pc.particles
+        @test collect(keys(RedshiftParticleCollection(0.5, gas, dm))) == [:gas, :dm]
     end
 
     @testset "AllParticles" begin

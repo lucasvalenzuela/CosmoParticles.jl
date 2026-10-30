@@ -7,6 +7,7 @@ using LazyArrays
 using LinearAlgebra
 using NamedRowArrays
 using NamedRowArrays: rownames
+using OrderedCollections: OrderedDict
 using Statistics
 using StatsBase
 using Tables

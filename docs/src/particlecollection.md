@@ -14,10 +14,12 @@ For an example implementation of a concrete subtype of `AbstractParticleCollecti
 ```@docs
 AbstractParticleCollection
 ParticleCollection
+ParticleCollection(particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles}
 ParticleCollection(::Type{<:AbstractParticles})
 ParticleCollection(pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles}
 ParticleCollection(p::Particles, ps::Particles...)
 RedshiftParticleCollection
+RedshiftParticleCollection(z::T, particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles,T<:Real}
 RedshiftParticleCollection(::Type{<:AbstractParticles}, z::Real)
 RedshiftParticleCollection(z::T, pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles,T<:Real}
 RedshiftParticleCollection(z::Real, p::Particles, ps::Particles...)
