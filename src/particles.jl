@@ -35,7 +35,7 @@ Base.empty(p::Particles) = Particles(p.type, empty(p.props))
 Base.:(==)(p1::Particles, p2::Particles) = p1.type == p2.type && isequal(p1.props, p2.props)
 particle_name(::Particles) = "Particles"
 
-function Base.propertynames(p::Particles; private=false)
+function Base.propertynames(p::Particles, private::Bool=false)
     if private
         return [fieldnames(Particles) |> collect; keys(p) |> collect]
     else

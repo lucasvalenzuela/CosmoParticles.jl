@@ -53,7 +53,7 @@ const CP = CosmoParticles
 
         @test CP.particle_name(p) == "Particles"
         @test issetequal(propertynames(p), [:type, :id, :pos])
-        @test issetequal(propertynames(p; private=true), [:type, :props, :id, :pos])
+        @test issetequal(propertynames(p, true), [:type, :props, :id, :pos])
 
         io = IOBuffer()
         show(io, "text/plain", p)
@@ -285,7 +285,7 @@ const CP = CosmoParticles
 
         list = [:id, :mass, :pos, :temp, :zs, :test]
         @test issetequal(propertynames(p), list)
-        @test issetequal(propertynames(p; private=true), [fieldnames(AllParticles) |> collect; list])
+        @test issetequal(propertynames(p, true), [fieldnames(AllParticles) |> collect; list])
 
         io = IOBuffer()
         show(io, "text/plain", p)
@@ -420,7 +420,7 @@ const CP = CosmoParticles
                   "ParticleCollection at z = $z\ndm: 100 Particles\n id mass pos\ngas: 100 Particles\n id pos"
 
             @test issetequal(propertynames(pc), [:z, :all, :dm, :gas])
-            @test issetequal(propertynames(pc; private=true), [:z, :all, :particles, :dm, :gas])
+            @test issetequal(propertynames(pc, true), [:z, :all, :particles, :dm, :gas])
 
 
             rpc = RedshiftParticleCollection(0, dm, gas)

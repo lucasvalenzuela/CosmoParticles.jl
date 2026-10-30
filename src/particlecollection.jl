@@ -131,7 +131,7 @@ function Base.:(==)(pc1::RedshiftParticleCollection, pc2::RedshiftParticleCollec
     return pc1.z == pc2.z && pc1.particles == pc2.particles
 end
 
-function Base.propertynames(pc::RedshiftParticleCollection; private=false)
+function Base.propertynames(pc::RedshiftParticleCollection, private::Bool=false)
     if private
         return [fieldnames(RedshiftParticleCollection) |> collect; :all; keys(pc) |> collect]
     else

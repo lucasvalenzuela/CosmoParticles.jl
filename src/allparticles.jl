@@ -271,7 +271,7 @@ function particle_number(ap::AllParticles)
     return n
 end
 
-function Base.propertynames(p::AllParticles; private=false)
+function Base.propertynames(p::AllParticles, private::Bool=false)
     if private
         return [fieldnames(AllParticles) |> collect; keys(p) |> collect]
     else
