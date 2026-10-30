@@ -8,6 +8,7 @@ using LinearAlgebra
 using NamedRowArrays
 using OrderedCollections: OrderedDict
 using OffsetArrays
+using Random
 using Rotations
 using SortingAlgorithms
 using StatsBase
@@ -16,6 +17,8 @@ using Test
 using Unitful
 
 const CP = CosmoParticles
+
+Random.seed!(42)
 
 @testset "CosmoParticles.jl" begin
     @testset "Code quality" begin
@@ -1846,6 +1849,18 @@ const CP = CosmoParticles
             filter!(pc, sph)
             @test pc == p[mask]
 
+            @test delete(p, sph) == p[.~mask]
+            @test delete(pu, sphu) == pu[.~mask]
+            pd = delete(p, sph; affect=[:pos])
+            @test pd.pos == p.pos[:, .~mask]
+            @test !haskey(pd, :mass)
+            pd = deepcopy(p)
+            @test delete!(pd, sph) === pd
+            @test pd == p[.~mask]
+            p2 = copy(p)
+            p2.pos2 = p.pos .+ 1
+            @test delete(p2, translate(sph, ones(3)), :pos2) == p2[.~mask]
+
 
             # Particle collection
             dm = p
@@ -1869,6 +1884,20 @@ const CP = CosmoParticles
             pcc = deepcopy(pc)
             filter!(pcc, sph)
             @test pcc == filter(pc, sph)
+
+            pcc = delete(pc, sph)
+            @test pcc.dm == dm[.~mask]
+            @test pcc.gas == gas[.~mask]
+            @test delete(pc, sph; affect=[:pos]).dm == delete(dm, sph; affect=[:pos])
+            pcc = delete(pc, sph; affect=[(:dm, [:pos, :mass])])
+            @test pcc.dm == delete(dm, sph; affect=[:pos, :mass])
+            @test !haskey(pcc, :gas)
+            pcc = delete(pc, sph; affect=[:gas => [:pos]])
+            @test pcc.gas == delete(gas, sph; affect=[:pos])
+            @test !haskey(pcc, :dm)
+            pcc = deepcopy(pc)
+            @test delete!(pcc, sph) === pcc
+            @test pcc == delete(pc, sph)
 
 
             ap = pc.all
@@ -1957,6 +1986,67 @@ const CP = CosmoParticles
             @test CP.mask_in(pos3, cyl_dx) == CP.mask_in(pos3_dx, cyl)
         end
 
+        @testset "Combined and transformed geometries" begin
+            c1 = CosmoCuboid([0.0, 0, 0], [1.0, 2, 3])
+            c2 = CosmoCuboid([0.5, -1, 1], [2.0, 1, 2])
+            far = CosmoCube(fill(5.0, 3), 1.0)
+            @test CP.geometry_enclosing_corners(union(c1, c2)) == ([0.0, -1, 0], [2.0, 2, 3])
+            @test CP.geometry_enclosing_center(union(c1, c2)) == [1.0, 0.5, 1.5]
+            @test CP.geometry_enclosing_corners(intersect(c1, c2)) == ([0.5, 0, 1], [1.0, 1, 2])
+            @test CP.geometry_enclosing_center(intersect(c1, c2)) == [0.75, 0.5, 1.5]
+            @test CP.geometry_enclosing_corners(intersect(c1, far)) == (zeros(3), zeros(3))
+            @test CP.geometry_enclosing_corners(setdiff(c1, c2)) == CP.geometry_enclosing_corners(c1)
+            @test CP.geometry_enclosing_center(setdiff(c1, c2, far)) == [0.5, 1, 1.5]
+
+            cu, faru = CosmoCube(zeros(3)u"m", 1.0u"m"), CosmoCube(fill(5.0, 3)u"m", 1.0u"m")
+            @test CP.geometry_enclosing_corners(union(cu, faru)) == (fill(-1.0, 3)u"m", fill(6.0, 3)u"m")
+            @test CP.geometry_enclosing_corners(intersect(cu, faru)) == (zeros(3)u"m", zeros(3)u"m")
+
+            @test CP.CosmoUnionGeometry(c1, c2) == union(c1, c2)
+            @test CP.CosmoIntersectGeometry(c1, c2) == intersect(c1, c2)
+            @test CP.CosmoDiffGeometry(c1, c2, far) == setdiff(c1, c2, far)
+            for g in (union(c1, c2), intersect(c1, c2), setdiff(c1, c2))
+                mask = BitVector(undef, size(pos3, 2))
+                @test CP.mask_in!(mask, pos3, g) == CP.mask_in(pos3, g)
+                @test mask == CP.mask_in(pos3, g)
+                dx = [0.1, 0.2, 0.3]
+                gdx = translate(g, dx)
+                @test gdx isa typeof(g)
+                @test CP.mask_in(pos3, gdx) == CP.mask_in(pos3 .- dx, g)
+                @test all(CP.geometry_enclosing_corners(gdx) .≈ CP.geometry_enclosing_corners(g) .|> x -> x .+ dx)
+            end
+
+            # rotation by 90° around the z axis
+            R = [0.0 -1 0; 1 0 0; 0 0 1]
+            r = rotate(c1, R)
+            @test r isa CP.Rotated
+            @test CP.geometry_enclosing_corners(r) == ([-2.0, 0, 0], [0.0, 1, 3])
+            @test CP.geometry_enclosing_center(r) == [-1.0, 0.5, 1.5]
+            rr = rotate(r, R)
+            @test rr isa CP.Rotated
+            @test CP.rotation_matrix(rr) == R * R
+            @test CP.geometry_enclosing_corners(rr) == ([-1.0, -2, 0], [0.0, 0, 3])
+            @test CP.mask_in(pos3, rr) == CP.mask_in(CP.matrix_rotate(pos3, transpose(R * R)), c1)
+            @test CP.geometry_enclosing_corners(rotate(cu, R)) == (fill(-1.0, 3)u"m", fill(1.0, 3)u"m")
+
+            ell = CosmoEllipse(2.0; q=0.5)
+            t = translate(ell, [1.0, 2.0])
+            @test t isa CP.Translated
+            @test CP.geometry_enclosing_corners(t) == ([-1.0, 1.0], [3.0, 3.0])
+            @test CP.geometry_enclosing_center(t) == [1.0, 2.0]
+            @test CP.mask_in(pos2, t) == CP.mask_in(pos2 .- [1.0, 2.0], ell)
+            tt = translate(t, [1.0, 1.0])
+            @test tt isa CP.Translated
+            @test tt.geo === ell
+            @test CP.geometry_enclosing_center(tt) == [2.0, 3.0]
+
+            scyl = CosmoStandingCylinder([0.5, 0.5, 0.5], 0.4, 0.3)
+            @test translate(scyl, [0.1, 0.2, 0.3]) == CosmoStandingCylinder([0.6, 0.7, 0.8], 0.4, 0.3)
+            scyl_rot = rotate(scyl, R)
+            @test scyl_rot isa CosmoCylinder
+            @test CP.mask_in(pos3, scyl_rot) == CP.mask_in(CP.matrix_rotate(pos3, transpose(R)), scyl)
+        end
+
         @testset "Type parameters" begin
             @test_throws TypeError CosmoHyperrectangle{String,2}
             @test_throws TypeError CosmoHypersphere{Symbol,3}
@@ -2039,6 +2129,78 @@ const CP = CosmoParticles
                 rand(3, 4),
                 CosmoEllipsoid(1.0; q=0.5),
             )
+
+            # positions between -1 and 1
+            pos2c, pos3c = 2 .* pos2 .- 1, 2 .* pos3 .- 1
+            for q in (1.0, 0.5)
+                mask = CP.mask_in(pos2c, CosmoEllipse(0.75; q))
+                @test mask == (colnormell2(pos2c, q) .≤ 0.75^2)
+                @test 0 < count(mask) < length(mask)
+                mask = CP.mask_in(pos2c, CosmoHomoeoid2D(0.35, 0.75; q))
+                @test mask == (0.35^2 .≤ colnormell2(pos2c, q) .≤ 0.75^2)
+                @test 0 < count(mask) < length(mask)
+            end
+            for (q, s) in ((1.0, 1.0), (0.5, 0.4))
+                mask = CP.mask_in(pos3c, CosmoEllipsoid(0.75; q, s))
+                @test mask == (colnormell2(pos3c, q, s) .≤ 0.75^2)
+                @test 0 < count(mask) < length(mask)
+                mask = CP.mask_in(pos3c, CosmoHomoeoid(0.35, 0.75; q, s))
+                @test mask == (0.35^2 .≤ colnormell2(pos3c, q, s) .≤ 0.75^2)
+                @test 0 < count(mask) < length(mask)
+            end
+            @test CP.mask_in(pos2c, CosmoEllipse(0.75)) == CP.mask_in(pos2c, CosmoCircle(zeros(2), 0.75))
+            @test CP.mask_in(pos3c * u"m", CosmoEllipsoid(0.75u"m"; q=0.5, s=0.4)) ==
+                  CP.mask_in(pos3c, CosmoEllipsoid(0.75; q=0.5, s=0.4))
+            @test CP.mask_in(pos3c * u"m", CosmoHomoeoid(35u"cm", 0.75u"m"; q=0.5, s=0.4)) ==
+                  CP.mask_in(pos3c, CosmoHomoeoid(0.35, 0.75; q=0.5, s=0.4))
+            p = Particles(:dm, :pos => pos3c)
+            e = CosmoEllipsoid(0.75; q=0.5, s=0.4)
+            @test filter(p, e) == p[CP.mask_in(pos3c, e)]
+            @test delete(p, e) == p[.~CP.mask_in(pos3c, e)]
+        end
+
+        @testset "Ellipsoid shapes" begin
+            @test CP.geometry_enclosing_corners(CosmoEllipse(2.0; q=0.5)) == ([-2.0, -1.0], [2.0, 1.0])
+            @test CP.geometry_enclosing_corners(CosmoEllipsoid(2.0; q=0.5, s=0.25)) ==
+                  ([-2.0, -1.0, -0.5], [2.0, 1.0, 0.5])
+            @test CP.geometry_enclosing_corners(CosmoHomoeoid2D(1.0, 2.0; q=0.5)) == ([-2.0, -1.0], [2.0, 1.0])
+            @test CP.geometry_enclosing_corners(CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)) ==
+                  ([-2.0, -1.0, -0.5], [2.0, 1.0, 0.5])
+            @test CP.geometry_enclosing_corners(CosmoEllipse(2.0u"km"; q=0.5)) == ([-2.0, -1.0]u"km", [2.0, 1.0]u"km")
+
+            # semi-axes
+            e = CosmoEllipse(2.0, 1.0)
+            @test (e.a, e.q) == (2.0, 0.5)
+            e = CosmoEllipsoid(2.0, 1.0, 0.5)
+            @test (e.a, e.q, e.s) == (2.0, 0.5, 0.25)
+            @test CosmoEllipsoid(2.0, 1.0, nothing) == CosmoEllipse(2.0, 1.0)
+            @test CosmoEllipsoid(2.0; q=0.5, s=nothing) == CosmoEllipse(2.0; q=0.5)
+            h = CosmoHomoeoid2D(2.0, 1.0; a2=1.0)
+            @test (h.a1, h.a2, h.q) == (1.0, 2.0, 0.5)
+            h = CosmoHomoeoid(2.0, 1.0, 0.5; a2=4.0)
+            @test (h.a1, h.a2, h.q, h.s) == (2.0, 4.0, 0.5, 0.25)
+            @test CosmoHomoeoid(2.0, 1.0, nothing; a2=4.0) == CosmoHomoeoid2D(2.0, 1.0; a2=4.0)
+            @test CosmoHomoeoid(1.0, 2.0; q=0.5, s=nothing) == CosmoHomoeoid2D(1.0, 2.0; q=0.5)
+
+            # the same area or volume as the circle or sphere
+            @test CosmoEllipse(1.0; q=0.25, constant_area=true).a ≈ 2
+            @test CosmoEllipsoid(1.0; q=0.5, s=0.25, constant_volume=true).a ≈ 2
+            h = CosmoHomoeoid2D(1.0, 2.0; q=0.25, constant_area=true)
+            @test all((h.a1, h.a2) .≈ (2.0, 4.0))
+            h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25, constant_volume=true)
+            @test all((h.a1, h.a2) .≈ (2.0, 4.0))
+            e = CosmoEllipsoid(1.0; q=0.25, s=nothing, constant_volume=true)
+            @test e isa CosmoEllipse
+            @test all((e.a, e.q) .≈ (2.0, 0.25))
+
+            @test triaxiality(0.5, 0.25) ≈ 0.8
+            @test triaxiality(CosmoEllipsoid(1.0; q=0.5, s=0.25)) ≈ 0.8
+            @test triaxiality(CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)) ≈ 0.8
+            @test ellipticity(0.25) ≈ 0.75
+            @test ellipticity(CosmoHomoeoid2D(1.0, 2.0; q=0.25)) ≈ 0.75
+            @test eccentricity(0.6) ≈ 0.8
+            @test eccentricity(CosmoEllipse(1.0; q=0.6)) ≈ 0.8
+            @test eccentricity(CosmoHomoeoid2D(1.0, 2.0; q=0.6)) ≈ 0.8
         end
 
         @testset "Offset arrays" begin
@@ -2326,6 +2488,20 @@ const CP = CosmoParticles
                 mfill = Fill(2.0u"kg", 10)
                 @test angmomtot(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
                 @test angmomtot_stable(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
+                o, vo = rand(3) * u"m", rand(3) * u"m/s"
+                for kwargs in ((; origin=o), (; velorigin=vo), (; origin=o, velorigin=vo))
+                    @test angmomtot(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
+                    @test angmomtot_stable(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
+                end
+                # without particles, the total is zero like for a vector of masses
+                pos0, vel0 = zeros(3, 0) * u"m", zeros(3, 0) * u"m/s"
+                z = zeros(3) * u"kg*m^2/s"
+                for m in (Fill(2.0u"kg", 0), zeros(0) * u"kg", 2.0u"kg")
+                    @test angmomtot(pos0, vel0, m) == z
+                    @test angmomtot_stable(pos0, vel0, m) == z
+                    @test angmomtot_stable(pos0, vel0, m; origin=o, velorigin=vo) == z
+                end
+                @test angmomtot_stable(Particles(:dm, :pos => pos0, :vel => vel0, :mass => 2.0u"kg")) == z
                 pf = Particles(:dm, :pos => Fill(1.0u"m", 3, 10), :mass => mfill)
                 @test meanprop(pf, :pos) == fill(1.0u"m", 3)
             end

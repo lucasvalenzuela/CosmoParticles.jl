@@ -207,7 +207,7 @@ function geometry_enclosing_corners(g::CosmoIntersectGeometry)
     upperright = [minimum(ur[i] for (ll, ur) in corners) for i in 1:ndims]
 
     if any(lowerleft .≥ upperright)
-        return zeros(ndims), zeros(ndims)
+        return zero.(lowerleft), zero.(upperright)
     end
 
     return lowerleft, upperright
@@ -353,7 +353,7 @@ function geometry_enclosing_corners(rot::Rotated)
     posrot = rot.rotmat * pos
 
     # extract the extrema along each dimension as the lower left and upper right corners
-    return minimum(posrot; dims=2), maximum(posrot; dims=2)
+    return vec(minimum(posrot; dims=2)), vec(maximum(posrot; dims=2))
 end
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, rot::Rotated)

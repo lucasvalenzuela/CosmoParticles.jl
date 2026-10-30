@@ -627,6 +627,9 @@ function _type_and_zero_of_summed_angmomtot(p::AbstractMatrix, v::AbstractMatrix
 end
 
 
+# The value of a `Fill` mass; an empty `Fill` has none, and its sums are zero.
+_fill_value(m::AbstractFillVector) = isempty(m) ? zero(eltype(m)) : m[1]
+
 """
     angmomtot_stable(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing)
 
@@ -647,6 +650,8 @@ function angmomtot_stable(
     velorigin=nothing,
 )
     _check_angmom_args(pos, vel, mass, origin, velorigin)
+    # `sum` throws for no particles, and passing it `init` would make it a running sum.
+    size(pos, 2) == 0 && return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -658,6 +663,8 @@ function angmomtot_stable(
     velorigin=nothing,
 )
     _check_angmom_args(pos, vel, mass, origin, velorigin)
+    # `sum` throws for no particles, and passing it `init` would make it a running sum.
+    size(pos, 2) == 0 && return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
     return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -721,7 +728,7 @@ for (T1, T2) in zip(
                 d2 += $p3 * $v1 - $p1 * $v3
                 d3 += $p1 * $v2 - $p2 * $v1
             end
-            mval = m[1]
+            mval = _fill_value(m)
             dst .= mval * d1, mval * d2, mval * d3
             return dst
         end
