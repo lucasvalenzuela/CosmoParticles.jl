@@ -198,6 +198,21 @@ const CP = CosmoParticles
         @test dm.pos_4d_2 == @view dm.pos_4d[2, :]
         @test dm.pos_4d_3 == @view dm.pos_4d[3, :]
         @test dm.pos_4d_4 == @view dm.pos_4d[4, :]
+
+        gas = Particles(:gas, :pos => rand(3, 50), :mass => rand(50), :pos_4d => rand(4, 50))
+        ap = ParticleCollection(dm, gas).all
+        for key in [:pos_1, :pos_x, :pos_z, :pos_4d_4]
+            @test haskey(ap, key)
+        end
+        for key in [:pos_4, :pos_4d_x, :mass_1, :test]
+            @test !haskey(ap, key)
+            @test_throws KeyError ap[key]
+        end
+        @test ap.pos_x == ap.pos[1, :]
+        @test sort(ap.pos_x) == sort([dm.pos[1, :]; gas.pos[1, :]])
+        @test ap.pos_3 == ap.pos_z == ap.pos[3, :]
+        @test ap.pos_4d_4 == ap.pos_4d[4, :]
+        @test Tables.columntable(ap).pos_y == ap.pos_y
     end
 
     @testset "AllParticles" begin

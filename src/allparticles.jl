@@ -117,9 +117,11 @@ function _check_alldims(arr::AbstractArray, dims, sym, ptype, dims_ptype)
 end
 
 function Base.getindex(ap::AllParticles, sym::Symbol)
-    # get property index if property already saved or if key does not exist at all to raise Dict error
-    if haskey(ap.props, sym) || !haskey(ap, sym)
-        return ap.props[sym]
+    haskey(ap.props, sym) && return ap.props[sym]
+    if !(sym in keys(ap))
+        row = _get_matrix_row(ap, sym)
+        isnothing(row) || return row
+        return ap.props[sym] # throws a KeyError
     end
 
     pc = ap.particle_collection
@@ -191,8 +193,6 @@ function Base.keys(ap::AllParticles)
     length(keys_arr) == 1 && return keys_arr[1]
     return union(keys_arr...) |> collect
 end
-
-Base.haskey(p::AllParticles, key) = haskey(p.props, key) || key in keys(p)
 
 Base.values(p::AllParticles) = Iterators.map(key -> getindex(p, key), keys(p))
 
