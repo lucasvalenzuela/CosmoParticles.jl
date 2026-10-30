@@ -445,15 +445,30 @@ end
 
 """
     CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelengths::Number...)
+    CosmoHyperrectangle(center::AbstractVector{<:Number}; halflengths)
 
-Return a `CosmoHyperrectangle` centered around `center`, with the given `sidelengths`.
+Return a `CosmoHyperrectangle` centered around `center`, with the given full `sidelengths` or `halflengths`.
 
-The side lengths are given in order of the axes, i.e., x, y or x, y, z for 2D and 3D, respectively.
+The lengths are given in order of the axes, i.e., x, y or x, y, z for 2D and 3D, respectively.
 """
-function CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelengths::Number...)
-    halflengths = [sidelengths...]
+function CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelength::Number, sidelengths::Number...)
+    halflengths = [sidelength, sidelengths...]
     halflengths *= 1 // 2
     return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
+end
+
+function CosmoHyperrectangle(center::AbstractVector{<:Number}; halflengths)
+    _check_halflengths(center, halflengths)
+    return CosmoHyperrectangle(center .- halflengths, center .+ halflengths)
+end
+
+function _check_halflengths(center, halflengths)
+    length(halflengths) == length(center) || throw(
+        DimensionMismatch(
+            "the half lengths must have length $(length(center)) like the center, got length $(length(halflengths))",
+        ),
+    )
+    return nothing
 end
 
 function Base.:(==)(r1::CosmoHyperrectangle, r2::CosmoHyperrectangle)
@@ -472,9 +487,21 @@ Alias for a 3D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoCuboid{T} = CosmoHyperrectangle{T,3} where {T<:Number}
 
+"""
+    CosmoCuboid(center::AbstractVector{<:Number}, x::Number, y::Number, z::Number)
+    CosmoCuboid(center::AbstractVector{<:Number}; halflengths)
+
+Return a `CosmoCuboid` centered around `center`, with the full side lengths `x`, `y`, and `z` or the three
+`halflengths`.
+"""
 function CosmoCuboid(center::AbstractVector{<:Number}, x::Number, y::Number, z::Number)
     halflengths = [x, y, z]
     halflengths *= 1 // 2
+    return CosmoCuboid(center .- halflengths, center .+ halflengths)
+end
+
+function CosmoCuboid(center::AbstractVector{<:Number}; halflengths)
+    _check_halflengths(center, halflengths)
     return CosmoCuboid(center .- halflengths, center .+ halflengths)
 end
 
@@ -486,9 +513,21 @@ Alias for a 2D [`CosmoHyperrectangle`](@ref).
 """
 const CosmoRectangle{T} = CosmoHyperrectangle{T,2} where {T<:Number}
 
+"""
+    CosmoRectangle(center::AbstractVector{<:Number}, x::Number, y::Number)
+    CosmoRectangle(center::AbstractVector{<:Number}; halflengths)
+
+Return a `CosmoRectangle` centered around `center`, with the full side lengths `x` and `y` or the two
+`halflengths`.
+"""
 function CosmoRectangle(center::AbstractVector{<:Number}, x::Number, y::Number)
     halflengths = [x, y]
     halflengths *= 1 // 2
+    return CosmoRectangle(center .- halflengths, center .+ halflengths)
+end
+
+function CosmoRectangle(center::AbstractVector{<:Number}; halflengths)
+    _check_halflengths(center, halflengths)
     return CosmoRectangle(center .- halflengths, center .+ halflengths)
 end
 
@@ -496,7 +535,9 @@ end
 """
     CosmoHypercube(center::AbstractVector{<:Number}, radius::Number)
 
-Return a cubic `CosmoCuboid` centered around `center`, with equal sidelengths.
+Return a `CosmoHyperrectangle` centered around `center` whose half side lengths are all equal to `radius`.
+
+The number of dimensions is the length of `center`.
 """
 function CosmoHypercube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoHyperrectangle(center .- radius, center .+ radius)
@@ -505,7 +546,7 @@ end
 """
     CosmoCube(center::AbstractVector{<:Number}, radius::Number)
 
-Return a cubic `CosmoCuboid` centered around `center`, with equal sidelengths.
+Return a cubic `CosmoCuboid` centered around `center` whose half side lengths are all equal to `radius`.
 """
 function CosmoCube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoCuboid(center .- radius, center .+ radius)
@@ -514,7 +555,7 @@ end
 """
     CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
 
-Return a square `CosmoRectangle` centered around `center`, with equal sidelengths.
+Return a square `CosmoRectangle` centered around `center` whose half side lengths are both equal to `radius`.
 """
 function CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
     return CosmoRectangle(center .- radius, center .+ radius)
@@ -531,6 +572,10 @@ for (name, N) in zip([:CosmoHyperrectangle, :CosmoCuboid, :CosmoRectangle], [:(l
             return CosmoHyperrectangle{T,$N}(lowerleft, upperright)
         end
     end |> eval
+end
+
+function CosmoHyperrectangle{T}(lowerleft::AbstractVector, upperright::AbstractVector) where {T<:Number}
+    return CosmoHyperrectangle{T,length(lowerleft)}(lowerleft, upperright)
 end
 
 
@@ -614,6 +659,8 @@ for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(
         end
     end |> eval
 end
+
+CosmoHypersphere{T}(center::AbstractVector, radius) where {T<:Number} = CosmoHypersphere{T,length(center)}(center, radius)
 
 """
     CosmoHypersphere(N::Integer, radius::Number)

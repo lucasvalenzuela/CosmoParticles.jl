@@ -1620,6 +1620,17 @@ const CP = CosmoParticles
             @test CosmoCuboid{Float64}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoCuboid{Float32}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float32}
             @test CosmoRectangle{Float64}([0, 0.0], [0.25, 0.20]) isa CosmoRectangle{Float64}
+            @test CosmoHyperrectangle([1, 1, 1]; halflengths=(1, 2, 3)) == CosmoHyperrectangle([1, 1, 1], 2, 4, 6)
+            @test CosmoHyperrectangle([1, 1, 1]; halflengths=[1, 2, 3]) == CosmoCuboid([0, -1, -2], [2, 3, 4])
+            @test CosmoCuboid([1, 1, 1]; halflengths=(1, 2, 3)) == CosmoCuboid([1, 1, 1], 2, 4, 6)
+            @test CosmoRectangle([1, 1]; halflengths=(1, 2)) == CosmoRectangle([1, 1], 2, 4)
+            @test CosmoHyperrectangle(zeros(4); halflengths=ones(4)) == CosmoHypercube(zeros(4), 1)
+            @test CosmoCube(zeros(3), 1) == CosmoCuboid(zeros(3); halflengths=(1, 1, 1))
+            @test_throws "the half lengths must have length 3 like the center, got length 2" CosmoCuboid(
+                zeros(3);
+                halflengths=(1, 1),
+            )
+            @test_throws "the corners must have length 3" CosmoCuboid(zeros(2); halflengths=(1, 1))
             @test CosmoRectangle{Float64}([0, 0], [0.25, 0.20]) isa CosmoRectangle{Float64}
 
             @test CosmoHyperrectangle([0, 0], 0.15, 0.25) isa CosmoRectangle{Float64}
@@ -1902,6 +1913,12 @@ const CP = CosmoParticles
             @test_throws "the geometries must have the same number of dimensions, got 2, 3" setdiff(circ, sph)
             @test union(sph) isa CP.CosmoUnionGeometry
             @test union(sph, CosmoCuboid(zeros(3), 1, 1, 1)) isa CP.CosmoUnionGeometry
+
+            @test CosmoHyperrectangle{Float32}([0, 0], [1, 1]) isa CosmoRectangle{Float32}
+            @test CosmoHyperrectangle{Float32}([0, 0, 0, 0], [1, 1, 1, 1]) isa CosmoHyperrectangle{Float32,4}
+            @test CosmoHypersphere{Float32}([0, 0, 0], 1) isa CosmoSphere{Float32}
+            @test CosmoHypersphere{Float32}([0, 0], 1) == CosmoCircle(zeros(2), 1)
+            @test_throws "the corners must have length 2" CosmoHyperrectangle{Float32}([0, 0], [1, 1, 1])
         end
 
         @testset "Transforming geometries" begin
@@ -1952,10 +1969,10 @@ const CP = CosmoParticles
 
         @testset "Ellipsoid constructors" begin
             @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0)
-            @test_throws "a1 must not exceed" CosmoHomoeoid(2.0, 1.0, 0.5, 0.5)
-            @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0, 0.5)
-            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 2.0, 1.5)
-            @test_throws "s must satisfy 0 < s ≤ q" CosmoHomoeoid(1.0, 2.0, 0.2, 0.5)
+            @test_throws "a1 must not exceed" CosmoHomoeoid{Float64,Float64}(2.0, 1.0, 0.5, 0.5)
+            @test_throws "a1 must not exceed" CosmoHomoeoid2D{Float64,Float64}(2.0, 1.0, 0.5)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D{Float64,Float64}(1.0, 2.0, 1.5)
+            @test_throws "s must satisfy 0 < s ≤ q" CosmoHomoeoid{Float64,Float64}(1.0, 2.0, 0.2, 0.5)
             @test_throws "s must satisfy 0 < s ≤ q" CosmoEllipsoid{Float64,Float64}(1.0, 0.5, 0.8)
             @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse{Float64,Float64}(1.0, -0.5)
             @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0; q=1.5)
@@ -1969,10 +1986,11 @@ const CP = CosmoParticles
 
             h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.2)
             @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
-            h = CosmoHomoeoid(1.0, 2.0, 0.5, 0.2)
-            @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
-            h2 = CosmoHomoeoid2D(1.0, 2.0, 0.5)
+            h2 = CosmoHomoeoid2D(1.0, 2.0; q=0.5)
             @test (h2.a1, h2.a2, h2.q) == (1.0, 2.0, 0.5)
+            # positional arguments are lengths, axis ratios are keywords
+            @test_throws MethodError CosmoHomoeoid(1.0, 2.0, 0.5, 0.2)
+            @test_throws MethodError CosmoHomoeoid2D(1.0, 2.0, 0.5)
 
             @test_throws "q must satisfy 0 < q ≤ 1" CosmoEllipse(1.0; q=-0.5, constant_area=true)
             @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 2.0; q=-0.5, constant_area=true)

@@ -124,6 +124,9 @@ end
     end
 
 Ellipse around the origin given by the semi-major axis `a` and the axis ratio `q = b/a` (where `b` is the semi-minor axis).
+
+The fields store the semi-major axis and the axis ratio; construct it with [`CosmoEllipse(a, b)`](@ref CosmoEllipse)
+from the semi-axes or [`CosmoEllipse(a; q)`](@ref CosmoEllipse) from the axis ratio.
 """
 struct CosmoEllipse{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
@@ -200,6 +203,10 @@ end
 
 Ellipsoid around the origin given by the largest semi-major axis `a`, and the axis ratios `q = b/a` and `s = c/a`
 (where `b` and `c` are the semi-minor axes with `b ≥ c`).
+
+The fields store the semi-major axis and the axis ratios; construct it with
+[`CosmoEllipsoid(a, b, c)`](@ref CosmoEllipsoid) from the semi-axes or
+[`CosmoEllipsoid(a; q, s)`](@ref CosmoEllipsoid) from the axis ratios.
 """
 struct CosmoEllipsoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
@@ -295,6 +302,10 @@ end
 
 Homoeoid in two dimensions around the origin given by the inner and outer semi-major axes `a1` and `a2`, and the
 axis ratio `q = b/a`.
+
+The fields store the semi-major axes and the axis ratio; construct it with
+[`CosmoHomoeoid2D(a, b; a2)`](@ref CosmoHomoeoid2D) from the semi-axes of one ellipse and the other semi-major axis,
+or [`CosmoHomoeoid2D(a1, a2; q)`](@ref CosmoHomoeoid2D) from the axis ratio.
 """
 struct CosmoHomoeoid2D{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
@@ -308,8 +319,6 @@ struct CosmoHomoeoid2D{T<:Number,U<:Real} <: AbstractCosmoGeometry
         return e
     end
 end
-
-CosmoHomoeoid2D(a1::T, a2::T, q::U) where {T,U} = CosmoHomoeoid2D{T,U}(a1, a2, q)
 
 """
     CosmoHomoeoid2D(a1::Number, a2::Number; q::Real=1, constant_area=false)
@@ -390,6 +399,10 @@ end
 
 Homoeoid in three dimensions around the origin given by the inner and outer semi-major axes `a1` and `a2`, and the
 axis ratios `q = b/a` and `s = c/a`.
+
+The fields store the semi-major axes and the axis ratios; construct it with
+[`CosmoHomoeoid(a, b, c; a2)`](@ref CosmoHomoeoid) from the semi-axes of one ellipsoid and the other semi-major
+axis, or [`CosmoHomoeoid(a1, a2; q, s)`](@ref CosmoHomoeoid) from the axis ratios.
 """
 struct CosmoHomoeoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
@@ -404,8 +417,6 @@ struct CosmoHomoeoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
         return e
     end
 end
-
-CosmoHomoeoid(a1::T, a2::T, q::U, s::U) where {T,U} = CosmoHomoeoid{T,U}(a1, a2, q, s)
 
 
 """
