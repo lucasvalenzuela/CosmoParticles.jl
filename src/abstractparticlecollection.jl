@@ -40,13 +40,11 @@ Concrete types of `AbstractParticleCollection` should have the following methods
 abstract type AbstractParticleCollection{AP} end
 
 """
-    get_particles(pc::AbstractParticleCollection)
+    CosmoParticles.get_particles(pc::AbstractParticleCollection)
 
 Return the particles dictionary belonging to the particle collection.
 
 This returns `pc.particles` by default if not overridden.
-
-This is not exported.
 """
 get_particles(pc::AbstractParticleCollection) = pc.particles
 
@@ -107,8 +105,6 @@ Prints the properties of the particles in the collection.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
 implementations of `AbstractParticleCollection`.
-
-This is not exported.
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) =
     show_properties(io, MIME(mime), p)

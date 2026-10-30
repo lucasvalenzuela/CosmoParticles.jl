@@ -15,22 +15,18 @@ The following methods are optional, but have default implementations:
 abstract type AbstractCosmoGeometry end
 
 """
-    geometry_enclosing_corners(geo::AbstractCosmoGeometry)
+    CosmoParticles.geometry_enclosing_corners(geo::AbstractCosmoGeometry)
 
 Return the lower left and upper right corners of the enclosing box of the geometry as a tuple of vectors.
 
 The enclosing box is not necessarily the tightest fitting box.
-
-This is not exported.
 """
 function geometry_enclosing_corners(::AbstractCosmoGeometry) end
 
 """
-    geometry_enclosing_center(geo::AbstractCosmoGeometry)
+    CosmoParticles.geometry_enclosing_center(geo::AbstractCosmoGeometry)
 
 Return the center of the enclosing box of the geometry as a vector.
-
-This is not exported.
 """
 function geometry_enclosing_center(geo::AbstractCosmoGeometry)
     corners = geometry_enclosing_corners(geo)
@@ -38,22 +34,18 @@ function geometry_enclosing_center(geo::AbstractCosmoGeometry)
 end
 
 @doc raw"""
-    mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
+    CosmoParticles.mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 
 Return the `BitVector` mask of the positions (``\mathrm{dims} × N``) located within the geometry.
-
-This is not exported.
 """
 function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
 
 @doc raw"""
-    mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
+    CosmoParticles.mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 
 Return the `BitArray` mask of the positions (``\mathrm{dims} × N``) located within the geometry.
 
 Calls [`mask_in!`](@ref) by default.
-
-This is not exported.
 """
 function mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
     mask = BitVector(undef, size(pos, 2))
@@ -95,7 +87,7 @@ Union of multiple geometries.
 
 This union geometry represents all of the volumes contained within the geometries. 
 
-This is not exported.
+This type is not exported; it is accessible as `CosmoParticles.CosmoUnionGeometry`.
 """
 struct CosmoUnionGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -108,12 +100,10 @@ struct CosmoUnionGeometry <: AbstractCosmoGeometry
 end
 
 """
-    CosmoUnionGeometry(geos::AbstractVector) 
-    CosmoUnionGeometry(geos::AbstractCosmoGeometry...) 
+    CosmoParticles.CosmoUnionGeometry(geos::AbstractVector)
+    CosmoParticles.CosmoUnionGeometry(geos::AbstractCosmoGeometry...)
 
 Create a union of geometries from the passed geometries.
-
-This is not exported.
 """
 CosmoUnionGeometry(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
 
@@ -169,7 +159,7 @@ Intersect of multiple geometries.
 
 This intersect geometry represents the volume that is shared among all of the geometries. 
 
-This is not exported.
+This type is not exported; it is accessible as `CosmoParticles.CosmoIntersectGeometry`.
 """
 struct CosmoIntersectGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -182,12 +172,10 @@ struct CosmoIntersectGeometry <: AbstractCosmoGeometry
 end
 
 """
-    CosmoIntersectGeometry(geos::AbstractVector) 
-    CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) 
+    CosmoParticles.CosmoIntersectGeometry(geos::AbstractVector)
+    CosmoParticles.CosmoIntersectGeometry(geos::AbstractCosmoGeometry...)
 
 Create an intersect of geometries from the passed geometries.
-
-This is not exported.
 """
 CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
 
@@ -248,7 +236,7 @@ Difference of a geometry with multiple geometries.
 
 This difference geometry represents the volume of `geo`, but that is not contained in any of the geometries `geos`.
 
-This is not exported.
+This type is not exported; it is accessible as `CosmoParticles.CosmoDiffGeometry`.
 """
 struct CosmoDiffGeometry <: AbstractCosmoGeometry
     geo::AbstractCosmoGeometry
@@ -263,12 +251,10 @@ struct CosmoDiffGeometry <: AbstractCosmoGeometry
 end
 
 """
-    CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractVector) 
-    CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) 
+    CosmoParticles.CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractVector)
+    CosmoParticles.CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...)
 
 Create a difference of geometries from the passed geometries.
-
-This is not exported.
 """
 CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = CosmoDiffGeometry(geo, geos)
 
@@ -321,7 +307,7 @@ Rotated geometry defined by a rotation matrix.
 
 This can be created by [`rotate`](@ref) applied to a geometry.
 
-This is not exported.
+This type is not exported; it is accessible as `CosmoParticles.Rotated`.
 """
 struct Rotated{G<:AbstractCosmoGeometry,R<:AbstractMatrix} <: AbstractCosmoGeometry
     geo::G
@@ -329,23 +315,19 @@ struct Rotated{G<:AbstractCosmoGeometry,R<:AbstractMatrix} <: AbstractCosmoGeome
 end
 
 """
-    rotation_matrix(rot::Rotated)
+    CosmoParticles.rotation_matrix(rot::Rotated)
 
 Returns the rotation matrix that rotates the original geometry into the rotated state.
-
-This is not exported.
 """
 rotation_matrix(rot::Rotated) = rot.rotmat
 
 """
-    rotation_matrix_inv(rot::Rotated)
+    CosmoParticles.rotation_matrix_inv(rot::Rotated)
 
 Returns the rotation matrix that rotates the rotated geometry back to its original orientation.
 
 Use this to rotate objects in the rotated frame of reference to the original frame of reference
 of the geometry.
-
-This is not exported.
 """
 rotation_matrix_inv(rot::Rotated) = transpose(rot.rotmat)
 
@@ -400,7 +382,7 @@ Translated geometry defined by a translation vector.
 
 This can be created by [`translate`](@ref) applied to a geometry.
 
-This is not exported.
+This type is not exported; it is accessible as `CosmoParticles.Translated`.
 """
 struct Translated{G<:AbstractCosmoGeometry,L<:AbstractVector} <: AbstractCosmoGeometry
     geo::G

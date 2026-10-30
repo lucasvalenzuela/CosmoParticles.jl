@@ -34,6 +34,7 @@ CosmoParticles.applyind
 CosmoParticles.applyind!
 CosmoParticles.removeind
 CosmoParticles.removeind!
+CosmoParticles.deleteat
 CosmoParticles.findall_in
 CosmoParticles.findall_in_sorted
 ```

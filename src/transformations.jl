@@ -3,8 +3,6 @@
 
 Returns `vals` rotated by the rotation matrix `rotmat` by regular matrix multiplication.
 Works for any dimensions and is optimized for unitful arrays.
-
-This is not exported.
 """
 matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = rotmat*ᵘvals
 
@@ -17,8 +15,6 @@ matrix_rotate(vals::NamedRowMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) =
     CosmoParticles.matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 
 In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `vals`.
-
-This is not exported.
 """
 function matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
     vals .= matrix_rotate(vals, rotmat)
@@ -37,8 +33,6 @@ end
     CosmoParticles.matrix_rotate!(dst::AbstractMatrix{<:Number}, vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 
 In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `dst`.
-
-This is not exported.
 """
 function matrix_rotate!(
     dst::AbstractMatrix{<:Number},
@@ -197,13 +191,11 @@ end
 
 
 """
-    _translate_periodic(x::Number, x₀::Number, period::Number, period_half::Number=1//2*period)
+    CosmoParticles._translate_periodic(x::Number, x₀::Number, period::Number, period_half::Number=1//2*period)
 
 Returns the coordinate `x` shifted by the `period` if reference coordinate `x₀` is on the other side.
 
 For periodic simulation boxes, the period corresponds to the boxlength.
-
-This is not exported.
 """
 @inline function _translate_periodic(
     x::Number,
@@ -346,22 +338,18 @@ end
 
 
 """
-    factor_to_comoving(z::Real, n::Real)
+    CosmoParticles.factor_to_comoving(z::Real, n::Real)
 
 Returns ``(1 + z)^n``.
-
-This is not exported.
 """
 function factor_to_comoving(z::Real, n::Real)
     float(1 + z)^n
 end
 
 """
-    factor_to_physical(z::Real, n::Real)
+    CosmoParticles.factor_to_physical(z::Real, n::Real)
 
 Returns ``(1 + z)^{-n}``.
-
-This is not exported.
 """
 function factor_to_physical(z::Real, n::Real)
     1 / float(1 + z)^n

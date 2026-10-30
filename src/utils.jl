@@ -67,8 +67,6 @@ The following indexing is applied:
 - `a::Number`: `a` is returned directly.
 - `a::Vector`: `a[ind]` is returned.
 - `a::Matrix`: `a[:, ind]` is returned.
-
-This is not exported.
 """
 _applyind(a::Union{Number,Nothing}, _::Union{AbstractVector,Colon}) = a
 _applyind(a::AbstractVector, ind::Union{AbstractVector,Colon}) = a[ind]
@@ -104,8 +102,6 @@ end
     CosmoParticles.applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
 
 In-place application of indices or mask to all particle properties.
-
-This is not exported.
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
@@ -123,8 +119,6 @@ Create new particles with the given indices or mask applied to all particle prop
 This can also be called by the simple syntax `p[ind]`.
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
-
-This is not exported.
 """
 function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
     affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
@@ -159,8 +153,6 @@ The following indexing is applied:
 - `a::Number`: `a` is returned directly.
 - `a::Vector`: `a[Not(ind)]` is returned.
 - `a::Matrix`: `a[:, Not(ind)]` is returned.
-
-This is not exported.
 """
 _removeind(a::Union{Number,Nothing}, _::AbstractVector) = a
 
@@ -233,8 +225,6 @@ end
     CosmoParticles.removeind!(p::AbstractParticles, ind::AbstractVector)
 
 In-place removal of indices to all particle properties.
-
-This is not exported.
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
@@ -252,8 +242,6 @@ Create new particles without the given indices or mask applied to all particle p
 This can also be called by the simple syntax `p[ind]`.
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
-
-This is not exported.
 """
 function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
@@ -281,8 +269,6 @@ Return all indices of `a` that are in `set`.
 
 If `a` is sorted without repeated values and `set` is sorted, the optimized [`findall_in_sorted`](@ref) is called.
 Otherwise, a `Set` is constructed from `set` to perform the checks with `in`.
-
-This is not exported.
 """
 function findall_in(a::AbstractVector, set::AbstractVector)
     if issorted(a; lt=≤) && issorted(set)
@@ -301,8 +287,6 @@ Return all indices of `a` that are in `set`, where both `a` and `set` are assume
 repeated values.
 
 This uses an optimized algorithm that is faster than creating a `Set` from `set` and performing checks with `in`.
-
-This is not exported.
 """
 function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     Base.require_one_based_indexing(a, set)
@@ -381,22 +365,18 @@ end
 Multiply an array with a scalar while preserving the element type of the array.
 
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
-
-This is not exported.
 """
 product_preserve_type(arr::AbstractArray{T}, b::Real) where {T<:Real} = arr .* convert(T, b)
 product_preserve_type(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
 
 """
-    CosmoParticles product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
+    CosmoParticles.product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T}
 
 Multiply an array with a scalar in-place while preserving the element type of the array.
 
 By converting the scalar factor to the array element type, this can be more performant than a normal
 broadcasted product.
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
-
-This is not exported.
 """
 function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
@@ -427,8 +407,6 @@ for `Number`s and arrays thereof, simply returning the original array.
 Note that after calling this method with a different conversion unit, the original array still has the old units,
 but the numerical values correspond to the new units. This method should always be called as
 `a = uconvert_lazy!(u, a)`.
-
-This is not exported.
 """
 ustrip_lazy(a::Unitful.AbstractQuantity) = ustrip(a)
 ustrip_lazy(a::Number) = a
@@ -459,8 +437,6 @@ uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = uconvert_lazy!(u
     CosmoParticles.uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity})
 
 Converts the unitful array to the given units while preserving the number type passed (not always the case for `uconvert`).
-
-This is not exported.
 """
 function uconvert_lazy(u::Unitful.Units, a::Quantity{T,D,U}) where {T,D,U}
     return convert(T, ustrip(u, a)) * u
@@ -473,8 +449,6 @@ Converts the unitful array to the specified units in-place.
 
 Note that after calling this method the original array still has the old units, but the numerical values
 correspond to the new units. This method should always be called as `a = uconvert_lazy!(u, a)`.
-
-This is not exported.
 """
 function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where {T,D,U}
     Q = Quantity{T,dimension(u),typeof(u)}

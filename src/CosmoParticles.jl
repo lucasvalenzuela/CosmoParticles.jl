@@ -87,6 +87,51 @@ export
     nrow,
     ncol
 
+public
+    # interface for particle types and collections
+    get_props,
+    get_particles,
+    particle_name,
+    particle_number,
+    particle_collection,
+    show_properties,
+
+    # geometry
+    geometry_enclosing_corners,
+    geometry_enclosing_center,
+    mask_in,
+    mask_in!,
+    CosmoUnionGeometry,
+    CosmoIntersectGeometry,
+    CosmoDiffGeometry,
+    Rotated,
+    Translated,
+    rotation_matrix,
+    rotation_matrix_inv,
+
+    # indexing
+    applyind,
+    applyind!,
+    removeind,
+    removeind!,
+    deleteat,
+    findall_in,
+    findall_in_sorted,
+
+    # transformations
+    matrix_rotate,
+    matrix_rotate!,
+    factor_to_comoving,
+    factor_to_physical,
+
+    # units
+    product_preserve_type,
+    product_preserve_type!,
+    ustrip_lazy,
+    ustrip_lazy!,
+    uconvert_lazy,
+    uconvert_lazy!
+
 
 include("abstractparticles.jl")
 include("particles.jl")

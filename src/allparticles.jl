@@ -95,11 +95,9 @@ end
 
 
 """
-    particle_collection(p::AllParticles)
+    CosmoParticles.particle_collection(p::AllParticles)
 
 Returns the underlying particle collection.
-
-This is not exported.
 """
 particle_collection(p::AllParticles) = p.particle_collection
 

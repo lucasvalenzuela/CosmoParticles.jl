@@ -27,6 +27,13 @@ const CP = CosmoParticles
         end
     end
 
+    @testset "Public names" begin
+        for name in (:get_props, :particle_number, :mask_in, :CosmoUnionGeometry, :Rotated, :findall_in, :ustrip_lazy, :deleteat)
+            @test Base.ispublic(CosmoParticles, name)
+            @test !Base.isexported(CosmoParticles, name)
+        end
+    end
+
     @testset "Particles" begin
         p = Particles(:dm)
 

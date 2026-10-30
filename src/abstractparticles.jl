@@ -65,7 +65,7 @@ Return the property dictionary belonging to the particles.
 
 This returns `p.props` by default if not overridden.
 
-This is not exported and should not be used outside of the defining files for particle types.
+This is meant for implementations of particle types.
 """
 get_props(p::AbstractParticles) = p.props
 
@@ -135,6 +135,14 @@ Base.copy!(dst::AbstractParticles, src::AbstractParticles) = (copy!(get_props(ds
 
 Base.getindex(p::AbstractParticles, ind::AbstractVector) = applyind(p, ind)
 Base.deleteat!(p::AbstractParticles, ind::AbstractVector) = removeind!(p, ind)
+"""
+    CosmoParticles.deleteat(p::AbstractParticles, ind::AbstractVector)
+
+Return a copy of the particles without the particles at the indices `ind`, leaving `p` unchanged.
+
+This is an alias of [`CosmoParticles.removeind`](@ref), and the copying counterpart of
+[`Base.deleteat!`](@extref).
+"""
 deleteat(p::AbstractParticles, ind::AbstractVector) = removeind(p, ind)
 
 # to implement:
@@ -203,8 +211,6 @@ end
 
 Returns the name of the particle type, which is used when printing an object of this type via
 [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}).
-
-This is not exported.
 """
 function particle_name(::AbstractParticles) end
 
@@ -212,8 +218,6 @@ function particle_name(::AbstractParticles) end
     CosmoParticles.particle_number(p::AbstractParticles)
 
 Returns the number of particles by determining the length of one of the property arrays.
-
-This is not exported.
 """
 function particle_number(p::AbstractParticles)
     for val in values(p)
@@ -231,8 +235,6 @@ Prints the number of particles, the name of the type, and the property names.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
 implementations of `AbstractParticles`.
-
-This is not exported.
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticles) = show_properties(io, MIME(mime), p)
 
