@@ -69,6 +69,18 @@ function _check_mask_dims(mask::AbstractVector, pos::AbstractMatrix, N)
     return nothing
 end
 
+# The geometries combined by a union, intersection, or difference must have the same number of dimensions.
+function _check_geometries(geos::Tuple)
+    isempty(geos) && throw(ArgumentError("at least one geometry is required"))
+    for geo in geos
+        geo isa AbstractCosmoGeometry || throw(ArgumentError("expected geometries, got a $(typeof(geo))"))
+    end
+    dims = [length(first(geometry_enclosing_corners(geo))) for geo in geos]
+    allequal(dims) ||
+        throw(DimensionMismatch("the geometries must have the same number of dimensions, got $(join(dims, ", "))"))
+    return nothing
+end
+
 # Adding zero turns -0.0 into 0.0, which `==` treats as equal to 0.0 but `hash` does not.
 _hash_normalized(x, h::UInt) = hash(x .+ zero.(x), h)
 
@@ -89,7 +101,9 @@ struct CosmoUnionGeometry <: AbstractCosmoGeometry
     geos::Tuple
 
     function CosmoUnionGeometry(geos)
-        new(Tuple(geos))
+        geos = Tuple(geos)
+        _check_geometries(geos)
+        new(geos)
     end
 end
 
@@ -161,7 +175,9 @@ struct CosmoIntersectGeometry <: AbstractCosmoGeometry
     geos::Tuple
 
     function CosmoIntersectGeometry(geos)
-        new(Tuple(geos))
+        geos = Tuple(geos)
+        _check_geometries(geos)
+        new(geos)
     end
 end
 
@@ -239,7 +255,10 @@ struct CosmoDiffGeometry <: AbstractCosmoGeometry
     geos::Tuple
 
     function CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos)
-        new(geo, Tuple(geos))
+        geos = Tuple(geos)
+        isempty(geos) && throw(ArgumentError("at least one geometry to subtract is required"))
+        _check_geometries((geo, geos...))
+        new(geo, geos)
     end
 end
 

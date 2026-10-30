@@ -124,6 +124,12 @@ const CP = CosmoParticles
         pab = vcat(pa, pb)
         @test pab.id == [1, 2, 3, 4]
         @test isequal(pab.mass, [1.0, 1.0, missing, missing])
+        pba = vcat(pb, pa)
+        @test collect(keys(pba)) == [:id, :mass]
+        @test pba.id == [3, 4, 1, 2]
+        @test isequal(pba.mass, [missing, missing, 1.0, 1.0])
+        @test isequal(vcat(pb, pa; affect=[:id]).id, [3, 4, 1, 2])
+        @test !haskey(vcat(pb, pa; affect=[:id]), :mass)
         append!(p1, p2)
         @test p1 == pv
         @test append!(p1, p2) === p1
@@ -249,6 +255,15 @@ const CP = CosmoParticles
         @test redshift(rpc) == 0.5
         @test rpc.particles == pc.particles
         @test collect(keys(RedshiftParticleCollection(0.5, gas, dm))) == [:gas, :dm]
+
+        @test_throws "the particle type :dm is given more than once" ParticleCollection(dm, gas, dm)
+        @test_throws "the particle type :dm is given more than once" ParticleCollection(:dm => dm, :dm => gas)
+        @test_throws "the particle type :gas is given more than once" RedshiftParticleCollection(1, gas, gas)
+        @test_throws "the particle type :dm is given more than once" RedshiftParticleCollection(1, :dm => dm, :dm => gas)
+
+        pcc = copy(pc)
+        @test pcc.particles !== pc.particles
+        @test pcc.dm === pc.dm
     end
 
     @testset "Hashing" begin
@@ -1018,6 +1033,20 @@ const CP = CosmoParticles
 
             atrans = a .+ da
             autrans = au .+ dau
+
+            @testset "Periodic element types" begin
+                p = Particles(:dm, :pos => Float32[0.1 0.9; 0.5 0.5; 0.5 0.5])
+                pt = translate_periodic(p, [0.0, 0.5, 0.5], 1.0)
+                @test pt.pos isa Matrix{Float32}
+                @test pt.pos ≈ [0.1 -0.1; 0.5 0.5; 0.5 0.5]
+                @test translate_periodic_to_center(p, [0.0, 0.5, 0.5], 1.0).pos isa Matrix{Float32}
+                @test translate_periodic(p, [0.0, 0.5, 0.5], [1.0, 1.0, 1.0]).pos == pt.pos
+                pu = Particles(:dm, :pos => Float32[0.1 0.9; 0.5 0.5; 0.5 0.5]u"m")
+                ptu = translate_periodic(pu, [0.0, 0.5, 0.5]u"m", 0.001u"km")
+                @test eltype(ptu.pos) == typeof(1.0f0u"m")
+                @test ptu.pos ≈ [0.1 -0.1; 0.5 0.5; 0.5 0.5]u"m"
+                @test translate_periodic!(deepcopy(pu), [0.0, 0.5, 0.5]u"m", 0.001u"km") == ptu
+            end
 
             @testset "Particle Translations" begin
                 p = Particles(:dm)
@@ -1852,6 +1881,20 @@ const CP = CosmoParticles
                   CP.mask_in(pos3, sph) .& CP.mask_in(pos3, cyl) .& CP.mask_in(pos3, rect)
             @test CP.mask_in(pos3, gdiff) ==
                   CP.mask_in(pos3, sph) .& .~CP.mask_in(pos3, cyl) .& .~CP.mask_in(pos3, rect)
+        end
+
+        @testset "Combining geometries checks" begin
+            sph = CosmoSphere(zeros(3), 0.5)
+            circ = CosmoCircle(zeros(2), 0.5)
+            @test_throws "at least one geometry is required" CP.CosmoUnionGeometry(())
+            @test_throws "at least one geometry is required" CP.CosmoIntersectGeometry([])
+            @test_throws "at least one geometry to subtract is required" setdiff(sph)
+            @test_throws "expected geometries, got a Int64" CP.CosmoUnionGeometry([sph, 1])
+            @test_throws "the geometries must have the same number of dimensions, got 3, 2" union(sph, circ)
+            @test_throws "the geometries must have the same number of dimensions, got 3, 2" intersect(sph, circ)
+            @test_throws "the geometries must have the same number of dimensions, got 2, 3" setdiff(circ, sph)
+            @test union(sph) isa CP.CosmoUnionGeometry
+            @test union(sph, CosmoCuboid(zeros(3), 1, 1, 1)) isa CP.CosmoUnionGeometry
         end
 
         @testset "Transforming geometries" begin

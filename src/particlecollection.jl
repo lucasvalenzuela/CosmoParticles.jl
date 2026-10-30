@@ -4,6 +4,9 @@
     end
 
 Basic particle collection at redshift 0.
+
+`copy(pc)` copies the dictionary of the collection, but not the particles: the copy contains the same
+[`Particles`](@ref) objects as `pc`.
 """
 struct ParticleCollection{AP<:AbstractParticles} <: AbstractParticleCollection{AP}
     particles::OrderedDict{Symbol,AP}
@@ -24,6 +27,16 @@ function ParticleCollection(particles::AbstractDict{Symbol,AP}) where {AP<:Abstr
     return ParticleCollection{AP}(particles)
 end
 
+# Each particle type can appear only once in a collection.
+function _particles_dict(::Type{AP}, pairs) where {AP<:AbstractParticles}
+    particles = OrderedDict{Symbol,AP}()
+    for (ptype, p) in pairs
+        haskey(particles, ptype) && throw(ArgumentError("the particle type :$ptype is given more than once"))
+        particles[ptype] = p
+    end
+    return particles
+end
+
 """
     ParticleCollection(::Type{AP}=Particles) where {AP<:AbstractParticles}
 
@@ -39,19 +52,23 @@ ParticleCollection(::Type{AP}=Particles) where {AP<:AbstractParticles} =
 
 Create a particle collection from pairs of Symbols and particles.
 
+Each particle type can only be given once.
+
 # Example
 ```julia
 ParticleCollection(:dm => Particles(:dm), :gas => Particles(:gas))
 ```
 """
 function ParticleCollection(pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles}
-    ParticleCollection{AP}(OrderedDict{Symbol,AP}(pairs...))
+    ParticleCollection{AP}(_particles_dict(AP, pairs))
 end
 
 """
     ParticleCollection(p::Particles...)
 
 Create a particle collection from multiple [`Particles`](@ref).
+
+Each particle type can only be given once.
 
 The keys are taken from the [`Particles`](@ref) type.
 
@@ -61,11 +78,7 @@ ParticleCollection(Particles(:dm), Particles(:gas))
 ```
 """
 function ParticleCollection(p::Particles, ps::Particles...)
-    particles = OrderedDict(p.type => p)
-    for particle in ps
-        particles[particle.type] = particle
-    end
-    return ParticleCollection(particles)
+    return ParticleCollection(_particles_dict(Particles, (particle.type => particle for particle in (p, ps...))))
 end
 
 Base.copy(pc::ParticleCollection) = ParticleCollection(copy(pc.particles))
@@ -86,6 +99,9 @@ end
     end
 
 Particle collection at a given redshift.
+
+`copy(pc)` copies the dictionary of the collection, but not the particles: the copy contains the same
+[`Particles`](@ref) objects as `pc`.
 """
 struct RedshiftParticleCollection{AP<:AbstractParticles,T<:Real} <: AbstractParticleCollection{AP}
     z::T
@@ -126,19 +142,23 @@ end
 
 Create a particle collection at redshift `z` from pairs of Symbols and particles.
 
+Each particle type can only be given once.
+
 # Example
 ```julia
 RedshiftParticleCollection(0.5, :dm => Particles(:dm), :gas => Particles(:gas))
 ```
 """
 function RedshiftParticleCollection(z::T, pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles,T<:Real}
-    RedshiftParticleCollection{AP,T}(z, OrderedDict{Symbol,AP}(pairs...))
+    RedshiftParticleCollection{AP,T}(z, _particles_dict(AP, pairs))
 end
 
 """
     RedshiftParticleCollection(z::Real, p::Particles...)
 
 Create a particle collection at redshift `z` from multiple [`Particles`](@ref).
+
+Each particle type can only be given once.
 
 The keys are taken from the [`Particles`](@ref) type.
 
@@ -148,10 +168,7 @@ RedshiftParticleCollection(0.5, Particles(:dm), Particles(:gas))
 ```
 """
 function RedshiftParticleCollection(z::Real, p::Particles, ps::Particles...)
-    particles = OrderedDict(p.type => p)
-    for particle in ps
-        particles[particle.type] = particle
-    end
+    particles = _particles_dict(Particles, (particle.type => particle for particle in (p, ps...)))
     return RedshiftParticleCollection(z, particles)
 end
 

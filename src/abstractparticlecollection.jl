@@ -29,7 +29,7 @@ dictionary.
 
 Concrete types of `AbstractParticleCollection` should have the following methods implemented
 (also see the implementation of [`ParticleCollection`](@ref)):
-- [`Base.copy`](@extref): returns new object containing a copy of the dictionary
+- [`Base.copy`](@extref): returns new object containing a copy of the dictionary, with the same particle objects
 - [`Base.empty`](@extref): returns an identical object, but with an empty dictionary
 - [`Base.:(==)`](@extref)
 - [`Base.hash`](@extref): equal objects must have equal hashes

@@ -219,6 +219,17 @@ This is not exported.
     return x
 end
 
+# The center and the period are converted to the element type of the coordinates, so that every branch of
+# `_translate_periodic` returns that type and the translated coordinates keep it.
+function _periodic_args(vals::AbstractArray, centerpos, period)
+    T = nonmissingtype(eltype(vals))
+    centerpos, period = _convert_elements(T, centerpos), _convert_elements(T, period)
+    return centerpos, period, period ./ 2
+end
+
+_convert_elements(::Type{T}, x::Number) where {T} = convert(T, x)
+_convert_elements(::Type{T}, x::AbstractArray) where {T} = convert.(T, x)
+
 
 """
     translate_periodic(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
@@ -234,7 +245,8 @@ function translate_periodic(p::AbstractParticles, centerpos, period, prop::Symbo
     p = copy(p)
 
     if haskey(p, prop)
-        p[prop] = _translate_periodic.(p[prop], centerpos, period, 0.5period)
+        c, P, Phalf = _periodic_args(p[prop], centerpos, period)
+        p[prop] = _translate_periodic.(p[prop], c, P, Phalf)
     end
 
     return p
@@ -258,7 +270,8 @@ In-place version of [`translate_periodic`](@ref).
 """
 function translate_periodic!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     if haskey(p, prop)
-        p[prop] .= _translate_periodic.(p[prop], centerpos, period, 0.5period)
+        c, P, Phalf = _periodic_args(p[prop], centerpos, period)
+        p[prop] .= _translate_periodic.(p[prop], c, P, Phalf)
     end
 
     return p
@@ -291,7 +304,8 @@ function translate_periodic_to_center(p::AbstractParticles, centerpos, period, p
     p = copy(p)
 
     if haskey(p, prop)
-        p[prop] = _translate_periodic.(p[prop], centerpos, period, 0.5period) .- centerpos
+        c, P, Phalf = _periodic_args(p[prop], centerpos, period)
+        p[prop] = _translate_periodic.(p[prop], c, P, Phalf) .- c
     end
 
     return p
@@ -315,7 +329,8 @@ In-place version of [`translate_periodic_to_center`](@ref).
 """
 function translate_periodic_to_center!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     if haskey(p, prop)
-        p[prop] .= _translate_periodic.(p[prop], centerpos, period, 0.5period) .- centerpos
+        c, P, Phalf = _periodic_args(p[prop], centerpos, period)
+        p[prop] .= _translate_periodic.(p[prop], c, P, Phalf) .- c
     end
 
     return p
