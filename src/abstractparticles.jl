@@ -4,8 +4,8 @@
 Abstract supertype for storing particle data efficiently in arrays.
 
 Particles generally have IDs, positions, and velocities as properties.
-The properties are expected to be stored in an `AbstractDict{Symbol,Any}`, such as the `OrderedDict` of
-[`Particles`](@ref), as vectors of length ``N``,
+The properties are expected to be stored in an `AbstractDict{Symbol,Any}`, such as the
+[`OrderedDict`](@extref OrderedCollections.OrderedDict) of [`Particles`](@ref), as vectors of length ``N``,
 matrices of size ``m×N``, or as scalars (when the property is equal for all particles).
 
 The inbuilt functionality of `AbstractParticles` includes accessing and setting properties
@@ -27,7 +27,7 @@ Any arrays may be of the type `AbstractArray`, provided the arrays are 1-indexed
 
 For matrix properties, a simplified syntax with underscores can be used to access the matrix rows. These are
 returned as views into the array, so `collect` them if necessary. This can also be used with the row names of
-[`NamedRowArray`s](https://lucasvalenzuela.github.io/NamedRowArrays.jl/dev/).
+[`NamedRowArray`s](@extref NamedRowArrays.NamedRowArray).
 ```julia
 # access by number always works, and by x, y, z for 2- and 3-dimensional matrices
 p.pos = rand(3, 100)
@@ -40,7 +40,7 @@ p.arr_1 == p.arr_a == @view p.arr[1, :] == @view p.arr[:a]
 ```
 
 # Methods
-The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref), [`Base.empty`](@extref),
+The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref),
 [`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the property
 dictionary.
 
@@ -234,7 +234,7 @@ end
 Prints the number of particles, the name of the type, and the property names.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
-implementations of `AbstractParticles`.
+implementations of [`AbstractParticles`](@ref).
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticles) = show_properties(io, MIME(mime), p)
 

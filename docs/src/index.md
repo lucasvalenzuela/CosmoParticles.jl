@@ -11,34 +11,38 @@ with the data extracted from cosmological simulations.
 
 ## Installation
 
-Note that this package usually does not have to be directly installed by the user, instead install any of the
-implementing packages.
-
-This package is only available through the local registry
-[CosmoSimsRegistry](https://gitlab.com/juliacosmosims/CosmoSimsRegistry), for which access first needs to be
-granted. It is recommended that an ssh key pair is created with the following command (which can be saved
-as `id_rsa_gitlab`, for example):
-```
-ssh-keygen -t rsa -b 4096 -m PEM
-```
-
-For the package manager to pick up on the ssh key, either `ssh-agent` has to be used, or the following two
-environment variables should be set (e.g., by setting them in the `.bashrc` file with `export` in front of each
-line):
-```
-SSH_KEY_PATH=~/.ssh/id_rsa_gitlab
-SSH_PUB_KEY_PATH=~/.ssh/id_rsa_gitlab.pub
-```
-
-The package registry can be loaded from the Julia REPL with the Julia package manager:
+This package is available through the public registry
+[CosmoAnalysisRegistry](https://github.com/lucasvalenzuela/CosmoAnalysisRegistry). Add the registry
+once per Julia installation, together with the General registry, which provides the dependencies:
 ```julia
 using Pkg
-pkg"registry add https://gitlab.com/juliacosmosims/CosmoSimsRegistry"
+Pkg.Registry.add("General")
+Pkg.Registry.add(url="https://github.com/lucasvalenzuela/CosmoAnalysisRegistry")
 ```
-This only needs to be done once per Julia installation.
 
-The latest version of the package is available for Julia 1.7 and newer versions and can be installed with:
+The package requires Julia 1.12 or newer and can then be installed with:
 ```julia
-using Pkg
 Pkg.add("CosmoParticles")
+```
+
+## Usage
+
+Particles of one type, such as dark matter or gas, are stored in a [`Particles`](@ref) object as a dictionary of
+properties: vectors with one value per particle, ``3 × N`` matrices for positions and velocities, or a scalar for a
+property that all particles share. A [`ParticleCollection`](@ref) groups several particle types:
+
+```julia
+using CosmoParticles
+
+dm = Particles(:dm, :id => collect(1:1000), :pos => 20 .* rand(3, 1000) .- 10, :vel => randn(3, 1000), :mass => 1.0)
+gas = Particles(:gas, :id => collect(1001:1500), :pos => 20 .* rand(3, 500) .- 10, :vel => randn(3, 500),
+                :mass => rand(500), :temp => 1e4 .* rand(500))
+pc = ParticleCollection(dm, gas)
+
+dm.pos_x                    # the x coordinates of the dark matter particles
+center = meanpos(pc[:gas])  # mass-weighted mean position of the gas
+inner = filter(pc, CosmoSphere(center, 5.0))   # new collection with the particles inside the sphere
+translate!(inner, -center)  # move the center to the origin
+angmomtot(inner[:gas])      # total angular momentum of the gas in the sphere
+inner.all.mass              # the masses of all particle types, concatenated lazily
 ```

@@ -21,7 +21,8 @@ end
 
 Create a particle collection from a dictionary of particles.
 
-An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new `OrderedDict`.
+An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new
+[`OrderedDict`](@extref OrderedCollections.OrderedDict).
 """
 function ParticleCollection(particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles}
     return ParticleCollection{AP}(particles)
@@ -42,7 +43,7 @@ end
 
 Create an empty particle collection of the passed type.
 
-By default, the particle collection is created for the [`Particles`] type.
+By default, the particle collection is created for the [`Particles`](@ref) type.
 """
 ParticleCollection(::Type{AP}=Particles) where {AP<:AbstractParticles} =
     ParticleCollection{AP}(OrderedDict{Symbol,AP}())
@@ -117,7 +118,8 @@ end
 
 Create a particle collection at redshift `z` from a dictionary of particles.
 
-An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new `OrderedDict`.
+An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new
+[`OrderedDict`](@extref OrderedCollections.OrderedDict).
 """
 function RedshiftParticleCollection(z::T, particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles,T<:Real}
     return RedshiftParticleCollection{AP,T}(z, particles)
@@ -128,7 +130,7 @@ end
 
 Create an empty particle collection of the passed type at redshift `z`.
 
-By default, the particle collection is created for the [`Particles`] type.
+By default, the particle collection is created for the [`Particles`](@ref) type.
 """
 function RedshiftParticleCollection(::Type{AP}, z::T) where {AP<:AbstractParticles,T<:Real}
     return RedshiftParticleCollection{AP,T}(z, OrderedDict{Symbol,AP}())

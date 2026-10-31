@@ -12,10 +12,10 @@ scalar properties.
 
 # Usage
 The individual properties of `AllParticles` can be converted as regular arrays with `Array(ap.pos)`
-and all or selected particle properties can be converted to a `Particles` object with `Particles(ap)`,
+and all or selected particle properties can be converted to a [`Particles`](@ref) object with `Particles(ap)`,
 where all lazy arrays are materialized as `Array`s.
 `AllParticles` cannot be sorted, filtered, or copied.
-In-place modifications are possible, such as [`rotate!`](@ref), [`translate!`](@ref), or [`to_comoving`](@ref).
+In-place modifications are possible, such as [`rotate!`](@ref), [`translate!`](@ref), or [`to_comoving!`](@ref).
 
 # Creation
 ```julia
@@ -35,8 +35,8 @@ ap = AllParticles(pc, [:dm, :stars]) # just include certain particle types
 The lazy concatenation occurs only when the property is needed and is only performed once.
 Note that this means that calling `pc.all.prop` multiple times results in the given property being lazily
 concatenated every time. As long as the property array pointers of the particle collection are not modified
-(e.g. by `sort!` or `filter!`), it is possible to reuse an object `ap = pc.all` without the need of regenerating
-the concatenated arrays.
+(e.g. by [`sort!`](@ref Base.sort!) or [`filter!`](@ref Base.filter!)), it is possible to reuse an object `ap = pc.all`
+without the need of regenerating the concatenated arrays.
 
 !!! warning "Modifying the underlying particle collection"
     After modifying the property array pointers of a particle collection (e.g. by `sort!` or `filter!`), any
@@ -222,7 +222,7 @@ end
 Copies the materialized particle properties to another particle object.
 
 To only copy certain properties, `props` can be passed as a vector of `Symbol`s.
-The `dst` cannot be of type `AllParticles`.
+The `dst` cannot be of type [`AllParticles`](@ref).
 """
 function Base.copy!(dst::AbstractParticles, src::AllParticles, props=nothing)
     empty!(dst)

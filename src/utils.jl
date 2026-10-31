@@ -129,7 +129,7 @@ function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect
         pnew[key] = p[key]
     end
 
-    Threads.@threads for key in affected_keys # collect used for compatibility with threads
+    Threads.@threads for key in affected_keys
         pnew[key] = _applyind(p[key], ind)
     end
 
@@ -239,7 +239,6 @@ end
 
 Create new particles without the given indices or mask applied to all particle properties.
 
-This can also be called by the simple syntax `p[ind]`.
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
 """
@@ -398,15 +397,14 @@ end
     CosmoParticles.ustrip_lazy([unit,] a::AbstractArray)
     CosmoParticles.ustrip_lazy!(unit, a::AbstractArray)
 
-Strips off the units of unitful arrays in a performant way while keeping the number type conserved (not always the case for `ustrip`).
+Strips off the units of unitful arrays in a performant way while keeping the number type conserved (not always the case
+for [`ustrip`](@extref Unitful.ustrip)).
 
-Like [`ustrip`](https://painterqubits.github.io/Unitful.jl/stable/manipulations/#Unitful.ustrip) for normal
-unitful arrays, but without reallocating non-unitful or lazy arrays. Differently to `ustrip`, this also works
-for `Number`s and arrays thereof, simply returning the original array.
+Like `ustrip` for normal unitful arrays, but without reallocating non-unitful or lazy arrays. Differently to `ustrip`,
+this also works for `Number`s and arrays thereof, simply returning the original array.
 
-Note that after calling this method with a different conversion unit, the original array still has the old units,
-but the numerical values correspond to the new units. This method should always be called as
-`a = uconvert_lazy!(u, a)`.
+`ustrip_lazy!` converts the array in place: afterwards, the original array still has the old units, but its
+numerical values correspond to the new units. Only the returned array should be used after calling it.
 """
 ustrip_lazy(a::Unitful.AbstractQuantity) = ustrip(a)
 ustrip_lazy(a::Number) = a
@@ -431,13 +429,17 @@ function ustrip_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity{T}}) where {T
     unit(eltype(a)) == u ? ustrip_lazy(a) : ustrip_lazy.(u, a)
 end
 
-uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = uconvert_lazy!(u, copy(a))
-
 """
+    CosmoParticles.uconvert_lazy(u::Unitful.Units, a::Quantity)
     CosmoParticles.uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity})
 
-Converts the unitful array to the given units while preserving the number type passed (not always the case for `uconvert`).
+Converts the unitful number or array to the given units while preserving the number type passed (not always the
+case for [`uconvert`](@extref Unitful.uconvert)).
 """
+function uconvert_lazy end
+
+uconvert_lazy(u::Unitful.Units, a::AbstractArray{<:Quantity}) = uconvert_lazy!(u, copy(a))
+
 function uconvert_lazy(u::Unitful.Units, a::Quantity{T,D,U}) where {T,D,U}
     return convert(T, ustrip(u, a)) * u
 end

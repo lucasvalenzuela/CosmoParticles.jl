@@ -64,7 +64,7 @@ meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=tr
     meanprop(p, prop; massprop, massweighted)
 
 """
-    meanvel(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true)
+    meanvel(p::AbstractParticles, prop::Symbol=:vel; massprop=:mass, massweighted=true)
 
 Returns the mean of the particles' velocities.
 
@@ -82,8 +82,8 @@ Returns the individual angular momenta of the particles.
 If `angmomprop` is a `Symbol`, the already computed angular momenta are returned directly if they exist.
 
 # Keyword Arguments
-- `origin=Nothing`: origin of the coordinate system for the computation of the angular momentum
-- `velorigin=Nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
+- `origin=nothing`: origin of the coordinate system for the computation of the angular momentum
+- `velorigin=nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
@@ -110,8 +110,8 @@ Returns the total angular momentum of the particles.
 If `angmomprop` is a `Symbol`, the total angular momentum is computed from the already existing angular momenta.
 
 # Keyword Arguments
-- `origin=Nothing`: origin of the coordinate system for the computation of the angular momentum
-- `velorigin=Nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
+- `origin=nothing`: origin of the coordinate system for the computation of the angular momentum
+- `velorigin=nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass

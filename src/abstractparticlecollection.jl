@@ -3,8 +3,8 @@
 
 Abstract supertype for storing data of multiple particle types.
 
-The particles are expected to be stored in an `AbstractDict{Symbol,<:AbstractParticles}`, such as the `OrderedDict`
-of [`ParticleCollection`](@ref).
+The particles are expected to be stored in an `AbstractDict{Symbol,<:AbstractParticles}`, such as the
+[`OrderedDict`](@extref OrderedCollections.OrderedDict) of [`ParticleCollection`](@ref).
 
 The inbuilt functionality of `AbstractParticleCollection` includes accessing and setting properties
 via the following syntax:
@@ -23,7 +23,7 @@ If the struct has additional fields, these can also be accessed by `pc.field`, b
 `pc[:field]`. The latter syntax can only be used to access the particles.
 
 # Methods
-The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref), [`Base.empty`](@extref),
+The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref),
 [`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the particle
 dictionary.
 
@@ -93,7 +93,7 @@ Base.copy!(dst::AbstractParticleCollection, src::AbstractParticleCollection) =
 
 Returns the redshift at which the particles are located.
 
-By default, 0 is returned. This method should be overridden for concrete types of `AbstractParticleCollection`
+By default, 0 is returned. This method should be overridden for concrete types of [`AbstractParticleCollection`](@ref)
 for which the redshift differs.
 """
 redshift(pc::AbstractParticleCollection) = 0
@@ -104,7 +104,7 @@ redshift(pc::AbstractParticleCollection) = 0
 Prints the properties of the particles in the collection.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
-implementations of `AbstractParticleCollection`.
+implementations of [`AbstractParticleCollection`](@ref).
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) =
     show_properties(io, MIME(mime), p)

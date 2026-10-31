@@ -20,3 +20,26 @@ CosmoParticles.particle_name
 CosmoParticles.particle_number
 CosmoParticles.show_properties(io::IO, mime::AbstractString, p::AbstractParticles)
 ```
+
+
+## Tables
+
+Particles implement the [Tables.jl](https://github.com/JuliaData/Tables.jl) interface, so they can be passed to any
+package that reads tables, for example `DataFrame(p)` from [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl) or
+`CSV.write("dm.csv", p)` from [CSV.jl](https://github.com/JuliaData/CSV.jl).
+Each particle is a row of the table. The columns are:
+- one column for each vector property;
+- one column for each scalar property, with its value repeated for every particle;
+- one column for each row of a matrix property, named like the underscore access of the property: `pos_x`,
+  `pos_y` and `pos_z` for two or three rows, by the row names for a
+  [`NamedRowMatrix`](@extref NamedRowArrays.NamedRowMatrix), and `pos_1`, `pos_2`, … otherwise.
+
+```julia
+julia> p = Particles(:dm, :id => [1, 2, 3], :pos => [0.0 1.0 2.0; 0.5 0.5 0.5; 1.0 0.0 -1.0], :mass => 2.0);
+
+julia> Tables.columntable(p)
+(id = [1, 2, 3], pos_x = [0.0, 1.0, 2.0], pos_y = [0.5, 0.5, 0.5], pos_z = [1.0, 0.0, -1.0], mass = Fill(2.0, 3))
+
+julia> nrow(p), ncol(p)
+(3, 5)
+```

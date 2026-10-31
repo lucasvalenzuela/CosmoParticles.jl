@@ -25,8 +25,8 @@ end
     Particles(type::Symbol[, pairs::Pair...])
 
 Create a [`Particles`](@ref) object with the given `type` and pairs of `Symbol` to the property
-values. These are passed to the underlying `OrderedDict`, which keeps the order of the properties.
-If no pairs are passed to the method, an empty `OrderedDict` is created.
+values. These are passed to the underlying [`OrderedDict`](@extref OrderedCollections.OrderedDict), which keeps the
+order of the properties. If no pairs are passed to the method, an empty `OrderedDict` is created.
 
 The properties can also be passed as an `AbstractDict`, as in `Particles(type, props)`. An `OrderedDict{Symbol,Any}`
 is stored as it is, and other dictionaries are copied into a new `OrderedDict`.

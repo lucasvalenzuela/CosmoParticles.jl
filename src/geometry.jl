@@ -640,7 +640,7 @@ end
 """
     CosmoSphere{T} = CosmoHypersphere{T,3}
 
-Alias for a 2D [`CosmoHypersphere`](@ref).
+Alias for a 3D [`CosmoHypersphere`](@ref).
 """
 const CosmoSphere{T} = CosmoHypersphere{T,3} where {T<:Number}
 

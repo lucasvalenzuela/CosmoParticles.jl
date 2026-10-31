@@ -211,7 +211,8 @@ end
     Base.filter(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
     Base.filter(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos[; affect])
 
-Create new particles or collection with them filtered by keeping only the particles inside the given [`AbstractCosmoGeometry`](@ref).
+Create new particles or collection with them filtered by keeping only the particles inside the given
+[`AbstractCosmoGeometry`](@ref).
 
 The geometry filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
@@ -256,7 +257,8 @@ end
     Base.filter!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
     Base.filter!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
 
-Filter the particles or collection in-place by keeping only the particles inside the given [`AbstractCosmoGeometry`](@ref).
+Filter the particles or collection in-place by keeping only the particles inside the given
+[`AbstractCosmoGeometry`](@ref).
 
 The geometry filter is applied to the property specified.
 """
@@ -297,7 +299,7 @@ end
     delete(p::AbstractParticles; ids, idprop=:id, affect=keys(p))
     delete(pc::AbstractParticleCollection; ids, idprop=:id[, affect])
 
-Create new particles or collection with them filtered by keeping only the particles with the given IDs.
+Create new particles or collection with them filtered by removing all particles with the given IDs.
 
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
 to the newly created particles object.
@@ -334,10 +336,11 @@ end
 
 
 """
-    Base.delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
-    Base.delete(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos[; affect])
+    delete(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos; affect=keys(p))
+    delete(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos[; affect])
 
-Create new particles or collection with them filtered by keeping only the particles outside the given [`AbstractCosmoGeometry`](@ref).
+Create new particles or collection with them filtered by keeping only the particles outside the given
+[`AbstractCosmoGeometry`](@ref).
 
 The geometry filter is applied to the property specified.
 If the keyword argument `affect` is a non-empty vector of `Symbol`s, only those properties are filtered and added
@@ -377,7 +380,8 @@ end
     Base.delete!(p::AbstractParticles, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
     Base.delete!(pc::AbstractParticleCollection, geo::AbstractCosmoGeometry, prop::Symbol=:pos)
 
-Filter the particles or collection in-place by keeping only the particles outside the given [`AbstractCosmoGeometry`](@ref).
+Filter the particles or collection in-place by keeping only the particles outside the given
+[`AbstractCosmoGeometry`](@ref).
 
 The geometry filter is applied to the property specified.
 """

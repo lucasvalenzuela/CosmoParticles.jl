@@ -45,7 +45,4 @@ CosmoParticles.findall_in_sorted
 ```@docs
 CosmoParticles.matrix_rotate
 CosmoParticles.matrix_rotate!
-CosmoParticles._applyind
-CosmoParticles._removeind
-CosmoParticles._translate_periodic
 ```
