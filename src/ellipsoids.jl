@@ -7,6 +7,18 @@ In the 2D case: ``x^2 + \frac{y^2}{q^2}``.
 In the 3D case: ``x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}``.
 
 See also [`colnormell`](@ref).
+
+# Examples
+
+```jldoctest
+julia> a = [3.0 0.0 0.0; 0.0 2.0 0.5];
+
+julia> colnormell2(a, 0.5)
+3-element Vector{Float64}:
+  9.0
+ 16.0
+  1.0
+```
 """
 function colnormell2(a::AbstractMatrix{T}, q, ::Nothing=nothing) where {T}
     # the floating-point type of the elements of `a` promoted with the axis ratios
@@ -62,6 +74,18 @@ In the 2D case: ``\sqrt{x^2 + \frac{y^2}{q^2}}``.
 In the 3D case: ``\sqrt{x^2 + \frac{y^2}{q^2} + \frac{z^2}{s^2}}``.
 
 See also [`colnormell2`](@ref).
+
+# Examples
+
+```jldoctest
+julia> a = [3.0 0.0 0.0; 0.0 2.0 0.5];
+
+julia> colnormell(a, 0.5)
+3-element Vector{Float64}:
+ 3.0
+ 4.0
+ 1.0
+```
 """
 function colnormell(a::AbstractMatrix{T}, q, ::Nothing=nothing) where {T}
     # the floating-point type of the elements of `a` promoted with the axis ratios
@@ -127,6 +151,19 @@ Ellipse around the origin given by the semi-major axis `a` and the axis ratio `q
 
 The fields store the semi-major axis and the axis ratio; construct it with [`CosmoEllipse(a, b)`](@ref CosmoEllipse)
 from the semi-axes or [`CosmoEllipse(a; q)`](@ref CosmoEllipse) from the axis ratio.
+
+# Examples
+
+```jldoctest
+julia> e = CosmoEllipse(2.0, 1.0)
+CosmoEllipse{Float64, Float64}(2.0, 0.5)
+
+julia> CosmoParticles.mask_in([1.0 0.0 2.0; 0.0 1.5 0.5], e)
+3-element BitVector:
+ 1
+ 0
+ 0
+```
 """
 struct CosmoEllipse{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
@@ -148,6 +185,13 @@ If `constant_area=true`, the semi-major axis of the ellipse is picked such that 
 circle with radius `a`.
 
 The axis ratio `q` has to satisfy `0 < q ≤ 1`.
+
+# Examples
+
+```jldoctest
+julia> CosmoEllipse(2.0; q=0.5)
+CosmoEllipse{Float64, Float64}(2.0, 0.5)
+```
 """
 function CosmoEllipse(a::T; q::U=1, constant_area=false) where {T<:Number,U<:Real}
     if constant_area
@@ -165,6 +209,13 @@ end
 Returns an ellipse around the origin with semi-major axis `a` and semi-minor axis `b`.
 
 The semi-minor axis has to be smaller than the semi-major axis.
+
+# Examples
+
+```jldoctest
+julia> CosmoEllipse(2.0, 1.0)
+CosmoEllipse{Float64, Float64}(2.0, 0.5)
+```
 """
 function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
     q = uconvert(NoUnits, b / a)
@@ -207,6 +258,19 @@ Ellipsoid around the origin given by the largest semi-major axis `a`, and the ax
 The fields store the semi-major axis and the axis ratios; construct it with
 [`CosmoEllipsoid(a, b, c)`](@ref CosmoEllipsoid) from the semi-axes or
 [`CosmoEllipsoid(a; q, s)`](@ref CosmoEllipsoid) from the axis ratios.
+
+# Examples
+
+```jldoctest
+julia> e = CosmoEllipsoid(4.0, 2.0, 1.0)
+CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+
+julia> CosmoParticles.mask_in([3.0 0.0 0.0; 0.0 3.0 0.0; 0.0 0.0 0.5], e)
+3-element BitVector:
+ 1
+ 0
+ 1
+```
 """
 struct CosmoEllipsoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a::T
@@ -231,6 +295,13 @@ of a sphere with radius `a`.
 
 The axis ratios have to satisfy `0 < s ≤ q ≤ 1`. By default, `s = q`: passing only `q` gives a prolate shape
 and passing only `s` an oblate one.
+
+# Examples
+
+```jldoctest
+julia> CosmoEllipsoid(4.0; q=0.5, s=0.25)
+CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+```
 """
 function CosmoEllipsoid(a; q=1, s=q, constant_volume=false)
     _create_cosmoellipsoid_qs(a, q, s, constant_volume)
@@ -252,6 +323,13 @@ end
 Returns an ellipsoid around the origin with semi axes `a`, `b`, and `c`, with `a ≥ b ≥ c`.
 
 If `c` is `nothing`, a [`CosmoEllipse`](@ref) is created instead.
+
+# Examples
+
+```jldoctest
+julia> CosmoEllipsoid(4.0, 2.0, 1.0)
+CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+```
 """
 function CosmoEllipsoid(a::T1, b::T2, c::T3) where {T1<:Number,T2<:Number,T3<:Number}
     q, s = uconvert(NoUnits, b / a), uconvert(NoUnits, c / a)
@@ -306,6 +384,19 @@ axis ratio `q = b/a`.
 The fields store the semi-major axes and the axis ratio; construct it with
 [`CosmoHomoeoid2D(a, b; a2)`](@ref CosmoHomoeoid2D) from the semi-axes of one ellipse and the other semi-major axis,
 or [`CosmoHomoeoid2D(a1, a2; q)`](@ref CosmoHomoeoid2D) from the axis ratio.
+
+# Examples
+
+```jldoctest
+julia> h = CosmoHomoeoid2D(1.0, 2.0; q=0.5)
+CosmoHomoeoid2D{Float64, Float64}(1.0, 2.0, 0.5)
+
+julia> CosmoParticles.mask_in([0.5 1.5 3.0; 0.0 0.0 0.0], h)
+3-element BitVector:
+ 0
+ 1
+ 0
+```
 """
 struct CosmoHomoeoid2D{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
@@ -333,6 +424,16 @@ The axis ratio `q` has to satisfy `0 < q ≤ 1`.
 
 For the second method, `a2` can also be smaller than `a1`. It is only important that `a` and `b` both either
 correspond to the inner or outer ellipse.
+
+# Examples
+
+```jldoctest
+julia> CosmoHomoeoid2D(1.0, 2.0; q=0.5)
+CosmoHomoeoid2D{Float64, Float64}(1.0, 2.0, 0.5)
+
+julia> CosmoHomoeoid2D(2.0, 1.0; a2=4.0)
+CosmoHomoeoid2D{Float64, Float64}(2.0, 4.0, 0.5)
+```
 """
 function CosmoHomoeoid2D(a1, a2_or_b; a2=nothing, q=1, constant_area=false)
     if isnothing(a2)
@@ -403,6 +504,19 @@ axis ratios `q = b/a` and `s = c/a`.
 The fields store the semi-major axes and the axis ratios; construct it with
 [`CosmoHomoeoid(a, b, c; a2)`](@ref CosmoHomoeoid) from the semi-axes of one ellipsoid and the other semi-major
 axis, or [`CosmoHomoeoid(a1, a2; q, s)`](@ref CosmoHomoeoid) from the axis ratios.
+
+# Examples
+
+```jldoctest
+julia> h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
+CosmoHomoeoid{Float64, Float64}(1.0, 2.0, 0.5, 0.25)
+
+julia> CosmoParticles.mask_in([0.5 1.5 3.0; 0.0 0.0 0.0; 0.0 0.0 0.0], h)
+3-element BitVector:
+ 0
+ 1
+ 0
+```
 """
 struct CosmoHomoeoid{T<:Number,U<:Real} <: AbstractCosmoGeometry
     a1::T
@@ -429,6 +543,13 @@ equal to that enclosed by two spheres with radii `a1` and `a2`.
 
 The axis ratios have to satisfy `0 < s ≤ q ≤ 1`. By default, `s = q`: passing only `q` gives a prolate shape
 and passing only `s` an oblate one.
+
+# Examples
+
+```jldoctest
+julia> CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
+CosmoHomoeoid{Float64, Float64}(1.0, 2.0, 0.5, 0.25)
+```
 """
 function CosmoHomoeoid(a1, a2; q=1, s=q, constant_volume=false)
     _create_cosmohomoeoid_qs(a1, a2, q, s, constant_volume)
@@ -463,6 +584,13 @@ specified by the semi-major axis `a2`.
 The semi-major axis `a2` can be smaller or larger than `a`.
 
 If `c` is `nothing`, a [`CosmoHomoeoid2D`](@ref) is created instead.
+
+# Examples
+
+```jldoctest
+julia> CosmoHomoeoid(2.0, 1.0, 0.5; a2=4.0)
+CosmoHomoeoid{Float64, Float64}(2.0, 4.0, 0.5, 0.25)
+```
 """
 function CosmoHomoeoid(a::T1, b::Number, c::Number; a2::T2) where {T1<:Number,T2<:Number}
     q, s = uconvert(NoUnits, b / a), uconvert(NoUnits, c / a)
@@ -520,6 +648,16 @@ Triaxiality from the axis ratios `q` and `s`.
 -   ``0 < T < 1/3``: oblate
 - ``1/3 < T < 2/3``: triaxial
 - ``2/3 < T < 1``:   prolate
+
+# Examples
+
+```jldoctest
+julia> triaxiality(0.5, 0.25)
+0.8
+
+julia> triaxiality(CosmoEllipsoid(4.0, 2.0, 1.0))
+0.8
+```
 """
 @inline triaxiality(q::Real, s::Real) = (1 - q^2) / (1 - s^2)
 @inline triaxiality(e::Union{CosmoEllipsoid,CosmoHomoeoid}) = triaxiality(e.q, e.s)
@@ -529,6 +667,16 @@ Triaxiality from the axis ratios `q` and `s`.
     ellipticity(e::Union{CosmoEllipse,CosmoHomoeoid2D})
 
 Ellipticity from axis ratio `q`: ``ϵ = 1 - q``
+
+# Examples
+
+```jldoctest
+julia> ellipticity(0.5)
+0.5
+
+julia> ellipticity(CosmoEllipse(2.0, 1.0))
+0.5
+```
 """
 @inline ellipticity(q::Real) = 1 - q
 @inline ellipticity(e::Union{CosmoEllipse,CosmoHomoeoid2D}) = ellipticity(e.q)
@@ -538,6 +686,16 @@ Ellipticity from axis ratio `q`: ``ϵ = 1 - q``
     eccentricity(e::Union{CosmoEllipse,CosmoHomoeoid2D})
 
 Eccentricity from axis ratio `q`: ``e = \sqrt{1 - q^2}``
+
+# Examples
+
+```jldoctest
+julia> eccentricity(0.5)
+0.8660254037844386
+
+julia> eccentricity(CosmoEllipse(2.0, 1.0))
+0.8660254037844386
+```
 """
 @inline eccentricity(q::Real) = sqrt(1 - q^2)
 @inline eccentricity(e::Union{CosmoEllipse,CosmoHomoeoid2D}) = eccentricity(e.q)

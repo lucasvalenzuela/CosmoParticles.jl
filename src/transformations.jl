@@ -3,6 +3,16 @@
 
 Returns `vals` rotated by the rotation matrix `rotmat` by regular matrix multiplication.
 Works for any dimensions and is optimized for unitful arrays.
+
+# Examples
+
+```jldoctest
+julia> CosmoParticles.matrix_rotate([1 0; 0 1; 0 0], [0 -1 0; 1 0 0; 0 0 1])
+3×2 Matrix{Int64}:
+ 0  -1
+ 1   0
+ 0   0
+```
 """
 matrix_rotate(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) = rotmat*ᵘvals
 
@@ -15,6 +25,18 @@ matrix_rotate(vals::NamedRowMatrix{<:Number}, rotmat::AbstractMatrix{<:Real}) =
     CosmoParticles.matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 
 In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `vals`.
+
+# Examples
+
+```jldoctest
+julia> vals = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> CosmoParticles.matrix_rotate!(vals, [0 -1 0; 1 0 0; 0 0 1])
+3×2 Matrix{Float64}:
+ 0.0  -1.0
+ 1.0   0.0
+ 0.0   0.0
+```
 """
 function matrix_rotate!(vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
     vals .= matrix_rotate(vals, rotmat)
@@ -33,6 +55,22 @@ end
     CosmoParticles.matrix_rotate!(dst::AbstractMatrix{<:Number}, vals::AbstractMatrix{<:Number}, rotmat::AbstractMatrix{<:Real})
 
 In-place version of [`CosmoParticles.matrix_rotate`](@ref), overwriting `dst`.
+
+# Examples
+
+```jldoctest
+julia> vals = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> dst = similar(vals);
+
+julia> CosmoParticles.matrix_rotate!(dst, vals, [0 -1 0; 1 0 0; 0 0 1]);
+
+julia> dst
+3×2 Matrix{Float64}:
+ 0.0  -1.0
+ 1.0   0.0
+ 0.0   0.0
+```
 """
 function matrix_rotate!(
     dst::AbstractMatrix{<:Number},
@@ -55,6 +93,18 @@ affect both the original particles as well as the rotated copied particles.
 The properties should be given as a single `Symbol`, or a vector of `Symbol`s. Only
 the existing quantities will be rotated (e.g., this method does not throw an error if
 velocities are not given for the particles).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 0.0; 0.0 1.0; 0.0 0.0]);
+
+julia> rotate(p, [0 -1 0; 1 0 0; 0 0 1]).pos
+3×2 Matrix{Float64}:
+ 0.0  -1.0
+ 1.0   0.0
+ 0.0   0.0
+```
 """
 function rotate(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     p = copy(p)
@@ -78,6 +128,18 @@ Rotates the specified properties `props` of the particles in the collection by t
 Creates a copy of the particle collection with only new pointers to the rotated particles
 (by default position and velocity). The properties should be given as a single `Symbol`, or a vector of
 `Symbol`s.
+
+# Examples
+
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :pos => [1.0 0.0; 0.0 1.0; 0.0 0.0]));
+
+julia> rotate(pc, [0 -1 0; 1 0 0; 0 0 1])[:dm].pos
+3×2 Matrix{Float64}:
+ 0.0  -1.0
+ 1.0   0.0
+ 0.0   0.0
+```
 """
 function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     pc = copy(pc)
@@ -102,6 +164,20 @@ end
 In-place version of [`rotate`](@ref).
 
 This function is reexported.
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 0.0; 0.0 1.0; 0.0 0.0]);
+
+julia> rotate!(p, [0 -1 0; 1 0 0; 0 0 1]);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 0.0  -1.0
+ 1.0   0.0
+ 0.0   0.0
+```
 """
 function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, props=[:pos, :vel])
     # only rotate existing quantities
@@ -138,6 +214,18 @@ Translates the specified property of the particles `p` by `Δx`.
 
 Creates a copy of the particles with only new pointers to the translated property.
 Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0]);
+
+julia> translate(p, [1.0, 2.0, 3.0]).pos
+3×2 Matrix{Float64}:
+ 2.0  3.0
+ 2.0  2.0
+ 3.0  3.0
+```
 """
 function translate(p::AbstractParticles, Δx, prop::Symbol=:pos)
     p = copy(p)
@@ -156,6 +244,18 @@ Translates the specified property of the particles in the collection `pc` by `Δ
 
 Creates a copy of the particle collection with only new pointers to the translated properties for the particles.
 Typically, `Δx` will be an `AbstractVector`, e.g., for positions or velocities.
+
+# Examples
+
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0]));
+
+julia> translate(pc, [1.0, 2.0, 3.0])[:dm].pos
+3×2 Matrix{Float64}:
+ 2.0  3.0
+ 2.0  2.0
+ 3.0  3.0
+```
 """
 function translate(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
     pc = copy(pc)
@@ -172,6 +272,20 @@ end
     translate!(pc::AbstractParticleCollection, Δx, prop::Symbol=:pos)
 
 In-place version of [`translate`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0]);
+
+julia> translate!(p, [1.0, 2.0, 3.0]);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 2.0  3.0
+ 2.0  2.0
+ 3.0  3.0
+```
 """
 function translate!(p::AbstractParticles, Δx, prop::Symbol=:pos)
     if haskey(p, prop)
@@ -232,6 +346,18 @@ Translates the specified property of the particles or collection by the `period`
 Creates a copy of the particles or the collection with only new pointers to the translated property.
 Typically, `centerpos` will be an `AbstractVector`, e.g., for positions, and `period` can be a `Number` or
 `AbstractVector`, depending on if the period is the same for all dimensions or if they are different.
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [0.5 9.5; 0.0 0.0; 0.0 0.0]);
+
+julia> translate_periodic(p, [0.0, 0.0, 0.0], 10.0).pos
+3×2 Matrix{Float64}:
+ 0.5  -0.5
+ 0.0   0.0
+ 0.0   0.0
+```
 """
 function translate_periodic(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     p = copy(p)
@@ -259,6 +385,20 @@ end
     translate_periodic!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
 
 In-place version of [`translate_periodic`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [0.5 9.5; 0.0 0.0; 0.0 0.0]);
+
+julia> translate_periodic!(p, [0.0, 0.0, 0.0], 10.0);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 0.5  -0.5
+ 0.0   0.0
+ 0.0   0.0
+```
 """
 function translate_periodic!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     if haskey(p, prop)
@@ -291,6 +431,18 @@ Typically, `centerpos` will be an `AbstractVector`, e.g., for positions, and `pe
 `AbstractVector`, depending on if the period is the same for all dimensions or if they are different.
 
 Also see [`translate_periodic`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [10.5 19.5; 0.0 0.0; 0.0 0.0]);
+
+julia> translate_periodic_to_center(p, [10.0, 0.0, 0.0], 10.0).pos
+3×2 Matrix{Float64}:
+ 0.5  -0.5
+ 0.0   0.0
+ 0.0   0.0
+```
 """
 function translate_periodic_to_center(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     p = copy(p)
@@ -318,6 +470,20 @@ end
     translate_periodic_to_center!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol=:pos)
 
 In-place version of [`translate_periodic_to_center`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [10.5 19.5; 0.0 0.0; 0.0 0.0]);
+
+julia> translate_periodic_to_center!(p, [10.0, 0.0, 0.0], 10.0);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 0.5  -0.5
+ 0.0   0.0
+ 0.0   0.0
+```
 """
 function translate_periodic_to_center!(p::AbstractParticles, centerpos, period, prop::Symbol=:pos)
     if haskey(p, prop)
@@ -341,6 +507,13 @@ end
     CosmoParticles.factor_to_comoving(z::Real, n::Real)
 
 Returns ``(1 + z)^n``.
+
+# Examples
+
+```jldoctest
+julia> CosmoParticles.factor_to_comoving(1, 2)
+4.0
+```
 """
 function factor_to_comoving(z::Real, n::Real)
     float(1 + z)^n
@@ -350,6 +523,13 @@ end
     CosmoParticles.factor_to_physical(z::Real, n::Real)
 
 Returns ``(1 + z)^{-n}``.
+
+# Examples
+
+```jldoctest
+julia> CosmoParticles.factor_to_physical(1, 2)
+0.25
+```
 """
 function factor_to_physical(z::Real, n::Real)
     1 / float(1 + z)^n
@@ -367,6 +547,18 @@ densities) are passed as the keyword argument `propexp` as a vector of tuples.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^n`` where ``n`` is the positional exponent.
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0]);
+
+julia> to_comoving(p, 1).pos
+3×2 Matrix{Float64}:
+ 2.0  4.0
+ 0.0  0.0
+ 0.0  0.0
+```
 """
 function to_comoving end
 
@@ -377,6 +569,20 @@ function to_comoving end
 Convert particle properties from physical to comoving in-place.
 
 In-place version of [`to_comoving`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0]);
+
+julia> to_comoving!(p, 1);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 2.0  4.0
+ 0.0  0.0
+ 0.0  0.0
+```
 """
 function to_comoving! end
 
@@ -391,6 +597,18 @@ densities) are passed as the keyword argument `propexp` as a vector of tuples.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^{-n}`` where ``n`` is the positional exponent.
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [2.0 4.0; 0.0 0.0; 0.0 0.0]);
+
+julia> to_physical(p, 1).pos
+3×2 Matrix{Float64}:
+ 1.0  2.0
+ 0.0  0.0
+ 0.0  0.0
+```
 """
 function to_physical end
 
@@ -401,6 +619,20 @@ function to_physical end
 Convert particle properties from comoving to physical in-place.
 
 In-place version of [`to_physical`](@ref).
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :pos => [2.0 4.0; 0.0 0.0; 0.0 0.0]);
+
+julia> to_physical!(p, 1);
+
+julia> p.pos
+3×2 Matrix{Float64}:
+ 1.0  2.0
+ 0.0  0.0
+ 0.0  0.0
+```
 """
 function to_physical! end
 

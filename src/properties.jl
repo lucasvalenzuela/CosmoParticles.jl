@@ -1,9 +1,20 @@
 """
-    meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted::Bool=true)
+    meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted=true)
 
 Returns the mean of the specified property over all particles.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 3.0], :temp => [1.0, 5.0]);
+
+julia> meanprop(p, :temp)
+4.0
+
+julia> meanprop(p, :temp; massweighted=false)
+3.0
+```
 """
 function meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted=true)
     if massweighted
@@ -44,6 +55,14 @@ _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
 Returns the sum of the specified property over all particles.
 
 For a matrix property, the sums of its rows are returned as a `Vector`.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> sumprop(p, :mass)
+6.0
+```
 """
 sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p, p[prop])
 
@@ -58,7 +77,18 @@ _sumprop(a::AbstractMatrix) = [sum(@view a[i, :]) for i in axes(a, 1)]
 
 Returns the mean of the particles' positions.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :pos => [0.0 2.0; 0.0 4.0; 0.0 6.0], :mass => [1.0, 1.0]);
+
+julia> meanpos(p)
+3-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+```
 """
 meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true) =
     meanprop(p, prop; massprop, massweighted)
@@ -68,14 +98,25 @@ meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=tr
 
 Returns the mean of the particles' velocities.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :vel => [0.0 2.0; 0.0 4.0; 0.0 6.0], :mass => [1.0, 1.0]);
+
+julia> meanvel(p)
+3-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+```
 """
 meanvel(p::AbstractParticles, prop::Symbol=:vel; massprop=:mass, massweighted=true) =
     meanprop(p, prop; massprop, massweighted)
 
 
 """
-    angmom(p::AbstractParticles)
+    angmom(p::AbstractParticles; kwargs...)
 
 Returns the individual angular momenta of the particles.
 
@@ -88,6 +129,21 @@ If `angmomprop` is a `Symbol`, the already computed angular momenta are returned
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
 - `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
+
+julia> angmom(p)
+3×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.0   0.0
+ 1.0  -2.0
+```
 """
 function angmom(
     p::AbstractParticles;
@@ -103,7 +159,7 @@ function angmom(
 end
 
 """
-    angmomtot(p::AbstractParticles)
+    angmomtot(p::AbstractParticles; kwargs...)
 
 Returns the total angular momentum of the particles.
 
@@ -116,6 +172,21 @@ If `angmomprop` is a `Symbol`, the total angular momentum is computed from the a
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
 - `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
+
+julia> angmomtot(p)
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+```
 """
 function angmomtot(
     p::AbstractParticles;
@@ -131,7 +202,7 @@ function angmomtot(
 end
 
 """
-    angmomtot_stable(p::AbstractParticles)
+    angmomtot_stable(p::AbstractParticles; kwargs...)
 
 Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
 
@@ -139,6 +210,21 @@ Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates l
 of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
+
+julia> angmomtot_stable(p)
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+```
 """
 function angmomtot_stable(
     p::AbstractParticles;
@@ -161,6 +247,23 @@ end
 Returns a new `Vector` with the columnwise norms of `a` around `origin`.
 
 This method does not check for overflow of the squared norm.
+
+# Examples
+```jldoctest
+julia> a = [3.0 0.0 0.0; 4.0 5.0 1.0];
+
+julia> colnorm(a)
+3-element Vector{Float64}:
+ 5.0
+ 5.0
+ 1.0
+
+julia> colnorm(a, [3.0, 1.0])
+3-element Vector{Float64}:
+ 3.0
+ 5.0
+ 3.0
+```
 """
 function colnorm(a::AbstractMatrix{T}) where {T}
     dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
@@ -175,9 +278,26 @@ function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
 end
 
 """
-    colnorm2(a::AbstractMatrix[, origin:AbstractVector])
+    colnorm2(a::AbstractMatrix[, origin::AbstractVector])
 
 Returns a new `Vector` with the columnwise squared norms of `a` around `origin`.
+
+# Examples
+```jldoctest
+julia> a = [3.0 0.0 0.0; 4.0 5.0 1.0];
+
+julia> colnorm2(a)
+3-element Vector{Float64}:
+ 25.0
+ 25.0
+  1.0
+
+julia> colnorm2(a, [0.0, 1.0])
+3-element Vector{Float64}:
+ 18.0
+ 16.0
+  0.0
+```
 """
 function colnorm2(a::AbstractMatrix{T}) where {T}
     dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
@@ -353,9 +473,18 @@ end
 """
     coldot(a::AbstractMatrix, b::AbstractMatrix)
 
-Returns the dot products of the matrix columns as a new matrix.
+Returns the dot products of the matrix columns as a new vector.
 
 Both input matrices need to have the same dimensions ``d × N``, representing ``N`` ``d``-dimensional vectors.
+
+# Examples
+```jldoctest
+julia> coldot([1.0 2.0 3.0; 4.0 5.0 6.0], [1.0 0.0 1.0; 0.0 1.0 1.0])
+3-element Vector{Float64}:
+ 1.0
+ 5.0
+ 9.0
+```
 """
 function coldot(a::AbstractMatrix, b::AbstractMatrix)
     _check_same_size(a, b)
@@ -413,6 +542,19 @@ end
 Returns the cross products of the matrix columns as a new matrix.
 
 Both input matrices need to have the same dimensions ``3 × N``.
+
+# Examples
+```jldoctest
+julia> a = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> b = [0.0 0.0; 1.0 0.0; 0.0 1.0];
+
+julia> colcross(a, b)
+3×2 Matrix{Float64}:
+ 0.0  1.0
+ 0.0  0.0
+ 1.0  0.0
+```
 """
 function colcross(a::AbstractMatrix, b::AbstractMatrix)
     _check_same_size(a, b)
@@ -449,6 +591,19 @@ The mass can be a vector or a scalar value (useful if all particles have the sam
 The coordinate system's origin can be passed as a vector of length 3, as well as the velocity origin, which
 determines the relative velocity at which the angular momentum should be determined. Typically, this will be the
 velocity of the center of mass.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> angmom(pos, vel, [1.0, 2.0])
+3×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.0   0.0
+ 1.0  -2.0
+```
 """
 function angmom(
     pos::AbstractMatrix,
@@ -580,6 +735,19 @@ velocity of the center of mass.
 
 This method never allocates the full angular momentum matrix for all particles like [`angmom`](@ref) does.
 Use this when the individual particle angular momenta are not needed.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> angmomtot(pos, vel, [1.0, 2.0])
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+```
 """
 function angmomtot(
     pos::AbstractMatrix,
@@ -639,6 +807,21 @@ Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates l
 of [`angmomtot`](@ref), but is almost three times slower than it.
 
 See [`angmomtot`](@ref) for the available keyword arguments.
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 -1.0; 1.0 0.0; 0.0 0.0];
+
+julia> angmomtot_stable(pos, vel, Fill(2.0, 2))
+3-element Vector{Float64}:
+ 0.0
+ 0.0
+ 4.0
+```
 """
 function angmomtot_stable end
 

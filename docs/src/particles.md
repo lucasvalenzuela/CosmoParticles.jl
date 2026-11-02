@@ -34,8 +34,10 @@ Each particle is a row of the table. The columns are:
   `pos_y` and `pos_z` for two or three rows, by the row names for a
   [`NamedRowMatrix`](@extref NamedRowArrays.NamedRowMatrix), and `pos_1`, `pos_2`, … otherwise.
 
-```julia
-julia> p = Particles(:dm, :id => [1, 2, 3], :pos => [0.0 1.0 2.0; 0.5 0.5 0.5; 1.0 0.0 -1.0], :mass => 2.0);
+```jldoctest
+julia> using CosmoParticles, FillArrays, Tables
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :pos => [0.0 1.0 2.0; 0.5 0.5 0.5; 1.0 0.0 -1.0], :mass => Fill(2.0, 3));
 
 julia> Tables.columntable(p)
 (id = [1, 2, 3], pos_x = [0.0, 1.0, 2.0], pos_y = [0.5, 0.5, 0.5], pos_z = [1.0, 0.0, -1.0], mass = Fill(2.0, 3))

@@ -8,6 +8,19 @@ The following dimensions are returned:
 - `[1, 3]`: `:edgeon` or `:xz`
 - `[2, 3]`: `:sideon` or `:yz`
 - `[1, 2]`: `:faceon` or `:xy`
+
+# Examples
+```jldoctest
+julia> CosmoParticles.get_dims(:edgeon)
+2-element Vector{Int64}:
+ 1
+ 3
+
+julia> CosmoParticles.get_dims([2, 3])
+2-element Vector{Int64}:
+ 2
+ 3
+```
 """
 function get_dims(projection::Symbol)
     if projection === :edgeon || projection === :xz
@@ -36,6 +49,15 @@ The following dimensions are returned:
 - `2`: `:edgeon` or `:xz` or `[1, 3]`
 - `1`: `:sideon` or `:yz` or `[2, 3]`
 - `3`: `:faceon` or `:xy` or `[1, 2]`
+
+# Examples
+```jldoctest
+julia> CosmoParticles.get_losdim(:edgeon)
+2
+
+julia> CosmoParticles.get_losdim([1, 2])
+3
+```
 """
 function get_losdim(projection::Symbol)
     if projection === :edgeon || projection === :xz
@@ -102,6 +124,18 @@ end
     CosmoParticles.applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
 
 In-place application of indices or mask to all particle properties.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> CosmoParticles.applyind!(p, [true, false, true]);
+
+julia> p[:mass]
+2-element Vector{Float64}:
+ 1.0
+ 3.0
+```
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
@@ -119,6 +153,16 @@ Create new particles with the given indices or mask applied to all particle prop
 This can also be called by the simple syntax `p[ind]`.
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> CosmoParticles.applyind(p, [1, 3])[:mass]
+2-element Vector{Float64}:
+ 1.0
+ 3.0
+```
 """
 function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect=keys(p))
     affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
@@ -225,6 +269,18 @@ end
     CosmoParticles.removeind!(p::AbstractParticles, ind::AbstractVector)
 
 In-place removal of indices to all particle properties.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> CosmoParticles.removeind!(p, [2]);
+
+julia> p[:mass]
+2-element Vector{Float64}:
+ 1.0
+ 3.0
+```
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
@@ -241,6 +297,16 @@ Create new particles without the given indices or mask applied to all particle p
 
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> CosmoParticles.removeind(p, [2])[:mass]
+2-element Vector{Float64}:
+ 1.0
+ 3.0
+```
 """
 function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
@@ -268,6 +334,14 @@ Return all indices of `a` that are in `set`.
 
 If `a` is sorted without repeated values and `set` is sorted, the optimized [`findall_in_sorted`](@ref) is called.
 Otherwise, a `Set` is constructed from `set` to perform the checks with `in`.
+
+# Examples
+```jldoctest
+julia> CosmoParticles.findall_in([5, 1, 3, 2], [2, 3, 7])
+2-element Vector{Int64}:
+ 3
+ 4
+```
 """
 function findall_in(a::AbstractVector, set::AbstractVector)
     if issorted(a; lt=≤) && issorted(set)
@@ -286,6 +360,14 @@ Return all indices of `a` that are in `set`, where both `a` and `set` are assume
 repeated values.
 
 This uses an optimized algorithm that is faster than creating a `Set` from `set` and performing checks with `in`.
+
+# Examples
+```jldoctest
+julia> CosmoParticles.findall_in_sorted([1, 2, 3, 5], [2, 3, 7])
+2-element Vector{Int64}:
+ 2
+ 3
+```
 """
 function findall_in_sorted(a::AbstractVector, set::AbstractVector)
     Base.require_one_based_indexing(a, set)
@@ -364,6 +446,14 @@ end
 Multiply an array with a scalar while preserving the element type of the array.
 
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+
+# Examples
+```jldoctest
+julia> CosmoParticles.product_preserve_type(Float32[1, 2], 2)
+2-element Vector{Float32}:
+ 2.0
+ 4.0
+```
 """
 product_preserve_type(arr::AbstractArray{T}, b::Real) where {T<:Real} = arr .* convert(T, b)
 product_preserve_type(arr::AbstractArray{<:Quantity{T}}, b::Real) where {T<:Real} = arr .* convert(T, b)
@@ -376,6 +466,18 @@ Multiply an array with a scalar in-place while preserving the element type of th
 By converting the scalar factor to the array element type, this can be more performant than a normal
 broadcasted product.
 For unitful arrays, the scalar factor is converted to the number type of the quantity before multiplying.
+
+# Examples
+```jldoctest
+julia> a = Float32[1, 2];
+
+julia> CosmoParticles.product_preserve_type!(a, 2);
+
+julia> a
+2-element Vector{Float32}:
+ 2.0
+ 4.0
+```
 """
 function product_preserve_type!(arr::AbstractArray{T}, b::Real) where {T<:Real}
     arr .*= convert(T, b)
@@ -405,6 +507,31 @@ this also works for `Number`s and arrays thereof, simply returning the original 
 
 `ustrip_lazy!` converts the array in place: afterwards, the original array still has the old units, but its
 numerical values correspond to the new units. Only the returned array should be used after calling it.
+
+# Examples
+```jldoctest
+julia> using Unitful
+
+julia> CosmoParticles.ustrip_lazy(u"km", [1.0, 2.0]u"km")
+2-element reinterpret(Float64, ::Vector{Quantity{Float64, 𝐋, Unitful.FreeUnits{(km,), 𝐋, nothing}}}):
+ 1.0
+ 2.0
+
+julia> CosmoParticles.ustrip_lazy(u"m", [1.0, 2.0]u"km")
+2-element Vector{Float64}:
+ 1000.0
+ 2000.0
+
+julia> a = [1.0, 2.0]u"km";
+
+julia> CosmoParticles.ustrip_lazy!(u"m", a)
+2-element reinterpret(Float64, ::Vector{Quantity{Float64, 𝐋, Unitful.FreeUnits{(km,), 𝐋, nothing}}}):
+ 1000.0
+ 2000.0
+
+julia> a[1]  # the original array keeps its units, but holds the values in m
+1000.0 km
+```
 """
 ustrip_lazy(a::Unitful.AbstractQuantity) = ustrip(a)
 ustrip_lazy(a::Number) = a
@@ -435,6 +562,16 @@ end
 
 Converts the unitful number or array to the given units while preserving the number type passed (not always the
 case for [`uconvert`](@extref Unitful.uconvert)).
+
+# Examples
+```jldoctest
+julia> using Unitful
+
+julia> CosmoParticles.uconvert_lazy(u"m", [1.0, 2.0]u"km")
+2-element reinterpret(Quantity{Float64, 𝐋, Unitful.FreeUnits{(m,), 𝐋, nothing}}, ::Vector{Quantity{Float64, 𝐋, Unitful.FreeUnits{(km,), 𝐋, nothing}}}):
+ 1000.0 m
+ 2000.0 m
+```
 """
 function uconvert_lazy end
 
@@ -451,6 +588,18 @@ Converts the unitful array to the specified units in-place.
 
 Note that after calling this method the original array still has the old units, but the numerical values
 correspond to the new units. This method should always be called as `a = uconvert_lazy!(u, a)`.
+
+# Examples
+```jldoctest
+julia> using Unitful
+
+julia> a = [1.0, 2.0]u"km";
+
+julia> a = CosmoParticles.uconvert_lazy!(u"m", a)
+2-element reinterpret(Quantity{Float64, 𝐋, Unitful.FreeUnits{(m,), 𝐋, nothing}}, ::Vector{Quantity{Float64, 𝐋, Unitful.FreeUnits{(km,), 𝐋, nothing}}}):
+ 1000.0 m
+ 2000.0 m
+```
 """
 function uconvert_lazy!(u::Unitful.Units, a::AbstractArray{<:Quantity{T,D,U}}) where {T,D,U}
     Q = Quantity{T,dimension(u),typeof(u)}

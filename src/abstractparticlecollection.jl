@@ -8,12 +8,15 @@ The particles are expected to be stored in an `AbstractDict{Symbol,<:AbstractPar
 
 The inbuilt functionality of `AbstractParticleCollection` includes accessing and setting properties
 via the following syntax:
-```julia
-P<:AbstractParticles
-pc::<:AbstractParticleCollection{P}
-p::<:P
-pc.dm = p
-pc[:dm] === p
+```jldoctest
+julia> pc = ParticleCollection();
+
+julia> p = Particles(:dm, :id => [1, 2, 3]);
+
+julia> pc.dm = p;
+
+julia> pc[:dm] === p
+true
 ```
 
 In addition, the following syntax is equivalent to creating an [`AllParticles`](@ref) object: `pc.all`.
@@ -36,6 +39,16 @@ Concrete types of `AbstractParticleCollection` should have the following methods
 - [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
 - [`Base.propertynames`](@extref): implement this if there are additional struct fields
 - [`Base.show(io, mime, pc)`](@extref Base.show-Tuple{IO, Any, Any})
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]));
+
+julia> collect(keys(pc))
+2-element Vector{Symbol}:
+ :dm
+ :gas
+```
 """
 abstract type AbstractParticleCollection{AP} end
 
@@ -45,6 +58,14 @@ abstract type AbstractParticleCollection{AP} end
 Return the particles dictionary belonging to the particle collection.
 
 This returns `pc.particles` by default if not overridden.
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]));
+
+julia> CosmoParticles.get_particles(pc) === pc.particles
+true
+```
 """
 get_particles(pc::AbstractParticleCollection) = pc.particles
 
@@ -95,6 +116,15 @@ Returns the redshift at which the particles are located.
 
 By default, 0 is returned. This method should be overridden for concrete types of [`AbstractParticleCollection`](@ref)
 for which the redshift differs.
+
+# Examples
+```jldoctest
+julia> redshift(ParticleCollection())
+0
+
+julia> redshift(RedshiftParticleCollection(0.5))
+0.5
+```
 """
 redshift(pc::AbstractParticleCollection) = 0
 
@@ -105,6 +135,17 @@ Prints the properties of the particles in the collection.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
 implementations of [`AbstractParticleCollection`](@ref).
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]));
+
+julia> CosmoParticles.show_properties(stdout, "text/plain", pc)
+dm: 2 Particles
+ id
+gas: 1 Particles
+ id
+```
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) =
     show_properties(io, MIME(mime), p)

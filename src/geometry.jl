@@ -11,6 +11,17 @@ The following methods are optional, but have default implementations:
 - [`CosmoParticles.geometry_enclosing_center`](@ref)
 - [`CosmoParticles.mask_in`](@ref)
 - [`CosmoParticles.translate`](@ref)
+
+# Examples
+
+```jldoctest
+julia> p = Particles(:dm, :id => [1, 2, 3], :pos => [0.5 2.0 0.0; 0.0 0.0 -0.5; 0.0 0.0 0.0]);
+
+julia> filter(p, CosmoSphere(1.0)).id
+2-element Vector{Int64}:
+ 1
+ 3
+```
 """
 abstract type AbstractCosmoGeometry end
 
@@ -20,6 +31,15 @@ abstract type AbstractCosmoGeometry end
 Return the lower left and upper right corners of the enclosing box of the geometry as a tuple of vectors.
 
 The enclosing box is not necessarily the tightest fitting box.
+
+# Examples
+
+```jldoctest
+julia> s = CosmoSphere([1.0, 2.0, 3.0], 1.0);
+
+julia> CosmoParticles.geometry_enclosing_corners(s)
+([0.0, 1.0, 2.0], [2.0, 3.0, 4.0])
+```
 """
 function geometry_enclosing_corners(::AbstractCosmoGeometry) end
 
@@ -27,6 +47,18 @@ function geometry_enclosing_corners(::AbstractCosmoGeometry) end
     CosmoParticles.geometry_enclosing_center(geo::AbstractCosmoGeometry)
 
 Return the center of the enclosing box of the geometry as a vector.
+
+# Examples
+
+```jldoctest
+julia> c = CosmoCuboid([0.0, 0.0, 0.0], [1.0, 2.0, 3.0]);
+
+julia> CosmoParticles.geometry_enclosing_center(c)
+3-element Vector{Float64}:
+ 0.5
+ 1.0
+ 1.5
+```
 """
 function geometry_enclosing_center(geo::AbstractCosmoGeometry)
     corners = geometry_enclosing_corners(geo)
@@ -37,6 +69,20 @@ end
     CosmoParticles.mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 
 Return the `BitVector` mask of the positions (``\mathrm{dims} × N``) located within the geometry.
+
+# Examples
+
+```jldoctest
+julia> s = CosmoSphere(1.0);
+
+julia> pos = [0.5 2.0 5.0; 0.0 0.0 0.0; 0.0 0.0 0.0];
+
+julia> CosmoParticles.mask_in!(BitVector(undef, 3), pos, s)
+3-element BitVector:
+ 1
+ 0
+ 0
+```
 """
 function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
 
@@ -46,6 +92,20 @@ function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeomet
 Return the `BitArray` mask of the positions (``\mathrm{dims} × N``) located within the geometry.
 
 Calls [`mask_in!`](@ref) by default.
+
+# Examples
+
+```jldoctest
+julia> s = CosmoSphere(1.0);
+
+julia> pos = [0.5 2.0 5.0; 0.0 0.0 0.0; 0.0 0.0 0.0];
+
+julia> CosmoParticles.mask_in(pos, s)
+3-element BitVector:
+ 1
+ 0
+ 0
+```
 """
 function mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
     mask = BitVector(undef, size(pos, 2))
@@ -88,6 +148,7 @@ Union of multiple geometries.
 This union geometry represents all of the volumes contained within the geometries. 
 
 This type is not exported; it is accessible as `CosmoParticles.CosmoUnionGeometry`.
+Union geometries are created with [`union`](@ref Base.union(::AbstractCosmoGeometry...)).
 """
 struct CosmoUnionGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -113,17 +174,18 @@ CosmoUnionGeometry(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
 Create a union of geometries from the passed geometries.
 
 # Examples
-```julia
-using CosmoParticles
-using CosmoParticles: mask_in
 
-pos::Matrix # 3×n
+```jldoctest
+julia> g1 = CosmoSphere(1.0);
 
-g1 = CosmoSphere([1, 2, 3], 4)
-g2 = CosmoSphere([3, 2, 3], 4)
-geo = union(g1, g2)
+julia> g2 = CosmoSphere([3.0, 0.0, 0.0], 1.0);
 
-mask_in(pos, geo) == mask_in(pos, g1) .| mask_in(pos, g2)
+julia> geo = union(g1, g2);
+
+julia> pos = [0.5 2.0 5.0; 0.0 0.0 0.0; 0.0 0.0 0.0];
+
+julia> CosmoParticles.mask_in(pos, geo) == CosmoParticles.mask_in(pos, g1) .| CosmoParticles.mask_in(pos, g2)
+true
 ```
 """
 Base.union(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
@@ -160,6 +222,7 @@ Intersect of multiple geometries.
 This intersect geometry represents the volume that is shared among all of the geometries. 
 
 This type is not exported; it is accessible as `CosmoParticles.CosmoIntersectGeometry`.
+Intersect geometries are created with [`intersect`](@ref Base.intersect(::AbstractCosmoGeometry...)).
 """
 struct CosmoIntersectGeometry <: AbstractCosmoGeometry
     geos::Tuple
@@ -185,17 +248,18 @@ CosmoIntersectGeometry(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(
 Create an intersect of geometries from the passed geometries.
 
 # Examples
-```julia
-using CosmoParticles
-using CosmoParticles: mask_in
 
-pos::Matrix # 3×n
+```jldoctest
+julia> g1 = CosmoSphere(2.0);
 
-g1 = CosmoSphere([1, 2, 3], 4)
-g2 = CosmoSphere([3, 2, 3], 4)
-geo = intersect(g1, g2)
+julia> g2 = CosmoSphere([3.0, 0.0, 0.0], 2.0);
 
-mask_in(pos, geo) == mask_in(pos, g1) .& mask_in(pos, g2)
+julia> geo = intersect(g1, g2);
+
+julia> pos = [0.5 1.5 3.0; 0.0 0.0 0.0; 0.0 0.0 0.0];
+
+julia> CosmoParticles.mask_in(pos, geo) == CosmoParticles.mask_in(pos, g1) .& CosmoParticles.mask_in(pos, g2)
+true
 ```
 """
 Base.intersect(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
@@ -237,6 +301,7 @@ Difference of a geometry with multiple geometries.
 This difference geometry represents the volume of `geo`, but that is not contained in any of the geometries `geos`.
 
 This type is not exported; it is accessible as `CosmoParticles.CosmoDiffGeometry`.
+Difference geometries are created with [`setdiff`](@ref Base.setdiff(::AbstractCosmoGeometry, ::AbstractCosmoGeometry...)).
 """
 struct CosmoDiffGeometry <: AbstractCosmoGeometry
     geo::AbstractCosmoGeometry
@@ -264,17 +329,18 @@ CosmoDiffGeometry(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = 
 Create a difference of geometries from the passed geometries.
 
 # Examples
-```julia
-using CosmoParticles
-using CosmoParticles: mask_in
 
-pos::Matrix # 3×n
+```jldoctest
+julia> g1 = CosmoSphere(2.0);
 
-g1 = CosmoSphere([1, 2, 3], 4)
-g2 = CosmoSphere([3, 2, 3], 4)
-geo = setdiff(g1, g2)
+julia> g2 = CosmoSphere([1.0, 0.0, 0.0], 1.0);
 
-mask_in(pos, geo) == mask_in(pos, g1) .& .~mask_in(pos, g2)
+julia> geo = setdiff(g1, g2);
+
+julia> pos = [-1.0 0.5 1.5; 0.0 0.0 0.0; 0.0 0.0 0.0];
+
+julia> CosmoParticles.mask_in(pos, geo) == CosmoParticles.mask_in(pos, g1) .& .~CosmoParticles.mask_in(pos, g2)
+true
 ```
 """
 Base.setdiff(geo::AbstractCosmoGeometry, geos::AbstractCosmoGeometry...) = CosmoDiffGeometry(geo, geos)
@@ -308,6 +374,17 @@ Rotated geometry defined by a rotation matrix.
 This can be created by [`rotate`](@ref) applied to a geometry.
 
 This type is not exported; it is accessible as `CosmoParticles.Rotated`.
+
+# Examples
+
+```jldoctest
+julia> R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0];
+
+julia> rot = rotate(CosmoCuboid([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0]), R);
+
+julia> rot isa CosmoParticles.Rotated
+true
+```
 """
 struct Rotated{G<:AbstractCosmoGeometry,R<:AbstractMatrix} <: AbstractCosmoGeometry
     geo::G
@@ -318,6 +395,20 @@ end
     CosmoParticles.rotation_matrix(rot::Rotated)
 
 Returns the rotation matrix that rotates the original geometry into the rotated state.
+
+# Examples
+
+```jldoctest
+julia> R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0];
+
+julia> rot = rotate(CosmoCuboid([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0]), R);
+
+julia> CosmoParticles.rotation_matrix(rot)
+3×3 Matrix{Float64}:
+ 0.0  -1.0  0.0
+ 1.0   0.0  0.0
+ 0.0   0.0  1.0
+```
 """
 rotation_matrix(rot::Rotated) = rot.rotmat
 
@@ -328,6 +419,20 @@ Returns the rotation matrix that rotates the rotated geometry back to its origin
 
 Use this to rotate objects in the rotated frame of reference to the original frame of reference
 of the geometry.
+
+# Examples
+
+```jldoctest
+julia> R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0];
+
+julia> rot = rotate(CosmoCuboid([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0]), R);
+
+julia> CosmoParticles.rotation_matrix_inv(rot) * CosmoParticles.rotation_matrix(rot)
+3×3 Matrix{Float64}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+```
 """
 rotation_matrix_inv(rot::Rotated) = transpose(rot.rotmat)
 
@@ -366,6 +471,17 @@ end
 Returns a rotated geometry rotated by the rotation matrix.
 
 Individual geometries may specify that this returns a different type than [`Rotated`](@ref).
+
+# Examples
+
+```jldoctest
+julia> R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0];
+
+julia> rot = rotate(CosmoCuboid([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0]), R);
+
+julia> CosmoParticles.geometry_enclosing_corners(rot)
+([-2.0, -1.0, -3.0], [2.0, 1.0, 3.0])
+```
 """
 rotate(geo::AbstractCosmoGeometry, rotmat::AbstractMatrix{<:Real}) = Rotated(geo, rotmat)
 rotate(rot::Rotated, rotmat::AbstractMatrix{<:Real}) = Rotated(rot.geo, rotmat * rot.rotmat)
@@ -383,6 +499,20 @@ Translated geometry defined by a translation vector.
 This can be created by [`translate`](@ref) applied to a geometry.
 
 This type is not exported; it is accessible as `CosmoParticles.Translated`.
+
+# Examples
+
+```jldoctest
+julia> t = translate(CosmoEllipse(2.0; q=0.5), [1.0, 0.0]);
+
+julia> t isa CosmoParticles.Translated
+true
+
+julia> CosmoParticles.geometry_enclosing_center(t)
+2-element Vector{Float64}:
+ 1.0
+ 0.0
+```
 """
 struct Translated{G<:AbstractCosmoGeometry,L<:AbstractVector} <: AbstractCosmoGeometry
     geo::G
@@ -408,6 +538,15 @@ end
 Returns a new geometry translated by `Δx`.
 
 Individual geometries may specify that this returns a different type than [`Translated`](@ref).
+
+# Examples
+
+```jldoctest
+julia> t = translate(CosmoEllipse(2.0; q=0.5), [1.0, 0.0]);
+
+julia> CosmoParticles.geometry_enclosing_corners(t)
+([-1.0, -1.0], [3.0, 1.0])
+```
 """
 translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number}) = Translated(geo, Δx)
 translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, tra.Δx .+ Δx)
@@ -425,6 +564,17 @@ translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, 
 `N`-dimensional hyperrectangle aligned with the coordinate system axes given by its lower left and upper right corners.
 
 The dimensions of space are given by `N`.
+
+# Examples
+
+```jldoctest
+julia> r = CosmoHyperrectangle([0.0, 0.0], [1.0, 2.0]);
+
+julia> CosmoParticles.mask_in([0.5 2.0; 1.0 1.0], r)
+2-element BitVector:
+ 1
+ 0
+```
 """
 struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
     lowerleft::Vector{T}
@@ -450,6 +600,13 @@ end
 Return a `CosmoHyperrectangle` centered around `center`, with the given full `sidelengths` or `halflengths`.
 
 The lengths are given in order of the axes, i.e., x, y or x, y, z for 2D and 3D, respectively.
+
+# Examples
+
+```jldoctest
+julia> CosmoHyperrectangle([0.0, 0.0, 0.0, 0.0], 2, 4, 6, 8)
+CosmoHyperrectangle{Float64, 4}([-1.0, -2.0, -3.0, -4.0], [1.0, 2.0, 3.0, 4.0])
+```
 """
 function CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelength::Number, sidelengths::Number...)
     halflengths = [sidelength, sidelengths...]
@@ -493,6 +650,13 @@ const CosmoCuboid{T} = CosmoHyperrectangle{T,3} where {T<:Number}
 
 Return a `CosmoCuboid` centered around `center`, with the full side lengths `x`, `y`, and `z` or the three
 `halflengths`.
+
+# Examples
+
+```jldoctest
+julia> CosmoCuboid([0.0, 0.0, 0.0], 2, 4, 6)
+CosmoCuboid{Float64}([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0])
+```
 """
 function CosmoCuboid(center::AbstractVector{<:Number}, x::Number, y::Number, z::Number)
     halflengths = [x, y, z]
@@ -519,6 +683,13 @@ const CosmoRectangle{T} = CosmoHyperrectangle{T,2} where {T<:Number}
 
 Return a `CosmoRectangle` centered around `center`, with the full side lengths `x` and `y` or the two
 `halflengths`.
+
+# Examples
+
+```jldoctest
+julia> CosmoRectangle([0.0, 0.0], 2, 4)
+CosmoRectangle{Float64}([-1.0, -2.0], [1.0, 2.0])
+```
 """
 function CosmoRectangle(center::AbstractVector{<:Number}, x::Number, y::Number)
     halflengths = [x, y]
@@ -538,6 +709,13 @@ end
 Return a `CosmoHyperrectangle` centered around `center` whose half side lengths are all equal to `radius`.
 
 The number of dimensions is the length of `center`.
+
+# Examples
+
+```jldoctest
+julia> CosmoHypercube([0.0, 0.0, 0.0, 0.0], 1.0)
+CosmoHyperrectangle{Float64, 4}([-1.0, -1.0, -1.0, -1.0], [1.0, 1.0, 1.0, 1.0])
+```
 """
 function CosmoHypercube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoHyperrectangle(center .- radius, center .+ radius)
@@ -547,6 +725,13 @@ end
     CosmoCube(center::AbstractVector{<:Number}, radius::Number)
 
 Return a cubic `CosmoCuboid` centered around `center` whose half side lengths are all equal to `radius`.
+
+# Examples
+
+```jldoctest
+julia> CosmoCube([0.0, 0.0, 0.0], 1.0)
+CosmoCuboid{Float64}([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0])
+```
 """
 function CosmoCube(center::AbstractVector{<:Number}, radius::Number)
     return CosmoCuboid(center .- radius, center .+ radius)
@@ -556,6 +741,13 @@ end
     CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
 
 Return a square `CosmoRectangle` centered around `center` whose half side lengths are both equal to `radius`.
+
+# Examples
+
+```jldoctest
+julia> CosmoSquare([0.0, 0.0], 1.0)
+CosmoRectangle{Float64}([-1.0, -1.0], [1.0, 1.0])
+```
 """
 function CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
     return CosmoRectangle(center .- radius, center .+ radius)
@@ -625,6 +817,17 @@ end
 `N`-dimensional hypersphere given by its `center` and `radius`.
 
 If different types are passed to the constructor, the types will be promoted without throwing an error.
+
+# Examples
+
+```jldoctest
+julia> s = CosmoHypersphere([0.0, 0.0, 0.0, 0.0], 1.0);
+
+julia> CosmoParticles.mask_in([0.5 2.0; 0.5 0.0; 0.0 0.0; 0.0 0.0], s)
+2-element BitVector:
+ 1
+ 0
+```
 """
 struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
     center::Vector{T}
@@ -666,6 +869,13 @@ CosmoHypersphere{T}(center::AbstractVector, radius) where {T<:Number} = CosmoHyp
     CosmoHypersphere(N::Integer, radius::Number)
 
 Returns an `N`-dimensional hypersphere around the origin.
+
+# Examples
+
+```jldoctest
+julia> CosmoHypersphere(4, 1.0)
+CosmoHypersphere{Float64, 4}([0.0, 0.0, 0.0, 0.0], 1.0)
+```
 """
 function CosmoHypersphere(N::Integer, radius::Number)
     return CosmoHypersphere(zeros(typeof(float(radius)), N), radius)
@@ -675,6 +885,13 @@ end
     CosmoSphere(radius::Number)
 
 Returns a sphere around the origin.
+
+# Examples
+
+```jldoctest
+julia> CosmoSphere(2.0)
+CosmoSphere{Float64}([0.0, 0.0, 0.0], 2.0)
+```
 """
 function CosmoSphere(radius::Number)
     return CosmoSphere(zeros(typeof(float(radius)), 3), radius)
@@ -684,6 +901,13 @@ end
     CosmoCircle(radius::Number)
 
 Returns a circle around the origin.
+
+# Examples
+
+```jldoctest
+julia> CosmoCircle(2.0)
+CosmoCircle{Float64}([0.0, 0.0], 2.0)
+```
 """
 function CosmoCircle(radius::Number)
     return CosmoCircle(zeros(typeof(float(radius)), 2), radius)
@@ -772,6 +996,17 @@ end
 Cylinder given by its end points `startpos` and `endpos` and `radius`.
 
 If different types are passed to the constructor, the types will be promoted without throwing an error.
+
+# Examples
+
+```jldoctest
+julia> c = CosmoCylinder([0.0, 0.0, 0.0], [0.0, 0.0, 2.0], 1.0);
+
+julia> CosmoParticles.mask_in([0.5 0.5; 0.0 0.0; 1.0 3.0], c)
+2-element BitVector:
+ 1
+ 0
+```
 """
 struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
     startpos::Vector{T}
@@ -855,6 +1090,17 @@ Standing cylinder given by its `center`, `height`, and `radius`.
 
 Standing means that the cylinder is oriented such that its axis is aligned with the z axis.
 If different types are passed to the constructor, the types will be promoted without throwing an error.
+
+# Examples
+
+```jldoctest
+julia> c = CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 1.0);
+
+julia> CosmoParticles.mask_in([0.5 0.5; 0.0 0.0; 0.5 3.0], c)
+2-element BitVector:
+ 1
+ 0
+```
 """
 struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
     center::Vector{T}
@@ -911,6 +1157,13 @@ end
     CosmoCylinder(c::CosmoStandingCylinder)
 
 Create a cylinder from a standing cylinder.
+
+# Examples
+
+```jldoctest
+julia> CosmoCylinder(CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 1.0))
+CosmoCylinder{Float64}([0.0, 0.0, -1.0], [0.0, 0.0, 1.0], 1.0)
+```
 """
 function CosmoCylinder(c::CosmoStandingCylinder)
     halfheight = 1 // 2 * c.height
@@ -925,6 +1178,15 @@ end
 Create a standing cylinder from a cylinder.
 
 The end positions of the cylinder have to have the same x and y coordinates.
+
+# Examples
+
+```jldoctest
+julia> c = CosmoCylinder([0.0, 0.0, -1.0], [0.0, 0.0, 1.0], 1.0);
+
+julia> CosmoStandingCylinder(c)
+CosmoStandingCylinder{Float64}([0.0, 0.0, 0.0], 2.0, 1.0)
+```
 """
 function CosmoStandingCylinder(c::CosmoCylinder)
     c.startpos[1] == c.endpos[1] && c.startpos[2] == c.endpos[2] || throw(

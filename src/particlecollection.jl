@@ -7,6 +7,24 @@ Basic particle collection at redshift 0.
 
 `copy(pc)` copies the dictionary of the collection, but not the particles: the copy contains the same
 [`Particles`](@ref) objects as `pc`.
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]))
+ParticleCollection
+dm: 2 Particles
+ id
+gas: 1 Particles
+ id
+
+julia> pc[:gas] # equivalent to pc.gas
+gas: 1 Particles
+ id
+
+julia> pc.gas.id
+1-element Vector{Int64}:
+ 3
+```
 """
 struct ParticleCollection{AP<:AbstractParticles} <: AbstractParticleCollection{AP}
     particles::OrderedDict{Symbol,AP}
@@ -23,6 +41,15 @@ Create a particle collection from a dictionary of particles.
 
 An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new
 [`OrderedDict`](@extref OrderedCollections.OrderedDict).
+
+# Examples
+```jldoctest
+julia> d = Dict(:dm => Particles(:dm, :id => [1, 2]));
+
+julia> keys(ParticleCollection(d))
+KeySet for a OrderedCollections.OrderedDict{Symbol, Particles} with 1 entry. Keys:
+  :dm
+```
 """
 function ParticleCollection(particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles}
     return ParticleCollection{AP}(particles)
@@ -44,6 +71,14 @@ end
 Create an empty particle collection of the passed type.
 
 By default, the particle collection is created for the [`Particles`](@ref) type.
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection();
+
+julia> isempty(pc)
+true
+```
 """
 ParticleCollection(::Type{AP}=Particles) where {AP<:AbstractParticles} =
     ParticleCollection{AP}(OrderedDict{Symbol,AP}())
@@ -55,9 +90,14 @@ Create a particle collection from pairs of Symbols and particles.
 
 Each particle type can only be given once.
 
-# Example
-```julia
-ParticleCollection(:dm => Particles(:dm), :gas => Particles(:gas))
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(:dm => Particles(:dm), :gas => Particles(:gas));
+
+julia> collect(keys(pc))
+2-element Vector{Symbol}:
+ :dm
+ :gas
 ```
 """
 function ParticleCollection(pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles}
@@ -73,9 +113,14 @@ Each particle type can only be given once.
 
 The keys are taken from the [`Particles`](@ref) type.
 
-# Example
-```julia
-ParticleCollection(Particles(:dm), Particles(:gas))
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm), Particles(:gas));
+
+julia> collect(keys(pc))
+2-element Vector{Symbol}:
+ :dm
+ :gas
 ```
 """
 function ParticleCollection(p::Particles, ps::Particles...)
@@ -103,6 +148,17 @@ Particle collection at a given redshift.
 
 `copy(pc)` copies the dictionary of the collection, but not the particles: the copy contains the same
 [`Particles`](@ref) objects as `pc`.
+
+# Examples
+```jldoctest
+julia> pc = RedshiftParticleCollection(0.5, Particles(:dm, :id => [1, 2]))
+ParticleCollection at z = 0.5
+dm: 2 Particles
+ id
+
+julia> redshift(pc)
+0.5
+```
 """
 struct RedshiftParticleCollection{AP<:AbstractParticles,T<:Real} <: AbstractParticleCollection{AP}
     z::T
@@ -120,6 +176,14 @@ Create a particle collection at redshift `z` from a dictionary of particles.
 
 An `OrderedDict{Symbol,AP}` is stored as it is, and other dictionaries are copied into a new
 [`OrderedDict`](@extref OrderedCollections.OrderedDict).
+
+# Examples
+```jldoctest
+julia> d = Dict(:dm => Particles(:dm, :id => [1, 2]));
+
+julia> redshift(RedshiftParticleCollection(0.5, d))
+0.5
+```
 """
 function RedshiftParticleCollection(z::T, particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles,T<:Real}
     return RedshiftParticleCollection{AP,T}(z, particles)
@@ -131,6 +195,14 @@ end
 Create an empty particle collection of the passed type at redshift `z`.
 
 By default, the particle collection is created for the [`Particles`](@ref) type.
+
+# Examples
+```jldoctest
+julia> pc = RedshiftParticleCollection(0.5);
+
+julia> isempty(pc), redshift(pc)
+(true, 0.5)
+```
 """
 function RedshiftParticleCollection(::Type{AP}, z::T) where {AP<:AbstractParticles,T<:Real}
     return RedshiftParticleCollection{AP,T}(z, OrderedDict{Symbol,AP}())
@@ -146,9 +218,12 @@ Create a particle collection at redshift `z` from pairs of Symbols and particles
 
 Each particle type can only be given once.
 
-# Example
-```julia
-RedshiftParticleCollection(0.5, :dm => Particles(:dm), :gas => Particles(:gas))
+# Examples
+```jldoctest
+julia> pc = RedshiftParticleCollection(0.5, :dm => Particles(:dm), :gas => Particles(:gas));
+
+julia> redshift(pc), collect(keys(pc))
+(0.5, [:dm, :gas])
 ```
 """
 function RedshiftParticleCollection(z::T, pairs::Pair{Symbol,AP}...) where {AP<:AbstractParticles,T<:Real}
@@ -164,9 +239,12 @@ Each particle type can only be given once.
 
 The keys are taken from the [`Particles`](@ref) type.
 
-# Example
-```julia
-RedshiftParticleCollection(0.5, Particles(:dm), Particles(:gas))
+# Examples
+```jldoctest
+julia> pc = RedshiftParticleCollection(0.5, Particles(:dm), Particles(:gas));
+
+julia> redshift(pc), collect(keys(pc))
+(0.5, [:dm, :gas])
 ```
 """
 function RedshiftParticleCollection(z::Real, p::Particles, ps::Particles...)

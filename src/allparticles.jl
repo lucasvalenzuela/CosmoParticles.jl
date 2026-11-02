@@ -18,13 +18,23 @@ where all lazy arrays are materialized as `Array`s.
 In-place modifications are possible, such as [`rotate!`](@ref), [`translate!`](@ref), or [`to_comoving!`](@ref).
 
 # Creation
-```julia
-pc::ParticleCollection # e.g. with particle types :dm, :stars, :gas
+```jldoctest
+julia> pc = ParticleCollection(
+           Particles(:dm, :id => [1, 2]), Particles(:stars, :id => [3]), Particles(:gas, :id => [4]),
+       );
 
-ap = AllParticles(pc)
-ap = pc.all # equivalent to the above
+julia> ap = AllParticles(pc);
 
-ap = AllParticles(pc, [:dm, :stars]) # just include certain particle types
+julia> ap == pc.all
+true
+
+julia> ap = AllParticles(pc, [:dm, :stars]); # just include certain particle types
+
+julia> Array(ap.id)
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
 ```
 
 !!! warning "In-place modifications"
@@ -45,29 +55,34 @@ without the need of regenerating the concatenated arrays.
 
 Note that the simplified access with underscore notation for matrices is not available for `AllParticles`.
 
-# Example
-```julia
-julia> pc::ParticleCollection
-ParticleCollection
-dm: 100 Particles
- id mass pos
-gas: 50 Particles
- id mass pos temp
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> pc = ParticleCollection(
+           Particles(:dm, :id => [3, 1], :mass => Fill(2.0, 2)),
+           Particles(:gas, :id => [2], :mass => Fill(1.0, 1), :temp => [1e4]),
+       );
 
 julia> ap = AllParticles(pc) # equivalent to ap = pc.all
-all: 150 Particles
- id mass pos temp
+all: 3 Particles
+ id mass temp
 
 julia> p = Particles(ap) # p is detached from pc and therefore modifiable
-all: 150 Particles
- id mass pos temp
+all: 3 Particles
+ id mass temp
 
-julia> sort!(p, :id)
+julia> sort!(p, :id);
 
-julia> p = Particles(ap, [:id, :mass]) # only get certain properties
-all: 150 Particles
+julia> p.id
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+
+julia> Particles(ap, [:id, :mass]) # only get certain properties
+all: 3 Particles
  id mass
-
 ```
 """
 struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
@@ -98,6 +113,14 @@ end
     CosmoParticles.particle_collection(p::AllParticles)
 
 Returns the underlying particle collection.
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]));
+
+julia> CosmoParticles.particle_collection(pc.all) === pc
+true
+```
 """
 particle_collection(p::AllParticles) = p.particle_collection
 
@@ -221,8 +244,29 @@ end
 
 Copies the materialized particle properties to another particle object.
 
-To only copy certain properties, `props` can be passed as a vector of `Symbol`s.
+To only copy certain properties, `props` can be passed as a vector or tuple of `Symbol`s.
 The `dst` cannot be of type [`AllParticles`](@ref).
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> dm = Particles(:dm, :id => [1, 2], :mass => Fill(2.0, 2));
+
+julia> gas = Particles(:gas, :id => [3], :mass => Fill(1.0, 1));
+
+julia> pc = ParticleCollection(dm, gas);
+
+julia> p = Particles(:all);
+
+julia> copy!(p, pc.all, [:id]);
+
+julia> p.id
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+```
 """
 function Base.copy!(dst::AbstractParticles, src::AllParticles, props=nothing)
     empty!(dst)
@@ -290,7 +334,20 @@ end
 
 Materializes the particle properties in a new particle object of type `:all`.
 
-To only copy certain properties, `props` can be passed as a tuple of `Symbol`s.
+To only copy certain properties, `props` can be passed as a vector or tuple of `Symbol`s.
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]));
+
+julia> p = Particles(pc.all);
+
+julia> p.id
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+```
 """
 Particles(p::AllParticles, props=nothing) = copy!(Particles(:all), p, props)
 

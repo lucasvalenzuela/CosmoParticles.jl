@@ -10,9 +10,13 @@ matrices of size ``m×N``, or as scalars (when the property is equal for all par
 
 The inbuilt functionality of `AbstractParticles` includes accessing and setting properties
 via the following syntax:
-```julia
-p.id = [1, 2, 3]
-p[:id] === p.id
+```jldoctest
+julia> p = Particles(:dm);
+
+julia> p.id = [1, 2, 3];
+
+julia> p[:id] === p.id
+true
 ```
 
 If the struct has additional fields, these can also be accessed by `p.field`, but not by
@@ -28,15 +32,31 @@ Any arrays may be of the type `AbstractArray`, provided the arrays are 1-indexed
 For matrix properties, a simplified syntax with underscores can be used to access the matrix rows. These are
 returned as views into the array, so `collect` them if necessary. This can also be used with the row names of
 [`NamedRowArray`s](@extref NamedRowArrays.NamedRowArray).
-```julia
-# access by number always works, and by x, y, z for 2- and 3-dimensional matrices
-p.pos = rand(3, 100)
-p.pos_1 == p.pos_x == @view p.pos[1, :]
-p.pos_2 == p.pos_y == @view p.pos[2, :]
-p.pos_3 == p.pos_z == @view p.pos[3, :]
+```jldoctest
+julia> p = Particles(:dm);
 
-p.arr = NamedRowArray(rand(4, 100), [:a, :b, :c, :d])
-p.arr_1 == p.arr_a == @view p.arr[1, :] == @view p.arr[:a]
+julia> # access by number always works, and by x, y, z for 2- and 3-dimensional matrices
+       p.pos = [1.0 2.0; 3.0 4.0; 5.0 6.0];
+
+julia> p.pos_1 == p.pos_x == @view p.pos[1, :]
+true
+
+julia> p.pos_3 == p.pos_z == @view p.pos[3, :]
+true
+```
+
+```jldoctest
+julia> using NamedRowArrays
+
+julia> p = Particles(:dm, :arr => NamedRowArray([1 2; 3 4; 5 6; 7 8], [:a, :b, :c, :d]));
+
+julia> p.arr_1 == p.arr_a == @view p.arr[1, :]
+true
+
+julia> p.arr_d
+2-element view(::Matrix{Int64}, 4, :) with eltype Int64:
+ 7
+ 8
 ```
 
 # Methods
@@ -55,6 +75,18 @@ Concrete types of `AbstractParticles` should have the following methods implemen
   [`Base.show`](@extref Base.show-Tuple{IO, Any, Any})
 - [`Base.propertynames`](@extref): implement this if there are additional struct fields
 - [`Base.show(io, mime, p)`](@extref Base.show-Tuple{IO, Any, Any})
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :mass => Fill(2.0, 3));
+
+julia> keys(p)
+KeySet for a OrderedCollections.OrderedDict{Symbol, Any} with 2 entries. Keys:
+  :id
+  :mass
+```
 """
 abstract type AbstractParticles end
 
@@ -66,6 +98,15 @@ Return the property dictionary belonging to the particles.
 This returns `p.props` by default if not overridden.
 
 This is meant for implementations of particle types.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :id => [1, 2, 3]);
+
+julia> CosmoParticles.get_props(p)
+OrderedCollections.OrderedDict{Symbol, Any} with 1 entry:
+  :id => [1, 2, 3]
+```
 """
 get_props(p::AbstractParticles) = p.props
 
@@ -142,6 +183,24 @@ Return a copy of the particles without the particles at the indices `ind`, leavi
 
 This is an alias of [`CosmoParticles.removeind`](@ref), and the copying counterpart of
 [`Base.deleteat!`](@extref).
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :mass => Fill(2.0, 3));
+
+julia> CosmoParticles.deleteat(p, [2]).id
+2-element Vector{Int64}:
+ 1
+ 3
+
+julia> p.id
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+```
 """
 deleteat(p::AbstractParticles, ind::AbstractVector) = removeind(p, ind)
 
@@ -211,6 +270,12 @@ end
 
 Returns the name of the particle type, which is used when printing an object of this type via
 [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}).
+
+# Examples
+```jldoctest
+julia> CosmoParticles.particle_name(Particles(:dm))
+"Particles"
+```
 """
 function particle_name(::AbstractParticles) end
 
@@ -218,6 +283,14 @@ function particle_name(::AbstractParticles) end
     CosmoParticles.particle_number(p::AbstractParticles)
 
 Returns the number of particles by determining the length of one of the property arrays.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :id => [1, 2, 3], :pos => zeros(3, 3));
+
+julia> CosmoParticles.particle_number(p)
+3
+```
 """
 function particle_number(p::AbstractParticles)
     for val in values(p)
@@ -235,6 +308,17 @@ Prints the number of particles, the name of the type, and the property names.
 
 Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
 implementations of [`AbstractParticles`](@ref).
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :mass => Fill(2.0, 3));
+
+julia> CosmoParticles.show_properties(stdout, "text/plain", p)
+3 Particles
+ id mass
+```
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticles) = show_properties(io, MIME(mime), p)
 

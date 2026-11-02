@@ -13,6 +13,22 @@ The following naming convention is to be used for specific properties:
 - `:vel`: ``2×N`` or ``3×N`` matrix with velocities
 - `:mass`: vector of masses or a scalar if all particles have the same mass
 - `:temp`: vector of temperatures
+
+# Examples
+```jldoctest
+julia> p = Particles(:gas, :id => [1, 2, 3], :temp => [1e4, 2e4, 3e4])
+gas: 3 Particles
+ id temp
+
+julia> p.type
+:gas
+
+julia> p[:temp] # equivalent to p.temp
+3-element Vector{Float64}:
+ 10000.0
+ 20000.0
+ 30000.0
+```
 """
 struct Particles <: AbstractParticles
     type::Symbol
@@ -30,6 +46,22 @@ order of the properties. If no pairs are passed to the method, an empty `Ordered
 
 The properties can also be passed as an `AbstractDict`, as in `Particles(type, props)`. An `OrderedDict{Symbol,Any}`
 is stored as it is, and other dictionaries are copied into a new `OrderedDict`.
+
+# Examples
+```jldoctest
+julia> using FillArrays
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :mass => Fill(2.0, 3));
+
+julia> p.mass
+3-element Fill{Float64}, with entries equal to 2.0
+
+julia> Particles(:dm, Dict(:id => [1, 2, 3])).id
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+```
 """
 Particles(type::Symbol) = Particles(type, OrderedDict{Symbol,Any}())
 Particles(type::Symbol, pairs::Pair...) = Particles(type, OrderedDict{Symbol,Any}(pairs...))
