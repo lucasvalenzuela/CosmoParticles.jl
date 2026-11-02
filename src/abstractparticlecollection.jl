@@ -104,11 +104,6 @@ Base.isempty(pc::AbstractParticleCollection) = isempty(get_particles(pc))
 Base.copy!(dst::AbstractParticleCollection, src::AbstractParticleCollection) =
     (copy!(get_particles(dst), get_particles(src)); dst)
 
-# to implement:
-# Base.copy(pc::AbstractParticleCollection) = AbstractParticleCollection(copy(pc.particles))
-# Base.empty(pc::AbstractParticleCollection) = AbstractParticleCollection(empty(pc.particles))
-# Base.:(==)(pc1::AbstractParticleCollection, pc2::AbstractParticleCollection) = pc1.particles == pc2.particles
-
 """
     redshift(pc::AbstractParticleCollection) = 0
 

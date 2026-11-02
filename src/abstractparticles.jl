@@ -204,11 +204,6 @@ julia> p.id
 """
 deleteat(p::AbstractParticles, ind::AbstractVector) = removeind(p, ind)
 
-# to implement:
-# Base.copy(p::AbstractParticles) = AbstractParticles(copy(p.props))
-# Base.empty(p::AbstractParticles) = AbstractParticles(empty(p.props))
-# Base.:(==)(p1::AbstractParticles, p2::AbstractParticles) = isequal(p1.props, p2.props)
-
 # By default, the result has the properties of all particles, in the order in which they first appear. Particles
 # without a property get `missing` values for it.
 function Base.vcat(
