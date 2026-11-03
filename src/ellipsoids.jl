@@ -699,3 +699,35 @@ julia> eccentricity(CosmoEllipse(2.0, 1.0))
 """
 @inline eccentricity(q::Real) = sqrt(1 - q^2)
 @inline eccentricity(e::Union{CosmoEllipse,CosmoHomoeoid2D}) = eccentricity(e.q)
+
+"""
+    axis_lengths(e::Union{CosmoEllipse,CosmoEllipsoid})
+    axis_lengths(e::Union{CosmoHomoeoid2D,CosmoHomoeoid}, region=:outer)
+
+Returns the axis lengths of the ellipse or ellipsoid as a tuple.
+
+For homoeoids, `region` selects the outer (`:outer`) or inner (`:inner`) boundary.
+
+# Examples
+
+```jldoctest
+julia> axis_lengths(CosmoEllipse(4.0; q=0.5))
+(4.0, 2.0)
+
+julia> axis_lengths(CosmoEllipsoid(4.0; q=0.5, s=0.25))
+(4.0, 2.0, 1.0)
+
+julia> axis_lengths(CosmoHomoeoid(2.0, 4.0; q=0.5, s=0.25), :inner)
+(2.0, 1.0, 0.5)
+```
+"""
+axis_lengths(e::CosmoEllipse) = (e.a, e.a * e.q)
+axis_lengths(e::CosmoEllipsoid) = (e.a, e.a * e.q, e.a * e.s)
+axis_lengths(e::CosmoHomoeoid2D, region=:outer) = (a = _homoeoid_axis(e, region); (a, a * e.q))
+axis_lengths(e::CosmoHomoeoid, region=:outer) = (a = _homoeoid_axis(e, region); (a, a * e.q, a * e.s))
+
+function _homoeoid_axis(e, region)
+    region === :outer && return e.a2
+    region === :inner && return e.a1
+    throw(ArgumentError("the region must be :inner or :outer, got $(repr(region))"))
+end

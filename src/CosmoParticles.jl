@@ -82,6 +82,7 @@ export
     triaxiality,
     ellipticity,
     eccentricity,
+    axis_lengths,
 
     # tables
     nrow,

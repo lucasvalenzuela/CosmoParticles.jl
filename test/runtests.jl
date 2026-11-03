@@ -2231,6 +2231,20 @@ Random.seed!(42)
             @test eccentricity(0.6) ≈ 0.8
             @test eccentricity(CosmoEllipse(1.0; q=0.6)) ≈ 0.8
             @test eccentricity(CosmoHomoeoid2D(1.0, 2.0; q=0.6)) ≈ 0.8
+
+            @test axis_lengths(CosmoEllipse(4.0, 2.0)) == (4.0, 2.0)
+            @test axis_lengths(CosmoEllipse(4.0; q=0.5)) == (4.0, 2.0)
+            @test axis_lengths(CosmoEllipsoid(4.0, 2.0, 1.0)) == (4.0, 2.0, 1.0)
+            @test axis_lengths(CosmoEllipsoid(4.0; q=0.5, s=0.25)) == (4.0, 2.0, 1.0)
+            @test axis_lengths(CosmoEllipsoid(4.0u"km"; q=0.5, s=0.25)) == (4.0, 2.0, 1.0) .* u"km"
+            h2 = CosmoHomoeoid2D(2.0, 4.0; q=0.5)
+            @test axis_lengths(h2) == axis_lengths(h2, :outer) == (4.0, 2.0)
+            @test axis_lengths(h2, :inner) == (2.0, 1.0)
+            h = CosmoHomoeoid(2.0, 4.0; q=0.5, s=0.25)
+            @test axis_lengths(h) == axis_lengths(h, :outer) == (4.0, 2.0, 1.0)
+            @test axis_lengths(h, :inner) == (2.0, 1.0, 0.5)
+            @test_throws "the region must be :inner or :outer, got :middle" axis_lengths(h2, :middle)
+            @test_throws "the region must be :inner or :outer, got :middle" axis_lengths(h, :middle)
         end
 
         @testset "Offset arrays" begin
