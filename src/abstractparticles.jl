@@ -43,6 +43,11 @@ true
 
 julia> p.pos_3 == p.pos_z == @view p.pos[3, :]
 true
+
+julia> p.pos_zx # two of x, y, z return both rows in that order
+2×2 view(::Matrix{Float64}, [3, 1], :) with eltype Float64:
+ 5.0  6.0
+ 1.0  2.0
 ```
 
 ```jldoctest
@@ -140,8 +145,8 @@ function Base.getindex(p::AbstractParticles, sym::Symbol)
 end
 
 # The underscore access `p.pos_x` returns a view of a row of the matrix property `pos`: by its number, by its name
-# for a `NamedRowMatrix`, or by `x`, `y`, `z` for a matrix with two or three rows. Returns `nothing` if `sym` names
-# no matrix row.
+# for a `NamedRowMatrix`, or by `x`, `y`, `z` for a matrix with two or three rows. Two axes, such as `p.pos_zx`,
+# return a view of both rows in that order. Returns `nothing` if `sym` names no matrix row.
 function _get_matrix_row(p::AbstractParticles, sym::Symbol)
     symsplit = split(String(sym), '_')
     for i in 1:(length(symsplit) - 1)
@@ -159,6 +164,9 @@ function _get_matrix_row(p::AbstractParticles, sym::Symbol)
         if 2 ≤ size(vals, 1) ≤ 3 && row_sym in (:x, :y, :z)
             row_int = findfirst(==(row_sym), (:x, :y, :z))
             row_int ≤ size(vals, 1) && return @view vals[row_int, :]
+        end
+        if row_sym in (:xy, :yx) && 2 ≤ size(vals, 1) ≤ 3 || row_sym in (:xz, :zx, :yz, :zy) && size(vals, 1) == 3
+            return @view vals[get_dims(row_sym), :]
         end
     end
     return nothing

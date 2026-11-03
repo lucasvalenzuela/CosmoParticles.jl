@@ -8,6 +8,9 @@ The following dimensions are returned:
 - `[1, 3]`: `:edgeon` or `:xz`
 - `[2, 3]`: `:sideon` or `:yz`
 - `[1, 2]`: `:faceon` or `:xy`
+- `[2, 1]`: `:yx`
+- `[3, 1]`: `:zx`
+- `[3, 2]`: `:zy`
 
 # Examples
 ```jldoctest
@@ -29,10 +32,16 @@ function get_dims(projection::Symbol)
         return [2, 3]
     elseif projection === :faceon || projection === :xy
         return [1, 2]
+    elseif projection === :yx
+        return [2, 1]
+    elseif projection === :zx
+        return [3, 1]
+    elseif projection === :zy
+        return [3, 2]
     else
         throw(
             ArgumentError(
-                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`.",
+                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yx`, `:xz`, `:zx`, `:yz`, or `:zy`.",
             ),
         )
     end
@@ -46,9 +55,9 @@ get_dims(dims) = dims
 Returns the 1D line-of-sight dimension of the passed projection, or of the passed 2D dimensions.
 
 The following dimensions are returned:
-- `2`: `:edgeon` or `:xz` or `[1, 3]`
-- `1`: `:sideon` or `:yz` or `[2, 3]`
-- `3`: `:faceon` or `:xy` or `[1, 2]`
+- `2`: `:edgeon` or `:xz` or `:zx` or `[1, 3]`
+- `1`: `:sideon` or `:yz` or `:zy` or `[2, 3]`
+- `3`: `:faceon` or `:xy` or `:yx` or `[1, 2]`
 
 # Examples
 ```jldoctest
@@ -60,16 +69,16 @@ julia> CosmoParticles.get_losdim([1, 2])
 ```
 """
 function get_losdim(projection::Symbol)
-    if projection === :edgeon || projection === :xz
+    if projection === :edgeon || projection === :xz || projection === :zx
         return 2
-    elseif projection === :sideon || projection === :yz
+    elseif projection === :sideon || projection === :yz || projection === :zy
         return 1
-    elseif projection === :faceon || projection === :xy
+    elseif projection === :faceon || projection === :xy || projection === :yx
         return 3
     else
         throw(
             ArgumentError(
-                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yz`, or `:xz`.",
+                "The projection `:$projection` is not valid. Please use `:edgeon`, `:sideon`, `:faceon`, `:xy`, `:yx`, `:xz`, `:zx`, `:yz`, or `:zy`.",
             ),
         )
     end

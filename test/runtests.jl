@@ -181,6 +181,14 @@ Random.seed!(42)
             :pos_2d_2,
             :pos_4d_1,
             :pos_4d_4,
+            :pos_xy,
+            :pos_yx,
+            :pos_xz,
+            :pos_zx,
+            :pos_yz,
+            :pos_zy,
+            :pos_2d_xy,
+            :pos_2d_yx,
         ]
             @test haskey(dm, key)
             dm[key] # just to make sure this does not throw
@@ -200,6 +208,12 @@ Random.seed!(42)
             :pos_4d_x,
             :pos_4d_z,
             :pos_4d_5,
+            :pos_xx,
+            :pos_xyz,
+            :pos_2d_xz,
+            :pos_2d_zy,
+            :pos_4d_xy,
+            :a_xy,
         ]
             @test !haskey(dm, key)
             @test_throws KeyError dm[key]
@@ -215,13 +229,22 @@ Random.seed!(42)
         @test dm.pos_4d_2 == @view dm.pos_4d[2, :]
         @test dm.pos_4d_3 == @view dm.pos_4d[3, :]
         @test dm.pos_4d_4 == @view dm.pos_4d[4, :]
+        @test dm.pos_xy == @view dm.pos[[1, 2], :]
+        @test dm.pos_yx == @view dm.pos[[2, 1], :]
+        @test dm.pos_xz == @view dm.pos[[1, 3], :]
+        @test dm.pos_zx == @view dm.pos[[3, 1], :]
+        @test dm.pos_yz == @view dm.pos[[2, 3], :]
+        @test dm.pos_zy == @view dm.pos[[3, 2], :]
+        @test dm.pos_2d_yx == @view dm.pos_2d[[2, 1], :]
+        dm.pos_zx .= 0
+        @test all(iszero, dm.pos[[1, 3], :])
 
         gas = Particles(:gas, :pos => rand(3, 50), :mass => rand(50), :pos_4d => rand(4, 50))
         ap = ParticleCollection(dm, gas).all
-        for key in [:pos_1, :pos_x, :pos_z, :pos_4d_4]
+        for key in [:pos_1, :pos_x, :pos_z, :pos_4d_4, :pos_xy, :pos_zy]
             @test haskey(ap, key)
         end
-        for key in [:pos_4, :pos_4d_x, :mass_1, :test]
+        for key in [:pos_4, :pos_4d_x, :pos_4d_xy, :mass_1, :test]
             @test !haskey(ap, key)
             @test_throws KeyError ap[key]
         end
@@ -229,6 +252,7 @@ Random.seed!(42)
         @test sort(ap.pos_x) == sort([dm.pos[1, :]; gas.pos[1, :]])
         @test ap.pos_3 == ap.pos_z == ap.pos[3, :]
         @test ap.pos_4d_4 == ap.pos_4d[4, :]
+        @test ap.pos_zy == ap.pos[[3, 2], :]
         @test Tables.columntable(ap).pos_y == ap.pos_y
     end
 
@@ -919,12 +943,18 @@ Random.seed!(42)
             @test CP.get_dims(:edgeon) == CP.get_dims(:xz) == CP.get_dims([1, 3]) == [1, 3]
             @test CP.get_dims(:sideon) == CP.get_dims(:yz) == CP.get_dims([2, 3]) == [2, 3]
             @test CP.get_dims(:faceon) == CP.get_dims(:xy) == CP.get_dims([1, 2]) == [1, 2]
-            @test_throws ArgumentError CP.get_dims(:test)
+            @test CP.get_dims(:yx) == [2, 1]
+            @test CP.get_dims(:zx) == [3, 1]
+            @test CP.get_dims(:zy) == [3, 2]
+            @test_throws "The projection `:test` is not valid" CP.get_dims(:test)
 
             @test CP.get_losdim(:edgeon) == CP.get_losdim(:xz) == CP.get_losdim([1, 3]) == 2
             @test CP.get_losdim(:sideon) == CP.get_losdim(:yz) == CP.get_losdim([2, 3]) == 1
             @test CP.get_losdim(:faceon) == CP.get_losdim(:xy) == CP.get_losdim([1, 2]) == 3
-            @test_throws ArgumentError CP.get_losdim(:test)
+            @test CP.get_losdim(:zx) == CP.get_losdim([3, 1]) == 2
+            @test CP.get_losdim(:zy) == CP.get_losdim([3, 2]) == 1
+            @test CP.get_losdim(:yx) == CP.get_losdim([2, 1]) == 3
+            @test_throws "The projection `:test` is not valid" CP.get_losdim(:test)
         end
     end
 
