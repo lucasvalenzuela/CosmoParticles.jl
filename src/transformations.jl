@@ -679,6 +679,8 @@ skipped.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^n`` where ``n`` is the positional exponent.
+The particles do not record whether their properties are comoving or physical, so the properties are
+converted on every call and must be physical beforehand.
 
 # Examples
 
@@ -731,6 +733,8 @@ skipped.
 The redshift `z` is obtained from [`redshift`](@ref) for the particle collection.
 
 The properties are multiplied by ``(1 + z)^{-n}`` where ``n`` is the positional exponent.
+The particles do not record whether their properties are comoving or physical, so the properties are
+converted on every call and must be comoving beforehand.
 
 # Examples
 
