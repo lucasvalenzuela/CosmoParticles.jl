@@ -18,6 +18,9 @@ using Unitful
 
 const CP = CosmoParticles
 
+# A geometry that implements none of the interface methods.
+struct IncompleteGeometry <: AbstractCosmoGeometry end
+
 Random.seed!(42)
 
 @testset "CosmoParticles.jl" begin
@@ -118,7 +121,7 @@ Random.seed!(42)
 
         @test CP.particle_number(p) == 100
         @test CP.particle_number(Particles(:gas)) == 0
-        @test CP.particle_number(Particles(:gas, Dict{Symbol,Any}(:mass => 3))) == 0
+        @test_throws "the scalar value of :mass cannot be stored" Particles(:gas, Dict{Symbol,Any}(:mass => 3))
 
         p1 = deepcopy(p)
         p1.test = rand()
@@ -127,9 +130,9 @@ Random.seed!(42)
         @test CP.particle_number(pv) == CP.particle_number(p1) + CP.particle_number(p2)
         @test pv.pos == hcat(p1.pos, p2.pos)
         @test pv.id == vcat(p1.id, p2.id)
-        @test pv.test == fill(p1.test, CP.particle_number(pv))
+        @test pv.test == fill(p1.test[1], CP.particle_number(pv))
 
-        pa = Particles(:gas, :id => [1, 2], :mass => 1.0)
+        pa = Particles(:gas, :id => [1, 2], :mass => Fill(1.0, 2))
         pb = Particles(:gas, :id => [3, 4])
         pab = vcat(pa, pb)
         @test pab.id == [1, 2, 3, 4]
@@ -144,7 +147,28 @@ Random.seed!(42)
         @test p1 == pv
         @test append!(p1, p2) === p1
 
-        @test isnothing(Base.@invoke(CP.particle_name(p::AbstractParticles)))
+        # all properties have the particle number as their last dimension, and scalars become `Fill` vectors
+        p3 = Particles(:dm, :mass => 2.0, :id => [1, 2, 3])
+        @test p3.mass isa Fill && p3.mass == fill(2.0, 3)
+        p3.temp = 1e4
+        @test p3.temp isa Fill && p3.temp == fill(1e4, 3)
+        p3.pos = zeros(3, 3)
+        @test_throws "property :vel has 2 particles, but the particles have 3" p3.vel = zeros(3, 2)
+        @test_throws "property :temp has 4 particles, but the particles have 3" p3.temp = ones(4)
+        @test_throws DimensionMismatch Particles(:dm, :mass => ones(3), :id => [1, 2])
+        @test_throws "property :id has 2 particles, but property :mass has 3" Particles(
+            :dm,
+            :mass => ones(3),
+            :id => [1, 2],
+        )
+        p4 = Particles(:dm)
+        @test_throws "the scalar value of :mass cannot be stored" p4.mass = 1.0
+        @test isempty(p4)
+        p4.id = [1, 2]
+        p4.id = [1, 2, 3] # the only property sets the particle number
+        @test CP.particle_number(p4) == 3
+        p4.mass = 1.0
+        @test p4.mass == fill(1.0, 3)
 
         io = IOBuffer()
         CP.show_properties(io, "text/plain", p)
@@ -265,7 +289,7 @@ Random.seed!(42)
         @test Tables.columnnames(p) == [:pos_x, :pos_y, :pos_z, :id, :mass, :temp]
 
         # a `Dict` is copied into an `OrderedDict`, an `OrderedDict{Symbol,Any}` is shared
-        d = Dict{Symbol,Any}(:id => 1:4, :mass => 2.0)
+        d = Dict{Symbol,Any}(:id => 1:4, :mass => Fill(2.0, 4))
         pd = Particles(:dm, d)
         @test pd.props isa OrderedDict{Symbol,Any}
         @test pd.props == d
@@ -339,6 +363,33 @@ Random.seed!(42)
         @test tilted1 != tilted2
         @test hash(tilted1) != hash(tilted2)
         @test hash(tilted1) == hash(CosmoCylinder([0.0, 0.0, 0.0], [1, 0, 0], 1 // 2))
+        tilted1r = CosmoCylinder([1.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.5)
+        @test tilted1 == tilted1r
+        @test hash(tilted1) == hash(tilted1r)
+        @test tilted1 != CosmoCylinder([1.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.25)
+
+        e = CosmoEllipsoid(2.0; q=0.5, s=0.25)
+        R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
+        for (g1, g2) in [
+            (CosmoEllipse(2.0; q=0.5), CosmoEllipse(2.0, 1.0)),
+            (e, CosmoEllipsoid(2.0, 1.0, 0.5)),
+            (CosmoHomoeoid2D(1.0, 2.0; q=0.5), CosmoHomoeoid2D(1.0, 2.0; q=0.5)),
+            (CosmoHomoeoid(1.0, 2.0; q=0.5), CosmoHomoeoid(1.0, 2.0; q=0.5)),
+            (translate(e, [1.0, 0.0, 0.0]), translate(e, [1.0, 0.0, 0.0])),
+            (translate(e, [0.0, 0.0, 0.0]), translate(e, [-0.0, 0.0, 0.0])),
+            (rotate(e, R), rotate(e, copy(R))),
+            (union(s1, e), union(s2, e)),
+            (intersect(s1, e), intersect(s2, e)),
+            (setdiff(s1, e), setdiff(s2, e)),
+        ]
+            @test g1 == g2
+            @test hash(g1) == hash(g2)
+        end
+        @test CosmoEllipse(2.0; q=0.5) != CosmoEllipse(2.0; q=0.25)
+        @test translate(e, [1.0, 0.0, 0.0]) != translate(e, [2.0, 0.0, 0.0])
+        @test rotate(e, R) != rotate(e, transpose(R))
+        @test union(s1, e) != union(s1, CosmoEllipsoid(2.0; q=0.5))
+        @test setdiff(s1, e) != setdiff(e, s1)
     end
 
     @testset "AllParticles" begin
@@ -346,7 +397,7 @@ Random.seed!(42)
         dm.id = sample(1:1000, 100; replace=false)
         dm.pos = rand(3, 100)
         dm.mass = rand()
-        dm.test = rand()
+        dm.test = Fill(rand(), 2, 100)
 
         gas = Particles(:gas)
         gas.id = sample(1001:2000, 100; replace=false)
@@ -366,17 +417,17 @@ Random.seed!(42)
         if p.id[1] == dm.id[1]
             @test p.id == vcat(dm.id, gas.id)
             @test p.pos == hcat(dm.pos, gas.pos)
-            @test p.mass == vcat(fill(dm.mass, length(dm.id)), gas.mass)
+            @test p.mass == vcat(dm.mass, gas.mass)
             @test isequal.(p.temp, vcat(fill(missing, length(dm.id)), gas.temp)) |> all
             @test isequal.(p.zs, hcat(fill(missing, 2, length(dm.id)), gas.zs)) |> all
-            @test p.test == hcat(fill(dm.test, 2, length(dm.id)), gas.test)
+            @test p.test == hcat(dm.test, gas.test)
         else
             @test p.id == vcat(gas.id, dm.id)
             @test p.pos == hcat(gas.pos, dm.pos)
-            @test p.mass == vcat(gas.mass, fill(dm.mass, length(dm.id)))
+            @test p.mass == vcat(gas.mass, dm.mass)
             @test isequal.(p.temp, vcat(gas.temp, fill(missing, length(dm.id)))) |> all
             @test isequal.(p.zs, hcat(gas.zs, fill(missing, 2, length(dm.id)))) |> all
-            @test p.test == hcat(gas.test, fill(dm.test, 2, length(dm.id)))
+            @test p.test == hcat(gas.test, dm.test)
         end
 
         @test_throws ErrorException p.id = rand(100)
@@ -473,7 +524,7 @@ Random.seed!(42)
         @test ap != pcoll.all
         @test ap.pos == hcat(pcoll.dm.pos, pcoll.stars.pos)
         @test ap.id == vcat(pcoll.dm.id, pcoll.stars.id)
-        @test ap.mass == vcat(fill(pcoll.dm.mass, CP.particle_number(dm)), pcoll.stars.mass)
+        @test ap.mass == vcat(pcoll.dm.mass, pcoll.stars.mass)
         @test all(collect(values(ap)) .=== collect(getindex.((ap,), keys(ap))))
 
         pcoll_empty = ParticleCollection(dm, gas, stars, Particles(:empty))
@@ -632,12 +683,12 @@ Random.seed!(42)
             ind = findall(mask)
 
             @test CP._applyind(3, mask) == 3
-            @test CP._applyind(p.mass, mask) == p.mass
+            @test CP._applyind(p.mass, mask) == p.mass[mask]
             @test CP._applyind(p.mass2, mask) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, mask) == p.id[mask]
             @test CP._applyind(p.pos, mask) == p.pos[:, mask]
             @test CP._applyind(3, ind) == 3
-            @test CP._applyind(p.mass, ind) == p.mass
+            @test CP._applyind(p.mass, ind) == p.mass[ind]
             @test CP._applyind(p.mass2, ind) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, ind) == p.id[ind]
             @test CP._applyind(p.pos, ind) == p.pos[:, ind]
@@ -657,7 +708,7 @@ Random.seed!(42)
             pc = CP.applyind(p, mask)
             @test pc.id == p.id[mask]
             @test pc.pos == p.pos[:, mask]
-            @test pc.mass == p.mass
+            @test pc.mass == p.mass[mask]
             @test pc.mass2 == collect(p.mass2)[mask]
 
             @test CP.applyind(p, ind) == pc
@@ -676,7 +727,7 @@ Random.seed!(42)
             @test !haskey(pc, :id)
             @test !haskey(pc, :foo)
             @test pc.pos == p.pos[:, mask]
-            @test pc.mass == p.mass
+            @test pc.mass == p.mass[mask]
             @test pc.mass2 == collect(p.mass2)[mask]
 
 
@@ -705,7 +756,7 @@ Random.seed!(42)
             @test_throws BoundsError CP._removeind(p.pos, [0, 1])
             @test_throws "offset arrays are not supported" CP._removeind(OffsetArray(p.id, -1), [1])
             @test_throws "offset arrays are not supported" CP._removeind(OffsetArray(p.pos, 0, -1), [1])
-            @test CP._removeind(p.mass, ind) == p.mass
+            @test CP._removeind(p.mass, ind) == deleteat!(collect(p.mass), ind)
             @test CP._removeind(p.mass2, ind) == deleteat!(collect(p.mass2), ind)
             @test CP._removeind(p.id, ind) == deleteat!(copy(p.id), ind)
             posremoved = CP._removeind(p.pos, ind)
@@ -1339,6 +1390,49 @@ Random.seed!(42)
     end
 
 
+    @testset "Explicitly named properties" begin
+        R = [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
+        Δx = [1.0, 0.0, 0.0]
+        dm = Particles(:dm, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0], :mass => [1.0, 2.0])
+        gas = Particles(:gas, :pos => [1.0 2.0; 0.0 0.0; 0.0 0.0], :vel => [1.0 2.0; 0.0 0.0; 0.0 0.0])
+        pc = RedshiftParticleCollection(1.0, dm, gas)
+
+        # without names, the missing default properties are skipped
+        @test rotate(dm, R).pos == R * dm.pos
+        @test rotate(pc, R).dm.pos == R * dm.pos
+        @test to_physical(dm, 1.0).pos == dm.pos ./ 2
+
+        msg = "the particles do not have the property :vel"
+        @test_throws msg rotate(dm, R, :vel)
+        @test_throws msg rotate(dm, R, [:pos, :vel])
+        @test_throws msg rotate!(copy(dm), R, :vel)
+        @test_throws msg translate(dm, Δx, :vel)
+        @test_throws msg translate!(copy(dm), Δx, :vel)
+        @test_throws msg translate_periodic(dm, Δx, 10.0, :vel)
+        @test_throws msg translate_periodic!(copy(dm), Δx, 10.0, :vel)
+        @test_throws msg translate_periodic_to_center(dm, Δx, 10.0, :vel)
+        @test_throws msg translate_periodic_to_center!(copy(dm), Δx, 10.0, :vel)
+
+        # in collections, a named property must exist for at least one particle type
+        @test rotate(pc, R, :vel).gas.vel == R * gas.vel
+        @test rotate(pc, R, :vel).dm == dm
+        @test translate(pc, Δx, :vel).gas.vel == gas.vel .+ Δx
+        @test to_physical(pc; propexp=[(:vel, 1)]).gas.vel == gas.vel ./ 2
+
+        # `propexp` configures the conversion, so its missing properties are skipped
+        @test to_physical(dm, 1.0; propexp=[(:pos, 1), (:temp, 1)]).pos == dm.pos ./ 2
+        @test to_physical(pc; propexp=[(:temp, 1)]) == pc
+        msg = "no particle type in the collection has the property :temp"
+        @test_throws msg rotate(pc, R, :temp)
+        @test_throws msg rotate!(deepcopy(pc), R, [:pos, :temp])
+        @test_throws msg translate(pc, Δx, :temp)
+        @test_throws msg translate!(deepcopy(pc), Δx, :temp)
+        @test_throws msg translate_periodic(pc, Δx, 10.0, :temp)
+        @test_throws msg translate_periodic!(deepcopy(pc), Δx, 10.0, :temp)
+        @test_throws msg translate_periodic_to_center(pc, Δx, 10.0, :temp)
+        @test_throws msg translate_periodic_to_center!(deepcopy(pc), Δx, 10.0, :temp)
+    end
+
     @testset "Misc Operations" begin
         ids = sample(1:1000, 100; replace=false)
         a = rand(3, 100)
@@ -1616,6 +1710,9 @@ Random.seed!(42)
     end
 
     @testset "Geometry" begin
+        @test_throws MethodError CP.geometry_enclosing_corners(IncompleteGeometry())
+        @test_throws MethodError CP.mask_in!(falses(2), zeros(3, 2), IncompleteGeometry())
+        @test_throws MethodError CP.mask_in(zeros(3, 2), IncompleteGeometry())
         # create square/cube/hypercube of positions between 0 and 1
         pos2 = reshape(Iterators.product(0:0.1:1, 0:0.1:1) |> collect, :)
         pos2 = reduce(hcat, getindex.(pos2, i) for i in eachindex(pos2[1]))'
@@ -2667,9 +2764,9 @@ Random.seed!(42)
                 @test meanprop(gas, :temp) ≈ sum(gas.temp .* gas.mass) / sum(gas.mass)
                 @test meanprop(gas, :temp; massweighted=false) ≈ mean(gas.temp)
                 @test meanprop(gas, :temp; massprop=:mass2) ≈ mean(gas.temp)
-                @test meanprop(dm, :mass) ≈ dm.mass
-                @test meanprop(dm, :mass; massweighted=false) ≈ dm.mass
-                @test meanprop(gas, :test) ≈ gas.test
+                @test meanprop(dm, :mass) ≈ dm.mass[1]
+                @test meanprop(dm, :mass; massweighted=false) ≈ dm.mass[1]
+                @test meanprop(gas, :test) ≈ gas.test[1]
                 @test meanprop(gas, :mass2) ≈ gas.mass2[1]
                 @test meanprop(gas, :mass2; massweighted=false) ≈ gas.mass2[1]
                 @test meanprop(gas, :mass2; massprop=:mass2) ≈ gas.mass2[1]
@@ -2683,7 +2780,7 @@ Random.seed!(42)
 
                 @test sumprop(dm, :pos) ≈ vec(sum(dm.pos; dims=2))
                 @test sumprop(gas, :pos) ≈ vec(sum(gas.pos; dims=2))
-                @test sumprop(dm, :mass) ≈ CP.particle_number(dm) * dm.mass
+                @test sumprop(dm, :mass) ≈ sum(dm.mass)
                 @test sumprop(gas, :mass2) ≈ sum(gas.mass2)
                 @test sumprop(ap, :pos) ≈ sumprop(p, :pos)
 
@@ -2723,7 +2820,7 @@ Random.seed!(42)
         @test Tables.columns(p) === p
 
         @test Tables.getcolumn(p, :temp) == p.temp
-        @test Tables.getcolumn(p, :mass) == fill(p.mass, n)
+        @test Tables.getcolumn(p, :mass) == fill(p.mass[1], n)
         @test Tables.getcolumn(p, :pos_y) == p.pos[2, :]
         @test_throws "its rows are the columns :pos_x, :pos_y, :pos_z" Tables.getcolumn(p, :pos)
         @test_throws "there is no table column :rho" Tables.getcolumn(p, :rho)
@@ -2745,7 +2842,7 @@ Random.seed!(42)
         ct = Tables.columntable(p)
         @test ct.pos_z == p.pos[3, :]
         @test ct.temp == p.temp
-        @test ct.mass == fill(p.mass, n)
+        @test ct.mass == fill(p.mass[1], n)
         rt = Tables.rowtable(p)
         @test length(rt) == n
         @test rt[2].pos_x == p.pos[1, 2]

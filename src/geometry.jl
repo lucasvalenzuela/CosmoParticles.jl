@@ -41,7 +41,7 @@ julia> CosmoParticles.geometry_enclosing_corners(s)
 ([0.0, 1.0, 2.0], [2.0, 3.0, 4.0])
 ```
 """
-function geometry_enclosing_corners(::AbstractCosmoGeometry) end
+function geometry_enclosing_corners end
 
 """
     CosmoParticles.geometry_enclosing_center(geo::AbstractCosmoGeometry)
@@ -84,7 +84,7 @@ julia> CosmoParticles.mask_in!(BitVector(undef, 3), pos, s)
  0
 ```
 """
-function mask_in!(::BitVector, ::AbstractMatrix{<:Number}, ::AbstractCosmoGeometry) end
+function mask_in! end
 
 @doc raw"""
     CosmoParticles.mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
@@ -134,7 +134,14 @@ function _check_geometries(geos::Tuple)
 end
 
 # Adding zero turns -0.0 into 0.0, which `==` treats as equal to 0.0 but `hash` does not.
-_hash_normalized(x, h::UInt) = hash(x .+ zero.(x), h)
+_hash_normalized(x::Union{Number,AbstractArray{<:Number}}, h::UInt) = hash(x .+ zero.(x), h)
+_hash_normalized(x, h::UInt) = hash(x, h)
+
+# For geometries that are determined by their fields: equal if all fields are equal, with a matching hash.
+_fields_equal(g1, g2) = all(f -> getfield(g1, f) == getfield(g2, f), fieldnames(typeof(g1)))
+function _fields_hash(g, h::UInt)
+    return foldl((h, f) -> _hash_normalized(getfield(g, f), h), fieldnames(typeof(g)); init=hash(nameof(typeof(g)), h))
+end
 
 
 
@@ -1032,8 +1039,10 @@ function CosmoCylinder(
     return CosmoCylinder{T}(startpos, endpos, radius)
 end
 
+# Swapping the end points gives the same cylinder.
 function Base.:(==)(c1::CosmoCylinder, c2::CosmoCylinder)
-    return c1.startpos == c2.startpos && c1.endpos == c2.endpos && c1.radius == c2.radius
+    c1.radius == c2.radius || return false
+    return c1.startpos == c2.startpos && c1.endpos == c2.endpos || c1.startpos == c2.endpos && c1.endpos == c2.startpos
 end
 
 
@@ -1212,7 +1221,12 @@ function Base.hash(c::CosmoCylinder, h::UInt)
     if @views c.startpos[1:2] == c.endpos[1:2]
         return _hash_standing_cylinder(geometry_enclosing_center(c), abs(c.endpos[3] - c.startpos[3]), c.radius, h)
     end
-    return _hash_normalized(c.radius, _hash_normalized(c.endpos, _hash_normalized(c.startpos, hash(:CosmoCylinder, h))))
+    # The end points are hashed in a fixed order, since swapping them gives the same cylinder.
+    p1, p2 = c.startpos .+ zero.(c.startpos), c.endpos .+ zero.(c.endpos)
+    if isless(p2, p1)
+        p1, p2 = p2, p1
+    end
+    return _hash_normalized(c.radius, hash(p2, hash(p1, hash(:CosmoCylinder, h))))
 end
 Base.hash(c::CosmoStandingCylinder, h::UInt) = _hash_standing_cylinder(c.center, c.height, c.radius, h)
 
@@ -1228,3 +1242,8 @@ function Base.isapprox(c1::CosmoCylinder, c2::CosmoStandingCylinder; kwargs...)
            @views isapprox(c1.startpos[1:2], c1.endpos[1:2]; kwargs...) # c1 is actually standing
 end
 Base.isapprox(c1::CosmoStandingCylinder, c2::CosmoCylinder; kwargs...) = isapprox(c2, c1; kwargs...)
+
+for G in (CosmoUnionGeometry, CosmoIntersectGeometry, CosmoDiffGeometry, Rotated, Translated)
+    @eval Base.:(==)(g1::$G, g2::$G) = _fields_equal(g1, g2)
+    @eval Base.hash(g::$G, h::UInt) = _fields_hash(g, h)
+end

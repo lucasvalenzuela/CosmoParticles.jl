@@ -5,10 +5,8 @@ Combines the particles of different types from a particle collection lazily.
 
 The property arrays of the collection's particles are concatenated lazily with
 [LazyArrays.jl](https://github.com/JuliaArrays/LazyArrays.jl).
-Scalar properties (e.g. mass for equal-mass particles) are repeated according to the particle number of the given
-particle type with [FillArrays.jl](https://github.com/JuliaArrays/FillArrays.jl).
-Properties that only exist for one of the particle types are repeated as `missing` values in the same way as
-scalar properties.
+Properties that do not exist for a particle type are filled with `missing` values for its particles with
+[FillArrays.jl](https://github.com/JuliaArrays/FillArrays.jl).
 
 # Usage
 The individual properties of `AllParticles` can be converted as regular arrays with `Array(ap.pos)`
@@ -52,8 +50,6 @@ without the need of regenerating the concatenated arrays.
     After modifying the property array pointers of a particle collection (e.g. by `sort!` or `filter!`), any
     already created `AllParticles` objects from that collection may have lazy arrays pointing to the old,
     non-modified arrays. When this happens, create a new object through `pc.all` or `AllParticles(pc)`.
-
-Note that the simplified access with underscore notation for matrices is not available for `AllParticles`.
 
 # Examples
 ```jldoctest
@@ -207,6 +203,8 @@ function Base.setindex!(::AllParticles, _, ::Symbol)
         "Setting a property of an AllParticles object is not allowed. Try converting it via Particles(allparticles) first.",
     )
 end
+
+_setprop!(ap::AllParticles, sym::Symbol, val) = setindex!(ap, val, sym)
 
 function Base.keys(ap::AllParticles)
     keys_arr = [keys(ap.particle_collection[ptype]) for ptype in ap.ptypes]

@@ -5,8 +5,11 @@ Abstract supertype for storing particle data efficiently in arrays.
 
 Particles generally have IDs, positions, and velocities as properties.
 The properties are expected to be stored in an `AbstractDict{Symbol,Any}`, such as the
-[`OrderedDict`](@extref OrderedCollections.OrderedDict) of [`Particles`](@ref), as vectors of length ``N``,
-matrices of size ``m×N``, or as scalars (when the property is equal for all particles).
+[`OrderedDict`](@extref OrderedCollections.OrderedDict) of [`Particles`](@ref), as vectors of length ``N`` or
+matrices of size ``m×N``, where ``N`` is the number of particles. Setting a property with a different number of
+particles throws a `DimensionMismatch`. A scalar value, e.g. a mass that is equal for all particles, is stored as a
+[`Fill`](https://github.com/JuliaArrays/FillArrays.jl) vector of length ``N``, so the particles must already have an
+array property.
 
 The inbuilt functionality of `AbstractParticles` includes accessing and setting properties
 via the following syntax:
@@ -120,6 +123,42 @@ get_props(p::AbstractParticles) = p.props
 _ordered_dict(::Type{K}, ::Type{V}, d::OrderedDict{K,V}) where {K,V} = d
 _ordered_dict(::Type{K}, ::Type{V}, d::AbstractDict) where {K,V} = OrderedDict{K,V}(d)
 
+# All properties are arrays whose last dimension has the length of the particle number. Scalars are replaced by `Fill`
+# vectors of that length.
+function _check_props!(props::OrderedDict)
+    n = nothing
+    nkey = nothing
+    for (key, val) in props
+        val isa AbstractArray || continue
+        m = size(val, ndims(val))
+        if isnothing(n)
+            n, nkey = m, key
+        else
+            m == n || throw(DimensionMismatch("property :$key has $m particles, but property :$nkey has $n"))
+        end
+    end
+    for key in keys(props)
+        props[key] isa AbstractArray && continue
+        isnothing(n) && throw(_scalar_error(key))
+        props[key] = Fill(props[key], n)
+    end
+    return props
+end
+
+_scalar_error(sym) = ArgumentError(
+    "the scalar value of :$sym cannot be stored, since the particles have no array property that sets the " *
+    "particle number",
+)
+
+# The particle number from the properties other than `sym`, or `nothing` if there are none.
+function _particle_number_except(p::AbstractParticles, sym::Symbol)
+    for (key, val) in get_props(p)
+        key === sym && continue
+        val isa AbstractArray && return size(val, ndims(val))
+    end
+    return nothing
+end
+
 function Base.getproperty(p::AP, sym::Symbol) where {AP<:AbstractParticles}
     if sym in fieldnames(AP)
         return getfield(p, sym)
@@ -172,7 +211,20 @@ function _get_matrix_row(p::AbstractParticles, sym::Symbol)
     return nothing
 end
 
-Base.setindex!(p::AbstractParticles, val, sym::Symbol) = (setindex!(get_props(p), val, sym); p)
+function Base.setindex!(p::AbstractParticles, val, sym::Symbol)
+    n = _particle_number_except(p, sym)
+    if val isa AbstractArray
+        m = size(val, ndims(val))
+        isnothing(n) || m == n || throw(DimensionMismatch("property :$sym has $m particles, but the particles have $n"))
+    else
+        isnothing(n) && throw(_scalar_error(sym))
+        val = Fill(val, n)
+    end
+    return _setprop!(p, sym, val)
+end
+
+# Stores a property without checks, for operations that keep the particle numbers of all properties consistent.
+_setprop!(p::AbstractParticles, sym::Symbol, val) = (setindex!(get_props(p), val, sym); p)
 Base.keys(p::AbstractParticles) = keys(get_props(p))
 Base.haskey(p::AbstractParticles, key) = key in keys(p) || (key isa Symbol && !isnothing(_get_matrix_row(p, key)))
 
@@ -235,7 +287,7 @@ function Base.append!(p::AbstractParticles, ps::AbstractParticles...)
     for key in keys(p)
         dims = _get_prop_dims(key, p, ps...)
         vals = _get_prop_scaled.(key, dims, [p, ps...], n)
-        p[key] = dims == 1 ? reduce(vcat, vals) : reduce(hcat, vals)
+        _setprop!(p, key, dims == 1 ? reduce(vcat, vals) : reduce(hcat, vals))
     end
 
     return p
@@ -280,7 +332,7 @@ julia> CosmoParticles.particle_name(Particles(:dm))
 "Particles"
 ```
 """
-function particle_name(::AbstractParticles) end
+function particle_name end
 
 """
     CosmoParticles.particle_number(p::AbstractParticles)

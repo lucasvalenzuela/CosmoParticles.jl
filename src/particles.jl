@@ -11,7 +11,7 @@ The following naming convention is to be used for specific properties:
 - `:id`: vector of IDs
 - `:pos`: ``2×N`` or ``3×N`` matrix with positions
 - `:vel`: ``2×N`` or ``3×N`` matrix with velocities
-- `:mass`: vector of masses or a scalar if all particles have the same mass
+- `:mass`: vector of masses
 - `:temp`: vector of temperatures
 
 # Examples
@@ -34,7 +34,7 @@ struct Particles <: AbstractParticles
     type::Symbol
     props::OrderedDict{Symbol,Any}
 
-    Particles(type::Symbol, props::AbstractDict) = new(type, _ordered_dict(Symbol, Any, props))
+    Particles(type::Symbol, props::AbstractDict) = new(type, _check_props!(_ordered_dict(Symbol, Any, props)))
 end
 
 """

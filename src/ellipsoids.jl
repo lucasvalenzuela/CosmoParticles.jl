@@ -731,3 +731,8 @@ function _homoeoid_axis(e, region)
     region === :inner && return e.a1
     throw(ArgumentError("the region must be :inner or :outer, got $(repr(region))"))
 end
+
+for G in (CosmoEllipse, CosmoEllipsoid, CosmoHomoeoid2D, CosmoHomoeoid)
+    @eval Base.:(==)(e1::$G, e2::$G) = _fields_equal(e1, e2)
+    @eval Base.hash(e::$G, h::UInt) = _fields_hash(e, h)
+end

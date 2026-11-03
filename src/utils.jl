@@ -148,7 +148,7 @@ julia> p[:mass]
 """
 function applyind!(p::AbstractParticles, ind::Union{AbstractVector,Colon})
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
-        p[key] = _applyind(p[key], ind)
+        _setprop!(p, key, _applyind(p[key], ind))
     end
 
     return p
@@ -183,7 +183,7 @@ function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect
     end
 
     Threads.@threads for key in affected_keys
-        pnew[key] = _applyind(p[key], ind)
+        _setprop!(pnew, key, _applyind(p[key], ind))
     end
 
     return pnew
@@ -293,7 +293,7 @@ julia> p[:mass]
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
-        p[key] = _removeind(p[key], ind)
+        _setprop!(p, key, _removeind(p[key], ind))
     end
 
     return p
@@ -327,7 +327,7 @@ function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     end
 
     Threads.@threads for key in affected_keys
-        pnew[key] = _removeind(p[key], ind)
+        _setprop!(pnew, key, _removeind(p[key], ind))
     end
 
     return pnew
