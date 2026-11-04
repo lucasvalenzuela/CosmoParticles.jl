@@ -5,7 +5,8 @@ Tables.columnaccess(::Type{<:AbstractParticles}) = true
 # not determine them again for each column.
 function Tables.columns(p::AbstractParticles)
     cols = _table_columns(p)
-    values = OrderedDict{Symbol,AbstractVector}(name => _table_column(p, key, row) for (name, key, row) in cols)
+    values =
+        OrderedDict{Symbol,AbstractVector}(name => _table_column(p, key, row) for (name, key, row) in cols)
     return Tables.DictColumnTable(_table_schema(p, cols), values)
 end
 
@@ -90,8 +91,9 @@ Tables.columnaccess(::Type{<:AbstractParticleCollection}) = true
 function Tables.columns(pc::AbstractParticleCollection)
     cols = Tables.columns(AllParticles(pc))
     names = Tables.columnnames(cols)
-    :ptype in names &&
-        throw(ArgumentError("the table column :ptype is given by both the particle types and the property :ptype"))
+    :ptype in names && throw(
+        ArgumentError("the table column :ptype is given by both the particle types and the property :ptype"),
+    )
     ptypes = Symbol[ptype for ptype in keys(pc) for _ in 1:particle_number(pc[ptype])]
     values = OrderedDict{Symbol,AbstractVector}(:ptype => ptypes)
     for name in names

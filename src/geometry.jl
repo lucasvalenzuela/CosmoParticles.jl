@@ -113,8 +113,9 @@ function mask_in(pos::AbstractMatrix{<:Number}, geo::AbstractCosmoGeometry)
 end
 
 function _check_mask_dims(mask::AbstractVector, pos::AbstractMatrix, N)
-    size(pos, 1) == N ||
-        throw(DimensionMismatch("the geometry is $N-dimensional, but the positions have $(size(pos, 1)) rows"))
+    size(pos, 1) == N || throw(
+        DimensionMismatch("the geometry is $N-dimensional, but the positions have $(size(pos, 1)) rows"),
+    )
     size(pos, 2) == length(mask) || throw(
         DimensionMismatch("the mask has length $(length(mask)), but there are $(size(pos, 2)) positions"),
     )
@@ -128,8 +129,9 @@ function _check_geometries(geos::Tuple)
         geo isa AbstractCosmoGeometry || throw(ArgumentError("expected geometries, got a $(typeof(geo))"))
     end
     dims = [length(first(geometry_enclosing_corners(geo))) for geo in geos]
-    allequal(dims) ||
-        throw(DimensionMismatch("the geometries must have the same number of dimensions, got $(join(dims, ", "))"))
+    allequal(dims) || throw(
+        DimensionMismatch("the geometries must have the same number of dimensions, got $(join(dims, ", "))"),
+    )
     return nothing
 end
 
@@ -140,7 +142,11 @@ _hash_normalized(x, h::UInt) = hash(x, h)
 # For geometries that are determined by their fields: equal if all fields are equal, with a matching hash.
 _fields_equal(g1, g2) = all(f -> getfield(g1, f) == getfield(g2, f), fieldnames(typeof(g1)))
 function _fields_hash(g, h::UInt)
-    return foldl((h, f) -> _hash_normalized(getfield(g, f), h), fieldnames(typeof(g)); init=hash(nameof(typeof(g)), h))
+    return foldl(
+        (h, f) -> _hash_normalized(getfield(g, f), h),
+        fieldnames(typeof(g));
+        init=hash(nameof(typeof(g)), h),
+    )
 end
 
 
@@ -873,7 +879,8 @@ for (name, N) in zip([:CosmoHypersphere, :CosmoSphere, :CosmoCircle], [:(length(
     end |> eval
 end
 
-CosmoHypersphere{T}(center::AbstractVector, radius) where {T<:Number} = CosmoHypersphere{T,length(center)}(center, radius)
+CosmoHypersphere{T}(center::AbstractVector, radius) where {T<:Number} =
+    CosmoHypersphere{T,length(center)}(center, radius)
 
 """
     CosmoHypersphere(N::Integer, radius::Number)
@@ -1045,7 +1052,8 @@ end
 # Swapping the end points gives the same cylinder.
 function Base.:(==)(c1::CosmoCylinder, c2::CosmoCylinder)
     c1.radius == c2.radius || return false
-    return c1.startpos == c2.startpos && c1.endpos == c2.endpos || c1.startpos == c2.endpos && c1.endpos == c2.startpos
+    return c1.startpos == c2.startpos && c1.endpos == c2.endpos ||
+           c1.startpos == c2.endpos && c1.endpos == c2.startpos
 end
 
 
@@ -1223,7 +1231,12 @@ Base.:(==)(c1::CosmoStandingCylinder, c2::CosmoCylinder) = ==(c2, c1)
 # A cylinder along the z axis can equal a standing cylinder, so both hash its center, height, and radius.
 function Base.hash(c::CosmoCylinder, h::UInt)
     if @views c.startpos[1:2] == c.endpos[1:2]
-        return _hash_standing_cylinder(geometry_enclosing_center(c), abs(c.endpos[3] - c.startpos[3]), c.radius, h)
+        return _hash_standing_cylinder(
+            geometry_enclosing_center(c),
+            abs(c.endpos[3] - c.startpos[3]),
+            c.radius,
+            h,
+        )
     end
     # The end points are hashed in a fixed order, since swapping them gives the same cylinder.
     p1, p2 = c.startpos .+ zero.(c.startpos), c.endpos .+ zero.(c.endpos)
@@ -1282,7 +1295,8 @@ function Base.show(io::IO, s::CosmoHypersphere{T,N}) where {T,N}
     _show_call(io, name, s.center, s.radius)
 end
 Base.show(io::IO, c::CosmoCylinder) = _show_call(io, "CosmoCylinder", c.startpos, c.endpos, c.radius)
-Base.show(io::IO, c::CosmoStandingCylinder) = _show_call(io, "CosmoStandingCylinder", c.center, c.height, c.radius)
+Base.show(io::IO, c::CosmoStandingCylinder) =
+    _show_call(io, "CosmoStandingCylinder", c.center, c.height, c.radius)
 Base.show(io::IO, g::CosmoUnionGeometry) = _show_call(io, "union", g.geos...)
 Base.show(io::IO, g::CosmoIntersectGeometry) = _show_call(io, "intersect", g.geos...)
 Base.show(io::IO, g::CosmoDiffGeometry) = _show_call(io, "setdiff", g.geo, g.geos...)

@@ -124,7 +124,9 @@ julia> collect(keys(pc))
 ```
 """
 function ParticleCollection(p::Particles, ps::Particles...)
-    return ParticleCollection(_particles_dict(Particles, (particle.type => particle for particle in (p, ps...))))
+    return ParticleCollection(
+        _particles_dict(Particles, (particle.type => particle for particle in (p, ps...))),
+    )
 end
 
 Base.copy(pc::ParticleCollection) = ParticleCollection(copy(pc.particles))
@@ -164,7 +166,10 @@ struct RedshiftParticleCollection{AP<:AbstractParticles,T<:Real} <: AbstractPart
     z::T
     particles::OrderedDict{Symbol,AP}
 
-    function RedshiftParticleCollection{AP,T}(z, particles::AbstractDict) where {AP<:AbstractParticles,T<:Real}
+    function RedshiftParticleCollection{AP,T}(
+        z,
+        particles::AbstractDict,
+    ) where {AP<:AbstractParticles,T<:Real}
         return new{AP,T}(z, _ordered_dict(Symbol, AP, particles))
     end
 end
@@ -185,7 +190,10 @@ julia> redshift(RedshiftParticleCollection(0.5, d))
 0.5
 ```
 """
-function RedshiftParticleCollection(z::T, particles::AbstractDict{Symbol,AP}) where {AP<:AbstractParticles,T<:Real}
+function RedshiftParticleCollection(
+    z::T,
+    particles::AbstractDict{Symbol,AP},
+) where {AP<:AbstractParticles,T<:Real}
     return RedshiftParticleCollection{AP,T}(z, particles)
 end
 

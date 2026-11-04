@@ -166,7 +166,8 @@ function rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, 
 end
 
 rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}) = _rotate(pc, rotmat, (:pos, :vel))
-rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop::Symbol) = rotate(pc, rotmat, (prop,))
+rotate(pc::AbstractParticleCollection, rotmat::AbstractMatrix{<:Real}, prop::Symbol) =
+    rotate(pc, rotmat, (prop,))
 
 function _rotate(pc::AbstractParticleCollection, rotmat, props)
     pc = copy(pc)
@@ -205,7 +206,8 @@ function LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Re
     return _rotate!(p, rotmat, props)
 end
 
-LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}) = _rotate!(p, rotmat, (:pos, :vel))
+LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}) =
+    _rotate!(p, rotmat, (:pos, :vel))
 LinearAlgebra.rotate!(p::AbstractParticles, rotmat::AbstractMatrix{<:Real}, prop::Symbol) =
     rotate!(p, rotmat, (prop,))
 
@@ -502,7 +504,8 @@ function translate_periodic!(pc::AbstractParticleCollection, centerpos, period, 
     return _periodic!(pc, centerpos, period, prop)
 end
 
-translate_periodic!(pc::AbstractParticleCollection, centerpos, period) = _periodic!(pc, centerpos, period, :pos)
+translate_periodic!(pc::AbstractParticleCollection, centerpos, period) =
+    _periodic!(pc, centerpos, period, :pos)
 
 function _periodic!(pc::AbstractParticleCollection, centerpos, period, prop::Symbol)
     Threads.@threads for ptype in keys(pc) |> collect # collect used for compatibility with threads
@@ -546,7 +549,8 @@ function translate_periodic_to_center(p::AbstractParticles, centerpos, period, p
     return _periodic_to_center(p, centerpos, period, prop)
 end
 
-translate_periodic_to_center(p::AbstractParticles, centerpos, period) = _periodic_to_center(p, centerpos, period, :pos)
+translate_periodic_to_center(p::AbstractParticles, centerpos, period) =
+    _periodic_to_center(p, centerpos, period, :pos)
 
 # Translates the property if it exists.
 function _periodic_to_center(p::AbstractParticles, centerpos, period, prop::Symbol)

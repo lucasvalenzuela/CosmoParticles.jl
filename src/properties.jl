@@ -272,13 +272,16 @@ end
 
 function _check_origin_length(a::AbstractMatrix, origin::AbstractVector)
     size(a, 1) == length(origin) || throw(
-        DimensionMismatch("the origin must have length $(size(a, 1)) like the matrix rows, got length $(length(origin))"),
+        DimensionMismatch(
+            "the origin must have length $(size(a, 1)) like the matrix rows, got length $(length(origin))",
+        ),
     )
     return nothing
 end
 
 function _check_same_size(a::AbstractMatrix, b::AbstractMatrix)
-    size(a) == size(b) || throw(DimensionMismatch("the matrices must have the same size, got $(size(a)) and $(size(b))"))
+    size(a) == size(b) ||
+        throw(DimensionMismatch("the matrices must have the same size, got $(size(a)) and $(size(b))"))
     return nothing
 end
 
@@ -586,11 +589,17 @@ end
 function _check_angmom_args(pos, vel, mass, origin, velorigin)
     size(pos, 1) == 3 || throw(DimensionMismatch("the positions must have 3 rows, got $(size(pos, 1))"))
     size(pos) == size(vel) || throw(
-        DimensionMismatch("the positions and velocities must have the same size, got $(size(pos)) and $(size(vel))"),
+        DimensionMismatch(
+            "the positions and velocities must have the same size, got $(size(pos)) and $(size(vel))",
+        ),
     )
-    mass isa AbstractVector && length(mass) != size(pos, 2) && throw(
-        DimensionMismatch("the masses must have length $(size(pos, 2)) like the positions, got length $(length(mass))"),
-    )
+    mass isa AbstractVector &&
+        length(mass) != size(pos, 2) &&
+        throw(
+            DimensionMismatch(
+                "the masses must have length $(size(pos, 2)) like the positions, got length $(length(mass))",
+            ),
+        )
     Base.require_one_based_indexing(pos, vel)
     mass isa AbstractArray && Base.require_one_based_indexing(mass)
     _check_origin(origin, "origin")

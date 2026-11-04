@@ -365,7 +365,7 @@ julia> CosmoParticles.findall_in([5, 1, 3, 2], [2, 3, 7])
 ```
 """
 function findall_in(a::AbstractVector, set::AbstractVector)
-    if issorted(a; lt=≤) && issorted(set)
+    if issorted(a; lt=(≤)) && issorted(set)
         return findall_in_sorted(a, set)
     else
         return findall_in(a, Set(set))

@@ -99,7 +99,8 @@ struct AllParticles{APC<:AbstractParticleCollection} <: AbstractParticles
         end
 
         for key in ptypes
-            haskey(pc, key) || throw(ArgumentError("the particle collection does not have the particle type :$key"))
+            haskey(pc, key) ||
+                throw(ArgumentError("the particle collection does not have the particle type :$key"))
         end
 
         return new{APC}(pc, ptypes, OrderedDict{Symbol,Any}())

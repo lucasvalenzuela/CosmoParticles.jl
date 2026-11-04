@@ -221,7 +221,8 @@ function _get_matrix_row(p::AbstractParticles, sym::Symbol)
             row_int = findfirst(==(row_sym), (:x, :y, :z))
             row_int ≤ size(vals, 1) && return @view vals[row_int, :]
         end
-        if row_sym in (:xy, :yx) && 2 ≤ size(vals, 1) ≤ 3 || row_sym in (:xz, :zx, :yz, :zy) && size(vals, 1) == 3
+        if row_sym in (:xy, :yx) && 2 ≤ size(vals, 1) ≤ 3 ||
+           row_sym in (:xz, :zx, :yz, :zy) && size(vals, 1) == 3
             return @view vals[get_dims(row_sym), :]
         end
     end
@@ -232,7 +233,9 @@ function Base.setindex!(p::AbstractParticles, val, sym::Symbol)
     n = _particle_number_except(p, sym)
     if val isa AbstractArray
         m = size(val, ndims(val))
-        isnothing(n) || m == n || throw(DimensionMismatch("property :$sym has $m particles, but the particles have $n"))
+        isnothing(n) ||
+            m == n ||
+            throw(DimensionMismatch("property :$sym has $m particles, but the particles have $n"))
     else
         isnothing(n) && throw(_scalar_error(sym))
         val = Fill(val, n)
@@ -254,7 +257,8 @@ end
 # Stores a property without checks, for operations that keep the particle numbers of all properties consistent.
 _setprop!(p::AbstractParticles, sym::Symbol, val) = (setindex!(get_props(p), val, sym); p)
 Base.keys(p::AbstractParticles) = keys(get_props(p))
-Base.haskey(p::AbstractParticles, key) = key in keys(p) || (key isa Symbol && !isnothing(_get_matrix_row(p, key)))
+Base.haskey(p::AbstractParticles, key) =
+    key in keys(p) || (key isa Symbol && !isnothing(_get_matrix_row(p, key)))
 
 Base.values(p::AbstractParticles) = values(get_props(p))
 Base.propertynames(p::AbstractParticles) = keys(p) |> collect

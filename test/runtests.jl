@@ -140,7 +140,10 @@ Random.seed!(42)
 
         @test CP.particle_number(p) == 100
         @test CP.particle_number(Particles(:gas)) == 0
-        @test_throws "the scalar value of :mass cannot be stored" Particles(:gas, Dict{Symbol,Any}(:mass => 3))
+        @test_throws "the scalar value of :mass cannot be stored" Particles(
+            :gas,
+            Dict{Symbol,Any}(:mass => 3),
+        )
 
         p1 = deepcopy(p)
         p1.test = rand()
@@ -161,7 +164,10 @@ Random.seed!(42)
         @test pba.id == [3, 4, 1, 2]
         @test isequal(pba.mass, [missing, missing, 1.0, 1.0])
         @test isequal(vcat(pb, pa; affect=[:id]).id, [3, 4, 1, 2])
-        pm = vcat(Particles(:gas, :id => [1, 2], :pos => [1.0 2.0; 3.0 4.0; 5.0 6.0]), Particles(:gas, :id => [3]))
+        pm = vcat(
+            Particles(:gas, :id => [1, 2], :pos => [1.0 2.0; 3.0 4.0; 5.0 6.0]),
+            Particles(:gas, :id => [3]),
+        )
         @test isequal(pm.pos, [1.0 2.0 missing; 3.0 4.0 missing; 5.0 6.0 missing])
         @test isequal(vcat(pa, pb; affect=[:foo]).foo, fill(missing, 4))
         @test !haskey(vcat(pb, pa; affect=[:id]), :mass)
@@ -352,7 +358,11 @@ Random.seed!(42)
         @test_throws "the particle type :dm is given more than once" ParticleCollection(dm, gas, dm)
         @test_throws "the particle type :dm is given more than once" ParticleCollection(:dm => dm, :dm => gas)
         @test_throws "the particle type :gas is given more than once" RedshiftParticleCollection(1, gas, gas)
-        @test_throws "the particle type :dm is given more than once" RedshiftParticleCollection(1, :dm => dm, :dm => gas)
+        @test_throws "the particle type :dm is given more than once" RedshiftParticleCollection(
+            1,
+            :dm => dm,
+            :dm => gas,
+        )
 
         pcc = copy(pc)
         @test pcc.particles !== pc.particles
@@ -471,8 +481,9 @@ Random.seed!(42)
         @test issetequal(keys(p), [:id, :mass, :pos, :temp, :zs, :test])
         @test keys(p) == keys(AllParticles(pcoll))
         # the properties are in the order of their first appearance
-        @test keys(ParticleCollection(Particles(:a, :x => [1], :y => [1]), Particles(:b, :z => [1], :x => [1])).all) ==
-              [:x, :y, :z]
+        @test keys(
+            ParticleCollection(Particles(:a, :x => [1], :y => [1]), Particles(:b, :z => [1], :x => [1])).all,
+        ) == [:x, :y, :z]
 
         @test haskey(p, :id) && haskey(AllParticles(pcoll), :id)
         @test !haskey(p, :vel) && !haskey(AllParticles(pcoll), :vel)
@@ -562,7 +573,10 @@ Random.seed!(42)
         @test_throws KeyError ap.temp
         @test_throws KeyError ap[:temp]
         @test ap == AllParticles(pcoll, ptypes)
-        @test_throws "the particle collection does not have the particle type :bh" AllParticles(pcoll, [:dm, :bh])
+        @test_throws "the particle collection does not have the particle type :bh" AllParticles(
+            pcoll,
+            [:dm, :bh],
+        )
         @test ap != pcoll.all
         @test ap.pos == hcat(pcoll.dm.pos, pcoll.stars.pos)
         @test ap.id == vcat(pcoll.dm.id, pcoll.stars.id)
@@ -781,12 +795,19 @@ Random.seed!(42)
 
         @testset "Remove particles" begin
             # like for arrays, the indices are unique and sorted, or a mask
-            pd = Particles(:dm, :id => [1, 2, 3, 4], :pos => [1.0 2.0 3.0 4.0; 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0])
+            pd = Particles(
+                :dm,
+                :id => [1, 2, 3, 4],
+                :pos => [1.0 2.0 3.0 4.0; 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0],
+            )
             @test CP.deleteat(pd, [1, 3]).id == [2, 4]
             @test CP.deleteat(pd, [true, false, false, true]).id == [2, 3]
             @test CP.removeind(pd, [true, false, false, true]; affect=[:id]).id == [2, 3]
             @test CP.deleteat(pd, Int[]) == pd
-            @test_throws "the mask has length 3, but there are 4 particles" CP.deleteat(pd, [true, false, true])
+            @test_throws "the mask has length 3, but there are 4 particles" CP.deleteat(
+                pd,
+                [true, false, true],
+            )
             @test_throws "indices must be unique and sorted" CP.deleteat(pd, [3, 1])
             @test_throws "indices must be unique and sorted" CP.deleteat(pd, [1, 1])
             pdd = deepcopy(pd)
@@ -795,7 +816,12 @@ Random.seed!(42)
             @test CP.removeind!(pdd, [false, true]).id == [2]
             # the indices are checked before any property is changed, also for `Fill` properties
             pf = Particles(:dm, :id => [1, 2, 3, 4], :mass => Fill(1.0, 4))
-            for (ind, err) in (([4, 2], ArgumentError), ([1, 1], ArgumentError), ([0, 1], BoundsError), ([4, 5], BoundsError))
+            for (ind, err) in (
+                ([4, 2], ArgumentError),
+                ([1, 1], ArgumentError),
+                ([0, 1], BoundsError),
+                ([4, 5], BoundsError),
+            )
                 @test_throws err deleteat!(pf, ind)
                 @test_throws err CP.removeind(pf, ind)
                 @test length(pf.id) == length(pf.mass) == 4
@@ -1189,7 +1215,11 @@ Random.seed!(42)
                 @test_throws ErrorException rotate(ap, rotmat)
 
                 @test_throws "Transforming an AllParticles object in place is not allowed" rotate!(ap, rotmat)
-                @test_throws "Transforming an AllParticles object in place is not allowed" rotate!(ap, rotmat, :pos)
+                @test_throws "Transforming an AllParticles object in place is not allowed" rotate!(
+                    ap,
+                    rotmat,
+                    :pos,
+                )
             end
         end
 
@@ -1444,7 +1474,11 @@ Random.seed!(42)
                 @test_throws ErrorException to_comoving(ap, z; propexp)
                 @test_throws ErrorException to_physical(ap, z; propexp)
 
-                @test_throws "Transforming an AllParticles object in place is not allowed" to_comoving!(ap, z; propexp)
+                @test_throws "Transforming an AllParticles object in place is not allowed" to_comoving!(
+                    ap,
+                    z;
+                    propexp,
+                )
                 @test_throws "Transforming an AllParticles object in place is not allowed" to_physical!(ap, z)
                 @test pccc == pc
             end
@@ -1493,7 +1527,8 @@ Random.seed!(42)
         @test translate_periodic!(deepcopy(pc), Δx, P, :pos) == translate_periodic(pc, Δx, P)
         @test translate_periodic_to_center(dm, Δx, P, :pos) == translate_periodic_to_center(dm, Δx, P)
         @test translate_periodic_to_center(pc, Δx, P, :pos) == translate_periodic_to_center(pc, Δx, P)
-        @test translate_periodic_to_center!(deepcopy(pc), Δx, P, :pos) == translate_periodic_to_center(pc, Δx, P)
+        @test translate_periodic_to_center!(deepcopy(pc), Δx, P, :pos) ==
+              translate_periodic_to_center(pc, Δx, P)
 
         # in collections, a named property must exist for at least one particle type
         @test rotate(pc, R, :vel).gas.vel == R * gas.vel
@@ -1823,7 +1858,10 @@ Random.seed!(42)
             @test CosmoHyperrectangle([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoHyperrectangle{Float64,3}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoHyperrectangle{Float64,3}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float64}
-            @test_throws "the corners must have length" CosmoHyperrectangle{Float64,4}([0, 0, 0.0], [0.15, 0.25, 0.20])
+            @test_throws "the corners must have length" CosmoHyperrectangle{Float64,4}(
+                [0, 0, 0.0],
+                [0.15, 0.25, 0.20],
+            )
             @test CosmoCuboid([0, 0, 0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test_throws "the corners must have length" CosmoCuboid([0, 0], [0.15, 0.25])
             @test CosmoRectangle([0, 0], [0.25, 0.20]) isa CosmoRectangle{Float64}
@@ -1832,7 +1870,8 @@ Random.seed!(42)
             @test CosmoCuboid{Float64}([0, 0, 0.0], [0.15, 0.25, 0.20]) isa CosmoCuboid{Float64}
             @test CosmoCuboid{Float32}([0, 0, 0], [0.15, 0.25, 1 // 10]) isa CosmoCuboid{Float32}
             @test CosmoRectangle{Float64}([0, 0.0], [0.25, 0.20]) isa CosmoRectangle{Float64}
-            @test CosmoHyperrectangle([1, 1, 1]; halflengths=(1, 2, 3)) == CosmoHyperrectangle([1, 1, 1], 2, 4, 6)
+            @test CosmoHyperrectangle([1, 1, 1]; halflengths=(1, 2, 3)) ==
+                  CosmoHyperrectangle([1, 1, 1], 2, 4, 6)
             @test CosmoHyperrectangle([1, 1, 1]; halflengths=[1, 2, 3]) == CosmoCuboid([0, -1, -2], [2, 3, 4])
             @test CosmoCuboid([1, 1, 1]; halflengths=(1, 2, 3)) == CosmoCuboid([1, 1, 1], 2, 4, 6)
             @test CosmoRectangle([1, 1]; halflengths=(1, 2)) == CosmoRectangle([1, 1], 2, 4)
@@ -2131,12 +2170,21 @@ Random.seed!(42)
             for (g, str) in [
                 (CosmoCuboid([0, 0, 0], [1, 2, 3]), "CosmoCuboid([0.0, 0.0, 0.0], [1.0, 2.0, 3.0])"),
                 (CosmoRectangle([0, 0], [1, 1]), "CosmoRectangle([0.0, 0.0], [1.0, 1.0])"),
-                (CosmoHyperrectangle(zeros(4), ones(4)), "CosmoHyperrectangle([0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0])"),
+                (
+                    CosmoHyperrectangle(zeros(4), ones(4)),
+                    "CosmoHyperrectangle([0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0])",
+                ),
                 (CosmoSphere(1.0), "CosmoSphere([0.0, 0.0, 0.0], 1.0)"),
                 (CosmoCircle([1.0, 2.0], 3.0), "CosmoCircle([1.0, 2.0], 3.0)"),
                 (CosmoHypersphere(4, 1.0), "CosmoHypersphere([0.0, 0.0, 0.0, 0.0], 1.0)"),
-                (CosmoCylinder([0, 0, 0], [1, 0, 0], 0.5), "CosmoCylinder([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.5)"),
-                (CosmoStandingCylinder([0, 0, 0], 2, 0.5), "CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 0.5)"),
+                (
+                    CosmoCylinder([0, 0, 0], [1, 0, 0], 0.5),
+                    "CosmoCylinder([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.5)",
+                ),
+                (
+                    CosmoStandingCylinder([0, 0, 0], 2, 0.5),
+                    "CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 0.5)",
+                ),
                 (CosmoEllipse(2.0, 1.0), "CosmoEllipse(2.0; q=0.5)"),
                 (e, "CosmoEllipsoid(4.0; q=0.5, s=0.25)"),
                 (CosmoHomoeoid2D(1.0, 2.0; q=0.5), "CosmoHomoeoid2D(1.0, 2.0; q=0.5)"),
@@ -2145,12 +2193,24 @@ Random.seed!(42)
                     translate(rotate(e, [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]), [1.0, 0.0, 0.0]),
                     "translate(rotate(CosmoEllipsoid(4.0; q=0.5, s=0.25), [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]), [1.0, 0.0, 0.0])",
                 ),
-                (union(CosmoSphere(1.0), e), "union(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))"),
-                (intersect(CosmoSphere(1.0), e), "intersect(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))"),
-                (setdiff(CosmoSphere(2.0), CosmoSphere(1.0)), "setdiff(CosmoSphere([0.0, 0.0, 0.0], 2.0), CosmoSphere([0.0, 0.0, 0.0], 1.0))"),
+                (
+                    union(CosmoSphere(1.0), e),
+                    "union(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))",
+                ),
+                (
+                    intersect(CosmoSphere(1.0), e),
+                    "intersect(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))",
+                ),
+                (
+                    setdiff(CosmoSphere(2.0), CosmoSphere(1.0)),
+                    "setdiff(CosmoSphere([0.0, 0.0, 0.0], 2.0), CosmoSphere([0.0, 0.0, 0.0], 1.0))",
+                ),
                 (CosmoSphere(Float32[0, 0, 0], 1.0f0), "CosmoSphere(Float32[0.0, 0.0, 0.0], 1.0f0)"),
                 (CosmoSphere([1.0, 0.0, 0.0]u"m", 2.0u"m"), "CosmoSphere([1.0, 0.0, 0.0]u\"m\", 2.0u\"m\")"),
-                (CosmoSphere([1.0, 0.0, 0.0]u"m/s", 2.0u"m/s"), "CosmoSphere([1.0, 0.0, 0.0]u\"m*s^-1\", 2.0u\"m*s^-1\")"),
+                (
+                    CosmoSphere([1.0, 0.0, 0.0]u"m/s", 2.0u"m/s"),
+                    "CosmoSphere([1.0, 0.0, 0.0]u\"m*s^-1\", 2.0u\"m*s^-1\")",
+                ),
             ]
                 @test repr(g) == str
                 @test repr(MIME("text/plain"), g) == str
@@ -2191,7 +2251,10 @@ Random.seed!(42)
             @test_throws "at least one geometry to subtract is required" setdiff(sph)
             @test_throws "expected geometries, got a Int64" CP.CosmoUnionGeometry([sph, 1])
             @test_throws "the geometries must have the same number of dimensions, got 3, 2" union(sph, circ)
-            @test_throws "the geometries must have the same number of dimensions, got 3, 2" intersect(sph, circ)
+            @test_throws "the geometries must have the same number of dimensions, got 3, 2" intersect(
+                sph,
+                circ,
+            )
             @test_throws "the geometries must have the same number of dimensions, got 2, 3" setdiff(circ, sph)
             @test union(sph) isa CP.CosmoUnionGeometry
             @test union(sph, CosmoCuboid(zeros(3), 1, 1, 1)) isa CP.CosmoUnionGeometry
@@ -2266,7 +2329,9 @@ Random.seed!(42)
                 gdx = translate(g, dx)
                 @test gdx isa typeof(g)
                 @test CP.mask_in(pos3, gdx) == CP.mask_in(pos3 .- dx, g)
-                @test all(CP.geometry_enclosing_corners(gdx) .≈ CP.geometry_enclosing_corners(g) .|> x -> x .+ dx)
+                @test all(
+                    CP.geometry_enclosing_corners(gdx) .≈ CP.geometry_enclosing_corners(g) .|> x -> x .+ dx,
+                )
             end
 
             # rotation by 90° around the z axis
@@ -2325,7 +2390,13 @@ Random.seed!(42)
             @test_throws "a1 must not exceed" CosmoHomoeoid2D(2.0, 1.0; q=0.5)
             @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid2D(1.0, 1.5; a2=2.0)
             @test_throws "s must satisfy 0 < s ≤ q" CosmoHomoeoid(1.0, 0.5, 0.8; a2=2.0)
-            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid(1.0, 2.0; q=1.2, s=0.5, constant_volume=true)
+            @test_throws "q must satisfy 0 < q ≤ 1" CosmoHomoeoid(
+                1.0,
+                2.0;
+                q=1.2,
+                s=0.5,
+                constant_volume=true,
+            )
 
             h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.2)
             @test (h.a1, h.a2, h.q, h.s) == (1.0, 2.0, 0.5, 0.2)
@@ -2361,9 +2432,12 @@ Random.seed!(42)
         @testset "Ellipsoid centers" begin
             km = u"km"
             @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0km; q=0.5)) == [0.0, 0.0]km
-            @test CosmoParticles.geometry_enclosing_center(CosmoEllipsoid(2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
-            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid2D(1.0km, 2.0km; q=0.5)) == [0.0, 0.0]km
-            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid(1.0km, 2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoEllipsoid(2.0km; q=0.5, s=0.5)) ==
+                  [0.0, 0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid2D(1.0km, 2.0km; q=0.5)) ==
+                  [0.0, 0.0]km
+            @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid(1.0km, 2.0km; q=0.5, s=0.5)) ==
+                  [0.0, 0.0, 0.0]km
             @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0; q=0.5)) == [0.0, 0.0]
             @test eltype(CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0f0; q=0.5f0))) === Float32
         end
@@ -2416,10 +2490,12 @@ Random.seed!(42)
             @test CP.geometry_enclosing_corners(CosmoEllipse(2.0; q=0.5)) == ([-2.0, -1.0], [2.0, 1.0])
             @test CP.geometry_enclosing_corners(CosmoEllipsoid(2.0; q=0.5, s=0.25)) ==
                   ([-2.0, -1.0, -0.5], [2.0, 1.0, 0.5])
-            @test CP.geometry_enclosing_corners(CosmoHomoeoid2D(1.0, 2.0; q=0.5)) == ([-2.0, -1.0], [2.0, 1.0])
+            @test CP.geometry_enclosing_corners(CosmoHomoeoid2D(1.0, 2.0; q=0.5)) ==
+                  ([-2.0, -1.0], [2.0, 1.0])
             @test CP.geometry_enclosing_corners(CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)) ==
                   ([-2.0, -1.0, -0.5], [2.0, 1.0, 0.5])
-            @test CP.geometry_enclosing_corners(CosmoEllipse(2.0u"km"; q=0.5)) == ([-2.0, -1.0]u"km", [2.0, 1.0]u"km")
+            @test CP.geometry_enclosing_corners(CosmoEllipse(2.0u"km"; q=0.5)) ==
+                  ([-2.0, -1.0]u"km", [2.0, 1.0]u"km")
 
             # semi-axes
             e = CosmoEllipse(2.0, 1.0)
@@ -2757,8 +2833,10 @@ Random.seed!(42)
                 @test stable_angmomtot(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
                 o, vo = rand(3) * u"m", rand(3) * u"m/s"
                 for kwargs in ((; origin=o), (; velorigin=vo), (; origin=o, velorigin=vo))
-                    @test angmomtot(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
-                    @test stable_angmomtot(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
+                    @test angmomtot(pos, vel, mfill; kwargs...) ≈
+                          angmomtot(pos, vel, collect(mfill); kwargs...)
+                    @test stable_angmomtot(pos, vel, mfill; kwargs...) ≈
+                          angmomtot(pos, vel, collect(mfill); kwargs...)
                 end
                 # without particles, the total is zero like for a vector of masses
                 pos0, vel0 = zeros(3, 0) * u"m", zeros(3, 0) * u"m/s"
@@ -3013,15 +3091,28 @@ Random.seed!(42)
         @test Particles(:dm, Tables.columntable(p)) == p
         @test Particles(:dm, Tables.rowtable(p)) == p
         @test Particles(:gas, p) == Particles(:gas, CP.get_props(p))
-        q = Particles(:dm, (v_1=[1, 2], v_2=[3, 4], v_3=[5, 6], v_4=[7, 8], w_x=[1, 2], w_y=[3, 4], w_w=[5, 6]))
+        q = Particles(
+            :dm,
+            (v_1=[1, 2], v_2=[3, 4], v_3=[5, 6], v_4=[7, 8], w_x=[1, 2], w_y=[3, 4], w_w=[5, 6]),
+        )
         @test collect(keys(q)) == [:v, :w, :w_w]
         @test q.v == [1 2; 3 4; 5 6; 7 8]
         @test q.w == [1 2; 3 4]
         # only consecutive columns in the order of the rows are combined
-        t = (v_2=[1, 2], v_1=[3, 4], w_x=[1, 2], w_z=[3, 4], u_1=[1, 2], u_3=[3, 4], temp_max=[5, 6], b_1=[0, 0])
+        t = (
+            v_2=[1, 2],
+            v_1=[3, 4],
+            w_x=[1, 2],
+            w_z=[3, 4],
+            u_1=[1, 2],
+            u_3=[3, 4],
+            temp_max=[5, 6],
+            b_1=[0, 0],
+        )
         @test collect(keys(Particles(:dm, t))) == collect(keys(t))
         @test collect(keys(Particles(:dm, (pos_x=[1, 2], id=[1, 2], pos_y=[3, 4])))) == [:pos_x, :id, :pos_y]
-        @test collect(keys(Particles(:dm, (pos_x=[1, 2], pos_y=[3, 4], pos_z=[5, 6], pos_w=[7, 8])))) == [:pos, :pos_w]
+        @test collect(keys(Particles(:dm, (pos_x=[1, 2], pos_y=[3, 4], pos_z=[5, 6], pos_w=[7, 8])))) ==
+              [:pos, :pos_w]
         # the shortest suffix decides, and a matrix is not created if a column has its name
         q = Particles(:dm, (pos_x_1=[1, 2], pos_x_2=[3, 4]))
         @test collect(keys(q)) == [:pos_x]
@@ -3044,11 +3135,13 @@ Random.seed!(42)
         @test ct.ptype == [:dm, :dm, :gas]
         @test ct.pos_x == [0.0, 1.0, 2.0]
         @test isequal(ct.temp, [missing, missing, 1e4])
-        @test Tables.schema(Tables.columns(pc)).types == (Symbol, Int, Float64, Float64, Float64, Union{Missing,Float64})
+        @test Tables.schema(Tables.columns(pc)).types ==
+              (Symbol, Int, Float64, Float64, Float64, Union{Missing,Float64})
         @test Tables.rowtable(pc)[3] == (ptype=:gas, id=3, pos_x=2.0, pos_y=0.0, pos_z=0.0, temp=1e4)
         @test Tables.columntable(ParticleCollection()) == (ptype=Symbol[],)
-        @test Tables.columntable(RedshiftParticleCollection(1.0, :stars_a => Particles(:stars, :id => [1]))).ptype ==
-              [:stars_a]
+        @test Tables.columntable(
+            RedshiftParticleCollection(1.0, :stars_a => Particles(:stars, :id => [1])),
+        ).ptype == [:stars_a]
         @test_throws "the table column :ptype is given by both the particle types and the property :ptype" Tables.columntable(
             ParticleCollection(Particles(:dm, :id => [1], :ptype => [1])),
         )

@@ -362,11 +362,7 @@ end
 
 geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zero(SVector{3,T})
 
-function mask_in!(
-    mask::BitVector,
-    pos::AbstractMatrix{<:Number},
-    e::CosmoEllipsoid{T},
-) where {T}
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipsoid{T}) where {T}
     _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r² = e.a^2
@@ -487,11 +483,7 @@ end
 
 geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zero(SVector{2,T})
 
-function mask_in!(
-    mask::BitVector,
-    pos::AbstractMatrix{<:Number},
-    e::CosmoHomoeoid2D{T},
-) where {T}
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoHomoeoid2D{T}) where {T}
     _check_mask_dims(mask, pos, 2)
     Base.require_one_based_indexing(pos)
     r1² = e.a1^2
@@ -626,11 +618,7 @@ end
 
 geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zero(SVector{3,T})
 
-function mask_in!(
-    mask::BitVector,
-    pos::AbstractMatrix{<:Number},
-    e::CosmoHomoeoid{T},
-) where {T}
+function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoHomoeoid{T}) where {T}
     _check_mask_dims(mask, pos, 3)
     Base.require_one_based_indexing(pos)
     r1² = e.a1^2
@@ -740,8 +728,14 @@ julia> axis_lengths(CosmoHomoeoid(2.0, 4.0; q=0.5, s=0.25), :inner)
 """
 axis_lengths(e::CosmoEllipse) = (e.a, e.a * e.q)
 axis_lengths(e::CosmoEllipsoid) = (e.a, e.a * e.q, e.a * e.s)
-axis_lengths(e::CosmoHomoeoid2D, region=:outer) = (a = _homoeoid_axis(e, region); (a, a * e.q))
-axis_lengths(e::CosmoHomoeoid, region=:outer) = (a = _homoeoid_axis(e, region); (a, a * e.q, a * e.s))
+function axis_lengths(e::CosmoHomoeoid2D, region=:outer)
+    a = _homoeoid_axis(e, region)
+    return (a, a * e.q)
+end
+function axis_lengths(e::CosmoHomoeoid, region=:outer)
+    a = _homoeoid_axis(e, region)
+    return (a, a * e.q, a * e.s)
+end
 
 function _homoeoid_axis(e, region)
     region === :outer && return e.a2
