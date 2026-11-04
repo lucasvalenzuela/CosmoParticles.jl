@@ -24,8 +24,6 @@ function meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweight
     end
 end
 
-_meanprop(a::Number) = a
-_meanprop(a::Number, ::Any) = a
 _meanprop(a::AbstractFillVector) = a[1]
 _meanprop(a::AbstractFillVector, ::AbstractVector) = a[1]
 _meanprop(a::AbstractFillVector, ::AbstractFillVector) = a[1]
@@ -44,7 +42,6 @@ end
 _meanprop(a::AbstractFillMatrix) = Fill(a[1, 1], size(a, 1))
 _meanprop(a::AbstractFillMatrix, ::AbstractVector) = _meanprop(a)
 _meanprop(a::AbstractFillMatrix, ::AbstractFillVector) = _meanprop(a)
-_meanprop(a::AbstractArray, ::Number) = _meanprop(a)
 _meanprop(a::AbstractVector, ::AbstractFillVector) = _meanprop(a)
 _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
 
@@ -64,10 +61,8 @@ julia> sumprop(p, :mass)
 6.0
 ```
 """
-sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p, p[prop])
+sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p[prop])
 
-_sumprop(p::AbstractParticles, a::Number) = particle_number(p) * a
-_sumprop(::AbstractParticles, a::AbstractVecOrMat) = _sumprop(a)
 _sumprop(a::AbstractVector) = sum(a)
 _sumprop(a::AbstractMatrix) = [sum(@view a[i, :]) for i in axes(a, 1)]
 
@@ -172,6 +167,7 @@ If `angmomprop` is a `Symbol`, the total angular momentum is computed from the a
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
 - `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+- `stable=false`: whether to sum pairwise, see the method for arrays below
 
 # Examples
 ```jldoctest
@@ -196,47 +192,10 @@ function angmomtot(
     velprop=:vel,
     massprop=:mass,
     angmomprop=nothing,
+    stable=false,
 )
     !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
-    return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin)
-end
-
-"""
-    angmomtot_stable(p::AbstractParticles; kwargs...)
-
-Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
-
-Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates less rounding error than the running sum
-of [`angmomtot`](@ref), but is almost three times slower than it.
-
-See [`angmomtot`](@ref) for the available keyword arguments.
-
-# Examples
-```jldoctest
-julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
-
-julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
-
-julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
-
-julia> angmomtot_stable(p)
-3-element Vector{Float64}:
-  0.0
-  0.0
- -1.0
-```
-"""
-function angmomtot_stable(
-    p::AbstractParticles;
-    origin=nothing,
-    velorigin=nothing,
-    posprop=:pos,
-    velprop=:vel,
-    massprop=:mass,
-    angmomprop=nothing,
-)
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
-    return angmomtot_stable(p[posprop], p[velprop], p[massprop]; origin, velorigin)
+    return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin, stable)
 end
 
 
@@ -722,7 +681,7 @@ _eltype_of(m) = typeof(m)
 
 
 """
-    angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing)
+    angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing, stable=false)
 
 Returns the total angular momentum based on the positions, velocities, and masses.
 
@@ -736,6 +695,9 @@ velocity of the center of mass.
 This method never allocates the full angular momentum matrix for all particles like [`angmom`](@ref) does.
 Use this when the individual particle angular momenta are not needed.
 
+By default, the terms are added in a running sum. With `stable=true`, they are summed with [`Base.sum`](@extref),
+which adds them pairwise and accumulates less rounding error, but is almost three times slower.
+
 # Examples
 ```jldoctest
 julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
@@ -743,6 +705,12 @@ julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
 julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
 
 julia> angmomtot(pos, vel, [1.0, 2.0])
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+
+julia> angmomtot(pos, vel, [1.0, 2.0]; stable=true)
 3-element Vector{Float64}:
   0.0
   0.0
@@ -755,13 +723,27 @@ function angmomtot(
     mass::AbstractVector;
     origin=nothing,
     velorigin=nothing,
+    stable=false,
 )
     _check_angmom_args(pos, vel, mass, origin, velorigin)
-    return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
+    return _angmomtot(pos, vel, mass, origin, velorigin, stable)
 end
 
-function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
+function angmomtot(
+    pos::AbstractMatrix,
+    vel::AbstractMatrix,
+    mass::Number;
+    origin=nothing,
+    velorigin=nothing,
+    stable=false,
+)
     _check_angmom_args(pos, vel, mass, origin, velorigin)
+    return _angmomtot(pos, vel, mass, origin, velorigin, stable)
+end
+
+function _angmomtot(pos, vel, mass, origin, velorigin, stable::Bool)
+    # `sum` throws for no particles, and passing it `init` would make it a running sum.
+    stable && size(pos, 2) > 0 && return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -797,61 +779,6 @@ end
 
 # The value of a `Fill` mass; an empty `Fill` has none, and its sums are zero.
 _fill_value(m::AbstractFillVector) = isempty(m) ? zero(eltype(m)) : m[1]
-
-"""
-    angmomtot_stable(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing)
-
-Returns the total angular momentum based on the positions, velocities, and masses, like [`angmomtot`](@ref).
-
-Sums with [`Base.sum`](@extref), which adds the terms pairwise and accumulates less rounding error than the running sum
-of [`angmomtot`](@ref), but is almost three times slower than it.
-
-See [`angmomtot`](@ref) for the available keyword arguments.
-
-# Examples
-```jldoctest
-julia> using FillArrays
-
-julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
-
-julia> vel = [0.0 -1.0; 1.0 0.0; 0.0 0.0];
-
-julia> angmomtot_stable(pos, vel, Fill(2.0, 2))
-3-element Vector{Float64}:
- 0.0
- 0.0
- 4.0
-```
-"""
-function angmomtot_stable end
-
-function angmomtot_stable(
-    pos::AbstractMatrix,
-    vel::AbstractMatrix,
-    mass::AbstractVector;
-    origin=nothing,
-    velorigin=nothing,
-)
-    _check_angmom_args(pos, vel, mass, origin, velorigin)
-    # `sum` throws for no particles, and passing it `init` would make it a running sum.
-    size(pos, 2) == 0 && return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
-    return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
-end
-
-function angmomtot_stable(
-    pos::AbstractMatrix,
-    vel::AbstractMatrix,
-    mass::Number;
-    origin=nothing,
-    velorigin=nothing,
-)
-    _check_angmom_args(pos, vel, mass, origin, velorigin)
-    # `sum` throws for no particles, and passing it `init` would make it a running sum.
-    size(pos, 2) == 0 && return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
-    return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
-end
-
-
 
 for (T1, T2) in zip(
     [:Nothing, :AbstractVector, :Nothing, :AbstractVector],

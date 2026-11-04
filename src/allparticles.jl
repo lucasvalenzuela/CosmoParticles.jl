@@ -12,8 +12,10 @@ Properties that do not exist for a particle type are filled with `missing` value
 The individual properties of `AllParticles` can be converted as regular arrays with `Array(ap.pos)`
 and all or selected particle properties can be converted to a [`Particles`](@ref) object with `Particles(ap)`,
 where all lazy arrays are materialized as `Array`s.
-`AllParticles` cannot be sorted, filtered, or copied.
-In-place modifications are possible, such as [`rotate!`](@ref), [`translate!`](@ref), or [`to_comoving!`](@ref).
+`AllParticles` cannot be sorted, filtered, or copied, and the in-place transformations [`rotate!`](@ref),
+[`translate!`](@ref), [`translate_periodic!`](@ref), [`translate_periodic_to_center!`](@ref),
+[`to_comoving!`](@ref), and [`to_physical!`](@ref) throw an error for it. They should be applied to the particle
+collection instead.
 
 # Creation
 ```jldoctest
@@ -35,10 +37,10 @@ julia> Array(ap.id)
  3
 ```
 
-!!! warning "In-place modifications"
-    Modifying an `AllParticles` object in-place results in the modification of the underlying particle collection!
-    To prevent bugs or unexpected behavior, it is advised to modify the particle collection instead and then
-    obtain the object through `pc.all` or `AllParticles(pc)` (these are equivalent).
+!!! warning "Writing into the lazy arrays"
+    The lazy arrays refer to the arrays of the particle collection, so writing into them, e.g. with `ap.pos .= 0`,
+    modifies the particle collection. To prevent bugs or unexpected behavior, modify the particle collection instead
+    and then obtain the object through `pc.all` or `AllParticles(pc)` (these are equivalent).
 
 The lazy concatenation occurs only when the property is needed and is only performed once.
 Note that this means that calling `pc.all.prop` multiple times results in the given property being lazily
@@ -169,17 +171,8 @@ function Base.getindex(ap::AllParticles, sym::Symbol)
         p = pc[key]
         # fill array with missing if property does not exist
         if haskey(p, sym)
-            # fill array with scalar value if property is not an array
-            if p[sym] isa AbstractArray
-                arr = p[sym]
-                _check_alldims(arr, dims, sym, key, dims_ptype)
-            else
-                if dims == 0
-                    arr = Fill(p[sym], particle_number(p))
-                else
-                    arr = Fill(p[sym], dims, particle_number(p))
-                end
-            end
+            arr = p[sym]
+            _check_alldims(arr, dims, sym, key, dims_ptype)
             push!(arrs, arr)
         else
             if dims == 0
@@ -205,6 +198,18 @@ function Base.setindex!(::AllParticles, _, ::Symbol)
 end
 
 _setprop!(ap::AllParticles, sym::Symbol, val) = setindex!(ap, val, sym)
+
+function Base.delete!(::AllParticles, ::Symbol)
+    error(
+        "Deleting a property of an AllParticles object is not allowed. Try converting it via Particles(allparticles) first.",
+    )
+end
+
+function Base.getindex(::AllParticles, ::AbstractVector{Symbol})
+    error(
+        "Selecting properties of an AllParticles object is not supported. Try Particles(allparticles, props) instead.",
+    )
+end
 
 function Base.keys(ap::AllParticles)
     keys_arr = [keys(ap.particle_collection[ptype]) for ptype in ap.ptypes]

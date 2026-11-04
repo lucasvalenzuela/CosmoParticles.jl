@@ -22,6 +22,23 @@ julia> p[:id] === p.id
 true
 ```
 
+A vector of property names selects these properties: the new particles share the arrays with `p`. A property is
+removed with `delete!`.
+```jldoctest
+julia> p = Particles(:dm, :id => [1, 2, 3], :mass => [1.0, 2.0, 3.0], :temp => [10.0, 20.0, 30.0]);
+
+julia> p2 = p[[:id, :mass]]
+dm: 3 Particles
+ id mass
+
+julia> p2.id === p.id
+true
+
+julia> delete!(p, :temp)
+dm: 3 Particles
+ id mass
+```
+
 If the struct has additional fields, these can also be accessed by `p.field`, but not by
 `p[:field]`. The latter syntax can only be used to access the particle properties.
 
@@ -69,8 +86,8 @@ julia> p.arr_d
 
 # Methods
 The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref),
-[`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the property
-dictionary.
+[`Base.empty!`](@extref), [`Base.isempty`](@extref), [`Base.copy!`](@extref), and [`Base.delete!`](@extref) with a
+property name are forwarded to the property dictionary.
 
 Concrete types of `AbstractParticles` should have the following methods implemented
 (also see the implementation of [`Particles`](@ref)):
@@ -154,7 +171,7 @@ _scalar_error(sym) = ArgumentError(
 function _particle_number_except(p::AbstractParticles, sym::Symbol)
     for (key, val) in get_props(p)
         key === sym && continue
-        val isa AbstractArray && return size(val, ndims(val))
+        return size(val, ndims(val))
     end
     return nothing
 end
@@ -221,6 +238,17 @@ function Base.setindex!(p::AbstractParticles, val, sym::Symbol)
         val = Fill(val, n)
     end
     return _setprop!(p, sym, val)
+end
+
+Base.delete!(p::AbstractParticles, sym::Symbol) = (delete!(get_props(p), sym); p)
+
+# The selected properties share their arrays with `p`.
+function Base.getindex(p::AbstractParticles, props::AbstractVector{Symbol})
+    pnew = empty(p)
+    for key in props
+        _setprop!(pnew, key, p[key])
+    end
+    return pnew
 end
 
 # Stores a property without checks, for operations that keep the particle numbers of all properties consistent.
@@ -348,12 +376,9 @@ julia> CosmoParticles.particle_number(p)
 ```
 """
 function particle_number(p::AbstractParticles)
-    for val in values(p)
-        if val isa AbstractArray
-            return size(val, ndims(val))
-        end
-    end
-    return 0
+    isempty(p) && return 0
+    val = first(values(p))
+    return size(val, ndims(val))
 end
 
 """

@@ -29,7 +29,6 @@ package that reads tables, for example `DataFrame(p)` from [DataFrames.jl](https
 `CSV.write("dm.csv", p)` from [CSV.jl](https://github.com/JuliaData/CSV.jl).
 Each particle is a row of the table. The columns are:
 - one column for each vector property;
-- one column for each scalar property, with its value repeated for every particle;
 - one column for each row of a matrix property, named like the underscore access of the property: `pos_x`,
   `pos_y` and `pos_z` for two or three rows, by the row names for a
   [`NamedRowMatrix`](@extref NamedRowArrays.NamedRowMatrix), and `pos_1`, `pos_2`, … otherwise.
@@ -44,4 +43,16 @@ julia> Tables.columntable(p)
 
 julia> nrow(p), ncol(p)
 (3, 5)
+```
+
+A table is read back into particles with [`Particles(type, table)`](@ref Particles(::Symbol, ::Any)), for example
+from `CSV.File("dm.csv")`. The columns of the matrix rows are combined into matrices again:
+
+```jldoctest
+julia> using CosmoParticles, FillArrays, Tables
+
+julia> p = Particles(:dm, :id => [1, 2, 3], :pos => [0.0 1.0 2.0; 0.5 0.5 0.5; 1.0 0.0 -1.0], :mass => Fill(2.0, 3));
+
+julia> Particles(:dm, Tables.columntable(p)) == p
+true
 ```

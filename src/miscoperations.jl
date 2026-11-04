@@ -25,7 +25,8 @@ julia> p.mass
 """
 function Base.sort!(p::AbstractParticles, prop::Symbol; kwargs...)
     vals = p[prop]
-    vals isa Number && return p
+    # All values are equal, so the particles are already sorted.
+    vals isa AbstractFill && return p
     ind = usortperm(vals; kwargs...)
     return applyind!(p, ind)
 end
@@ -85,7 +86,8 @@ julia> sort(p, :id).mass
 """
 function Base.sort(p::AbstractParticles, prop::Symbol; affect=keys(p), kwargs...)
     vals = p[prop]
-    vals isa Number && return applyind(p, (:); affect)
+    # All values are equal, so the particles are already sorted.
+    vals isa AbstractFill && return applyind(p, (:); affect)
     ind = usortperm(vals; kwargs...)
     return applyind(p, ind; affect)
 end

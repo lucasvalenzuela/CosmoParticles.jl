@@ -819,3 +819,15 @@ for (name, factorexpr) in zip(["to_comoving", "to_physical"], [:(float(1 + z)), 
         end
     end |> eval
 end
+
+# The properties of `AllParticles` are lazy concatenations of the arrays of a collection, which is transformed
+# instead.
+_inplace_error() = error(
+    "Transforming an AllParticles object in place is not allowed. Try transforming the particle collection instead.",
+)
+_rotate!(::AllParticles, _, _) = _inplace_error()
+_translate!(::AllParticles, _, ::Symbol) = _inplace_error()
+_periodic!(::AllParticles, _, _, ::Symbol) = _inplace_error()
+_periodic_to_center!(::AllParticles, _, _, ::Symbol) = _inplace_error()
+to_comoving!(::AllParticles, ::Real; kwargs...) = _inplace_error()
+to_physical!(::AllParticles, ::Real; kwargs...) = _inplace_error()

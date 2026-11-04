@@ -18,6 +18,9 @@ using Unitful
 
 const CP = CosmoParticles
 
+# `angmomtot` with the pairwise summation
+stable_angmomtot(args...; kwargs...) = angmomtot(args...; kwargs..., stable=true)
+
 # A geometry that implements none of the interface methods.
 struct IncompleteGeometry <: AbstractCosmoGeometry end
 
@@ -169,6 +172,19 @@ Random.seed!(42)
         @test CP.particle_number(p4) == 3
         p4.mass = 1.0
         @test p4.mass == fill(1.0, 3)
+
+        # selecting and deleting properties
+        p5 = Particles(:gas, :id => [1, 2, 3], :pos => rand(3, 3), :temp => rand(3))
+        ps = p5[[:temp, :id]]
+        @test ps.type === :gas
+        @test collect(keys(ps)) == [:temp, :id]
+        @test ps.id === p5.id && ps.temp === p5.temp
+        @test p5[[:pos_x]].pos_x == p5.pos[1, :]
+        @test isempty(p5[Symbol[]])
+        @test_throws KeyError p5[[:id, :mass]]
+        @test delete!(p5, :temp) === p5
+        @test collect(keys(p5)) == [:id, :pos]
+        @test delete!(p5, :temp) === p5 # like for dictionaries, a missing property is ignored
 
         io = IOBuffer()
         CP.show_properties(io, "text/plain", p)
@@ -682,12 +698,10 @@ Random.seed!(42)
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
-            @test CP._applyind(3, mask) == 3
             @test CP._applyind(p.mass, mask) == p.mass[mask]
             @test CP._applyind(p.mass2, mask) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, mask) == p.id[mask]
             @test CP._applyind(p.pos, mask) == p.pos[:, mask]
-            @test CP._applyind(3, ind) == 3
             @test CP._applyind(p.mass, ind) == p.mass[ind]
             @test CP._applyind(p.mass2, ind) == collect(p.mass2)[mask]
             @test CP._applyind(p.id, ind) == p.id[ind]
@@ -749,7 +763,6 @@ Random.seed!(42)
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
-            @test CP._removeind(3, ind) == 3
             @test_throws "sorted and unique" CP._removeind(p.id, [3, 2])
             @test_throws "sorted and unique" CP._removeind(p.pos, [2, 2])
             @test_throws BoundsError CP._removeind(p.id, [101])
@@ -1111,8 +1124,8 @@ Random.seed!(42)
                 ap = pccc.all
                 @test_throws ErrorException rotate(ap, rotmat)
 
-                rotate!(ap, rotmat)
-                @test pccc == pcc
+                @test_throws "Transforming an AllParticles object in place is not allowed" rotate!(ap, rotmat)
+                @test_throws "Transforming an AllParticles object in place is not allowed" rotate!(ap, rotmat, :pos)
             end
         end
 
@@ -1224,13 +1237,12 @@ Random.seed!(42)
                 ap = pccc.all
                 @test_throws ErrorException translate(ap, da)
 
-                translate!(ap, dau)
-                @test pccc == translate(pc, dau)
-
-                pccc = deepcopy(pc)
-                ap = pccc.all
-                translate!(ap, da, :vel)
-                @test pccc == pcc
+                msg = "Transforming an AllParticles object in place is not allowed"
+                @test_throws msg translate!(ap, dau)
+                @test_throws msg translate!(ap, da, :vel)
+                @test_throws msg translate_periodic!(ap, dau, oneunit(eltype(dau)))
+                @test_throws msg translate_periodic_to_center!(ap, dau, oneunit(eltype(dau)), :pos)
+                @test pccc == pc
 
                 o = oneunit(eltype(dau))
 
@@ -1368,13 +1380,9 @@ Random.seed!(42)
                 @test_throws ErrorException to_comoving(ap, z; propexp)
                 @test_throws ErrorException to_physical(ap, z; propexp)
 
-                to_comoving!(ap, z; propexp)
-                @test pccc == to_comoving(pc; propexp)
-
-                pccc = deepcopy(pc)
-                ap = pccc.all
-                to_physical!(ap, z; propexp)
-                @test pccc == to_physical(pc; propexp)
+                @test_throws "Transforming an AllParticles object in place is not allowed" to_comoving!(ap, z; propexp)
+                @test_throws "Transforming an AllParticles object in place is not allowed" to_physical!(ap, z)
+                @test pccc == pc
             end
 
             @testset "Integer redshift" begin
@@ -2571,7 +2579,7 @@ Random.seed!(42)
                 @test angmom(a, bu, mu) ≈ j * u"m*kg"
                 @test angmom(au, bu, mu) ≈ j * u"m^2*kg"
 
-                for func in [angmomtot, angmomtot_stable]
+                for func in [angmomtot, stable_angmomtot]
                     @test func(a, b, m) ≈ sum(j; dims=2)
                     @test func(au, b, m) ≈ sum(j * u"m"; dims=2)
                     @test func(a, bu, m) ≈ sum(j * u"m"; dims=2)
@@ -2591,14 +2599,14 @@ Random.seed!(42)
                 jorigin = m' .* colcross(a, b .- velorigin)
                 @test angmom(au, bu, mu; velorigin=velorigin * u"m") ≈ jorigin * u"m^2*kg"
                 @test angmomtot(au, bu, mu; velorigin=velorigin * u"m") ≈ sum(jorigin * u"m^2*kg"; dims=2)
-                @test angmomtot_stable(au, bu, mu; velorigin=velorigin * u"m") ≈
+                @test stable_angmomtot(au, bu, mu; velorigin=velorigin * u"m") ≈
                       sum(jorigin * u"m^2*kg"; dims=2)
                 jorigin = m' .* colcross(a .- origin, b .- velorigin)
                 @test angmom(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
                       jorigin * u"m^2*kg"
                 @test angmomtot(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
                       sum(jorigin * u"m^2*kg"; dims=2)
-                @test angmomtot_stable(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
+                @test stable_angmomtot(au, bu, mu; origin=origin * u"m", velorigin=velorigin * u"m") ≈
                       sum(jorigin * u"m^2*kg"; dims=2)
 
                 am = similar(a, Union{Float64,Missing})
@@ -2628,21 +2636,21 @@ Random.seed!(42)
                 pos, vel = rand(3, 10) * u"m", rand(3, 10) * u"m/s"
                 mfill = Fill(2.0u"kg", 10)
                 @test angmomtot(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
-                @test angmomtot_stable(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
+                @test stable_angmomtot(pos, vel, mfill) ≈ angmomtot(pos, vel, collect(mfill))
                 o, vo = rand(3) * u"m", rand(3) * u"m/s"
                 for kwargs in ((; origin=o), (; velorigin=vo), (; origin=o, velorigin=vo))
                     @test angmomtot(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
-                    @test angmomtot_stable(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
+                    @test stable_angmomtot(pos, vel, mfill; kwargs...) ≈ angmomtot(pos, vel, collect(mfill); kwargs...)
                 end
                 # without particles, the total is zero like for a vector of masses
                 pos0, vel0 = zeros(3, 0) * u"m", zeros(3, 0) * u"m/s"
                 z = zeros(3) * u"kg*m^2/s"
                 for m in (Fill(2.0u"kg", 0), zeros(0) * u"kg", 2.0u"kg")
                     @test angmomtot(pos0, vel0, m) == z
-                    @test angmomtot_stable(pos0, vel0, m) == z
-                    @test angmomtot_stable(pos0, vel0, m; origin=o, velorigin=vo) == z
+                    @test stable_angmomtot(pos0, vel0, m) == z
+                    @test stable_angmomtot(pos0, vel0, m; origin=o, velorigin=vo) == z
                 end
-                @test angmomtot_stable(Particles(:dm, :pos => pos0, :vel => vel0, :mass => 2.0u"kg")) == z
+                @test stable_angmomtot(Particles(:dm, :pos => pos0, :vel => vel0, :mass => 2.0u"kg")) == z
                 pf = Particles(:dm, :pos => Fill(1.0u"m", 3, 10), :mass => mfill)
                 @test meanprop(pf, :pos) == fill(1.0u"m", 3)
             end
@@ -2683,13 +2691,13 @@ Random.seed!(42)
             end
             @test_throws "offset arrays are not supported" coldot(ao, b)
             @test_throws "offset arrays are not supported" colcross(ao, b)
-            for f in (angmom, angmomtot, angmomtot_stable)
+            for f in (angmom, angmomtot, stable_angmomtot)
                 @test_throws "offset arrays are not supported" f(ao, b, 1.0)
                 @test_throws "offset arrays are not supported" f(a, b, OffsetArray(rand(5), -1))
             end
             @test_throws "`origin` must have length 3" angmom(a, b, rand(5); origin=[0.0])
             @test_throws "`velorigin` must have length 3" angmomtot(a, b, 1.0; velorigin=[0.0, 0.0])
-            @test_throws "`origin` must have length 3" angmomtot_stable(a, b, 1.0; origin=zeros(4))
+            @test_throws "`origin` must have length 3" stable_angmomtot(a, b, 1.0; origin=zeros(4))
 
             @test_throws "expected a matrix with 3 rows" colnormell2(ones(2, 3), 0.5, 0.5)
             @test_throws "expected a matrix with 2 rows" colnormell(ones(3, 3), 0.5)
@@ -2700,7 +2708,7 @@ Random.seed!(42)
             @test_throws "the matrices must have the same size" coldot(a, rand(3, 4))
             @test_throws "the matrices must have the same size" colcross(a, rand(2, 5))
             @test_throws "the matrices must have 3 rows" colcross(rand(2, 5), rand(2, 5))
-            for f in (angmom, angmomtot, angmomtot_stable)
+            for f in (angmom, angmomtot, stable_angmomtot)
                 @test_throws "the positions must have 3 rows" f(rand(2, 5), rand(2, 5), 1.0)
                 @test_throws "the positions and velocities must have the same size" f(a, rand(3, 4), 1.0)
                 @test_throws "the masses must have length 5 like the positions" f(a, b, rand(4))
@@ -2715,9 +2723,9 @@ Random.seed!(42)
             vel = zeros(Float32, 3, n)
             vel[2, :] .= 0.1f0
             jtot = [0, 0, n / 10]
-            @test isapprox(angmomtot_stable(pos, vel, 1.0f0), jtot; rtol=1e-5)
-            @test isapprox(angmomtot_stable(pos, vel, ones(Float32, n)), jtot; rtol=1e-5)
-            @test isapprox(angmomtot_stable(pos, vel, Fill(1.0f0, n)), jtot; rtol=1e-5)
+            @test isapprox(stable_angmomtot(pos, vel, 1.0f0), jtot; rtol=1e-5)
+            @test isapprox(stable_angmomtot(pos, vel, ones(Float32, n)), jtot; rtol=1e-5)
+            @test isapprox(stable_angmomtot(pos, vel, Fill(1.0f0, n)), jtot; rtol=1e-5)
 
             p = Particles(:gas, :vel => vel, :j => angmom(pos, vel, 1.0f0))
             @test sumprop(p, :vel) isa Vector{Float32}
@@ -2786,19 +2794,19 @@ Random.seed!(42)
 
                 @test angmom(dm; angmomprop=:j) ≈ angmom(dm.pos, dm.vel, dm.mass)
                 @test angmomtot(dm; angmomprop=:j) ≈ angmomtot(dm.pos, dm.vel, dm.mass)
-                @test angmomtot_stable(dm; angmomprop=:j) ≈ angmomtot_stable(dm.pos, dm.vel, dm.mass)
+                @test stable_angmomtot(dm; angmomprop=:j) ≈ stable_angmomtot(dm.pos, dm.vel, dm.mass)
                 dm.j = angmom(dm)
                 @test angmom(dm; angmomprop=:j) ≈ angmom(dm.pos, dm.vel, dm.mass)
                 @test angmomtot(dm; angmomprop=:j) ≈ angmomtot(dm.pos, dm.vel, dm.mass)
-                @test angmomtot_stable(dm; angmomprop=:j) ≈ angmomtot_stable(dm.pos, dm.vel, dm.mass)
+                @test stable_angmomtot(dm; angmomprop=:j) ≈ stable_angmomtot(dm.pos, dm.vel, dm.mass)
                 @test angmom(gas; angmomprop=:j) ≈ angmom(gas.pos, gas.vel, gas.mass)
                 @test angmomtot(gas; angmomprop=:j) ≈ angmomtot(gas.pos, gas.vel, gas.mass)
-                @test angmomtot_stable(gas; angmomprop=:j) ≈ angmomtot_stable(gas.pos, gas.vel, gas.mass)
+                @test stable_angmomtot(gas; angmomprop=:j) ≈ stable_angmomtot(gas.pos, gas.vel, gas.mass)
 
                 origin = 2 * dm.pos[:, 1]
                 velorigin = 2 * dm.vel[:, 1]
 
-                for func in [angmom, angmomtot, angmomtot_stable]
+                for func in [angmom, angmomtot, stable_angmomtot]
                     @test func(gas; origin) ≈ func(gas.pos, gas.vel, gas.mass; origin)
                     @test func(gas; velorigin) ≈ func(gas.pos, gas.vel, gas.mass; velorigin)
                     @test func(gas; origin, velorigin) ≈ func(gas.pos, gas.vel, gas.mass; origin, velorigin)
@@ -2817,7 +2825,12 @@ Random.seed!(42)
 
         @test Tables.istable(typeof(p))
         @test Tables.columnaccess(typeof(p))
-        @test Tables.columns(p) === p
+        cols = Tables.columns(p)
+        @test cols isa Tables.DictColumnTable
+        @test collect(Tables.columnnames(cols)) == Tables.columnnames(p)
+        @test Tables.schema(cols) == Tables.schema(p)
+        @test all(Tables.getcolumn(cols, nm) == Tables.getcolumn(p, nm) for nm in Tables.columnnames(p))
+        @test Tables.getcolumn(cols, :pos_y) isa SubArray # the columns are not copied
 
         @test Tables.getcolumn(p, :temp) == p.temp
         @test Tables.getcolumn(p, :mass) == fill(p.mass[1], n)
@@ -2866,5 +2879,49 @@ Random.seed!(42)
         @test length(ct.pos_x) == 10
         @test ct.pos_y == ap.pos[2, :]
         @test ct.mass == ap.mass
+
+        # particles from tables: columns with the suffixes x, y, z or 1 to m become the rows of matrices
+        p = Particles(
+            :dm,
+            :id => [1, 2],
+            :pos => [1.0 2.0; 3.0 4.0; 5.0 6.0],
+            :vel2d => [1.0 2.0; 3.0 4.0],
+            :arr => rand(4, 2),
+            :mass => Fill(1.0, 2),
+        )
+        @test Particles(:dm, Tables.columntable(p)) == p
+        @test Particles(:dm, Tables.rowtable(p)) == p
+        @test Particles(:gas, p) == Particles(:gas, CP.get_props(p))
+        q = Particles(:dm, (v_1=[1, 2], v_2=[3, 4], v_3=[5, 6], v_4=[7, 8], w_x=[1, 2], w_y=[3, 4], w_w=[5, 6]))
+        @test collect(keys(q)) == [:v, :w, :w_w]
+        @test q.v == [1 2; 3 4; 5 6; 7 8]
+        @test q.w == [1 2; 3 4]
+        # only consecutive columns in the order of the rows are combined
+        t = (v_2=[1, 2], v_1=[3, 4], w_x=[1, 2], w_z=[3, 4], u_1=[1, 2], u_3=[3, 4], temp_max=[5, 6], b_1=[0, 0])
+        @test collect(keys(Particles(:dm, t))) == collect(keys(t))
+        @test collect(keys(Particles(:dm, (pos_x=[1, 2], id=[1, 2], pos_y=[3, 4])))) == [:pos_x, :id, :pos_y]
+        @test collect(keys(Particles(:dm, (pos_x=[1, 2], pos_y=[3, 4], pos_z=[5, 6], pos_w=[7, 8])))) == [:pos, :pos_w]
+        # the shortest suffix decides, and a matrix is not created if a column has its name
+        q = Particles(:dm, (pos_x_1=[1, 2], pos_x_2=[3, 4]))
+        @test collect(keys(q)) == [:pos_x]
+        @test q.pos_x == [1 2; 3 4]
+        q = Particles(:dm, (pos_x=[0, 0], pos_x_1=[1, 2], pos_x_2=[3, 4]))
+        @test collect(keys(q)) == [:pos_x, :pos_x_1, :pos_x_2]
+        # the rows of a `NamedRowMatrix` stay vectors
+        q = Particles(:dm, Tables.columntable(Particles(:dm, :a => NamedRowArray([1 2; 3 4], [:b, :c]))))
+        @test collect(keys(q)) == [:a_b, :a_c]
+        @test_throws "a value of type Int64 is not a table" Particles(:dm, 1)
+
+        # column names must be unique
+        p = Particles(:dm, :pos => rand(3, 2), :pos_x => [1.0, 2.0])
+        msg = "the table column :pos_x is given by both row 1 of the matrix property :pos and the property :pos_x"
+        @test_throws msg Tables.columnnames(p)
+        @test_throws msg Tables.getcolumn(p, :pos_x)
+        @test_throws msg Tables.columntable(p)
+        p = Particles(:dm, :pos_x => rand(4, 2), :pos_x_1 => [1.0, 2.0])
+        @test_throws "the table column :pos_x_1 is given by both row 1 of the matrix property :pos_x and the property :pos_x_1" Tables.columnnames(
+            p,
+        )
+        @test_throws DimensionMismatch Particles(:dm, (a=[1, 2], b=[1, 2, 3]))
     end
 end

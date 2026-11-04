@@ -151,6 +151,7 @@ Ellipse around the origin given by the semi-major axis `a` and the axis ratio `q
 
 The fields store the semi-major axis and the axis ratio; construct it with [`CosmoEllipse(a, b)`](@ref CosmoEllipse)
 from the semi-axes or [`CosmoEllipse(a; q)`](@ref CosmoEllipse) from the axis ratio.
+Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to rotate and move it.
 
 # Examples
 
@@ -259,6 +260,10 @@ The fields store the semi-major axis and the axis ratios; construct it with
 [`CosmoEllipsoid(a, b, c)`](@ref CosmoEllipsoid) from the semi-axes or
 [`CosmoEllipsoid(a; q, s)`](@ref CosmoEllipsoid) from the axis ratios.
 
+Its axes lie along the coordinate axes. To orient and place it elsewhere, rotate it first and translate it afterwards,
+as in `translate(rotate(e, R), center)`: this rotates the ellipsoid about its own center and then moves its center to
+`center`. The reverse order rotates the translated ellipsoid about the origin of the coordinate system.
+
 # Examples
 
 ```jldoctest
@@ -266,6 +271,16 @@ julia> e = CosmoEllipsoid(4.0, 2.0, 1.0)
 CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
 
 julia> CosmoParticles.mask_in([3.0 0.0 0.0; 0.0 3.0 0.0; 0.0 0.0 0.5], e)
+3-element BitVector:
+ 1
+ 0
+ 1
+
+julia> using Rotations
+
+julia> g = translate(rotate(e, RotZ(π / 2)), [10.0, 0.0, 0.0]); # major axis along y, centered at x = 10
+
+julia> CosmoParticles.mask_in([10.0 13.0 10.0; 3.0 0.0 0.0; 0.0 0.0 0.5], g)
 3-element BitVector:
  1
  0
@@ -384,6 +399,7 @@ axis ratio `q = b/a`.
 The fields store the semi-major axes and the axis ratio; construct it with
 [`CosmoHomoeoid2D(a, b; a2)`](@ref CosmoHomoeoid2D) from the semi-axes of one ellipse and the other semi-major axis,
 or [`CosmoHomoeoid2D(a1, a2; q)`](@ref CosmoHomoeoid2D) from the axis ratio.
+Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to rotate and move it.
 
 # Examples
 
@@ -504,6 +520,7 @@ axis ratios `q = b/a` and `s = c/a`.
 The fields store the semi-major axes and the axis ratios; construct it with
 [`CosmoHomoeoid(a, b, c; a2)`](@ref CosmoHomoeoid) from the semi-axes of one ellipsoid and the other semi-major
 axis, or [`CosmoHomoeoid(a1, a2; q, s)`](@ref CosmoHomoeoid) from the axis ratios.
+Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to rotate and move it.
 
 # Examples
 

@@ -11,7 +11,6 @@ meanpos
 meanvel
 angmom
 angmomtot
-angmomtot_stable
 colnorm
 colnorm2
 coldot

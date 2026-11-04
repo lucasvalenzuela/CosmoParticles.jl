@@ -76,7 +76,6 @@ export
     coldot,
     angmom,
     angmomtot,
-    angmomtot_stable,
 
     # ellipsoids
     triaxiality,
