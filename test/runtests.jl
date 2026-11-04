@@ -37,7 +37,18 @@ Random.seed!(42)
     end
 
     @testset "Public names" begin
-        for name in (:get_props, :particle_number, :mask_in, :CosmoUnionGeometry, :Rotated, :findall_in, :ustrip_lazy, :deleteat)
+        for name in (
+            :get_props,
+            :particle_number,
+            :mask_in,
+            :CosmoUnionGeometry,
+            :Rotated,
+            :findall_in,
+            :ustrip_lazy,
+            :deleteat,
+            :get_dims,
+            :get_losdim,
+        )
             @test Base.ispublic(CosmoParticles, name)
             @test !Base.isexported(CosmoParticles, name)
         end
@@ -145,6 +156,9 @@ Random.seed!(42)
         @test pba.id == [3, 4, 1, 2]
         @test isequal(pba.mass, [missing, missing, 1.0, 1.0])
         @test isequal(vcat(pb, pa; affect=[:id]).id, [3, 4, 1, 2])
+        pm = vcat(Particles(:gas, :id => [1, 2], :pos => [1.0 2.0; 3.0 4.0; 5.0 6.0]), Particles(:gas, :id => [3]))
+        @test isequal(pm.pos, [1.0 2.0 missing; 3.0 4.0 missing; 5.0 6.0 missing])
+        @test isequal(vcat(pa, pb; affect=[:foo]).foo, fill(missing, 4))
         @test !haskey(vcat(pb, pa; affect=[:id]), :mass)
         append!(p1, p2)
         @test p1 == pv
@@ -457,6 +471,10 @@ Random.seed!(42)
 
         @test all(val === p[key] for (key, val) in zip(keys(p), values(p)))
         @test all(val === p[key] for (key, val) in pairs(p))
+
+        @test_throws "Deleting a property of an AllParticles object is not allowed" delete!(p, :id)
+        @test_throws "Selecting properties of an AllParticles object is not supported" p[[:id, :mass]]
+        @test AllParticles(pcoll, (:dm,)) == AllParticles(pcoll, [:dm])
 
         @test_throws ErrorException copy(p)
         @test_throws ErrorException copy!(p, AllParticles(pcoll))
@@ -815,6 +833,8 @@ Random.seed!(42)
         end
 
         @testset "Find all in" begin
+            @test CP.findall_in_sorted(collect(1:1_000_001), [2_000_000]) == Int[]
+
             a = sample(1:10000, 6000; replace=false)
             set = sample(1:10000, 100; replace=false)
             inboth = intersect(a, set)
@@ -876,6 +896,11 @@ Random.seed!(42)
         end
 
         @testset "Unitful operations" begin
+            v1, v2 = Float32[1, 2], Float32[3]
+            av = ApplyArray(vcat, v1, v2)
+            @test CP.product_preserve_type!(av, 2) === av
+            @test v1 == [2, 4] && v2 == [6] && eltype(v1) === Float32
+
             a = rand(100)
             au = a * u"m"
             af = convert(Vector{Float32}, a)
@@ -906,6 +931,10 @@ Random.seed!(42)
 
         @testset "Lazy ustrip" begin
             @test CP.ustrip_lazy(3) == 3
+            @test CP.ustrip_lazy(u"m", [1, 2]u"km") == [1000, 2000]
+            ak = [1.0, 2.0]u"km"
+            @test CP.uconvert_lazy(u"m", ak) == [1000.0, 2000.0]u"m"
+            @test ak == [1.0, 2.0]u"km" # the input is not modified
 
             a = rand(4)
             b = rand(3)
@@ -1026,6 +1055,12 @@ Random.seed!(42)
     @testset "Transformations" begin
         @testset "Rotation" begin
             rotmat = rand(RotMatrix{3})
+            a1, a2 = rand(3, 2), rand(3, 4)
+            expected = rotmat * hcat(a1, a2)
+            am = ApplyArray(hcat, a1, a2)
+            @test CP.matrix_rotate!(am, rotmat) === am
+            @test a1 ≈ expected[:, 1:2] && a2 ≈ expected[:, 3:6]
+
             a = rand(3, 100)
             au = a * u"m"
 
@@ -1179,9 +1214,9 @@ Random.seed!(42)
 
                 # periodic translations
                 period, period_half = 10, 5
-                CP._translate_periodic(1, 2, period) == 1
-                CP._translate_periodic(8, 2, period, period_half) == -2
-                CP._translate_periodic(2, 8, period, period_half) == 12
+                @test CP._translate_periodic(1, 2, period) == 1
+                @test CP._translate_periodic(8, 2, period, period_half) == -2
+                @test CP._translate_periodic(2, 8, period, period_half) == 12
 
                 o = oneunit(eltype(dau))
 
@@ -1420,6 +1455,16 @@ Random.seed!(42)
         @test_throws msg translate_periodic!(copy(dm), Δx, 10.0, :vel)
         @test_throws msg translate_periodic_to_center(dm, Δx, 10.0, :vel)
         @test_throws msg translate_periodic_to_center!(copy(dm), Δx, 10.0, :vel)
+
+        # explicitly named properties that exist
+        P = 10.0
+        @test translate_periodic(dm, Δx, P, :pos) == translate_periodic(dm, Δx, P)
+        @test translate_periodic(pc, Δx, P, :pos) == translate_periodic(pc, Δx, P)
+        @test translate_periodic!(deepcopy(dm), Δx, P, :pos) == translate_periodic(dm, Δx, P)
+        @test translate_periodic!(deepcopy(pc), Δx, P, :pos) == translate_periodic(pc, Δx, P)
+        @test translate_periodic_to_center(dm, Δx, P, :pos) == translate_periodic_to_center(dm, Δx, P)
+        @test translate_periodic_to_center(pc, Δx, P, :pos) == translate_periodic_to_center(pc, Δx, P)
+        @test translate_periodic_to_center!(deepcopy(pc), Δx, P, :pos) == translate_periodic_to_center(pc, Δx, P)
 
         # in collections, a named property must exist for at least one particle type
         @test rotate(pc, R, :vel).gas.vel == R * gas.vel
@@ -2734,6 +2779,9 @@ Random.seed!(42)
         end
 
         @testset "Particles properties" begin
+            pf = Particles(:dm, :pos => Fill(1.5, 3, 4), :mass => rand(4))
+            @test meanprop(pf, :pos) == [1.5, 1.5, 1.5]
+
             dm = Particles(:dm, :pos => rand(3, 100), :vel => rand(Float32, 3, 100), :mass => 2)
             gas = Particles(
                 :gas,

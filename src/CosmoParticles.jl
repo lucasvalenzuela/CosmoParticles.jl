@@ -118,6 +118,10 @@ public
     findall_in,
     findall_in_sorted,
 
+    # projections
+    get_dims,
+    get_losdim,
+
     # transformations
     matrix_rotate,
     matrix_rotate!,
