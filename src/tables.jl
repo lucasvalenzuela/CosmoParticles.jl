@@ -82,6 +82,25 @@ function Tables.getcolumn(p::AbstractParticles, nm::Symbol)
     return _table_column(p, key, row)
 end
 
+Tables.istable(::Type{<:AbstractParticleCollection}) = true
+Tables.columnaccess(::Type{<:AbstractParticleCollection}) = true
+
+# The table of a collection has a first column `ptype` with the particle type of each particle, followed by the
+# columns of all particles, as given by `pc.all`, with `missing` values for the properties of other particle types.
+function Tables.columns(pc::AbstractParticleCollection)
+    cols = Tables.columns(AllParticles(pc))
+    names = Tables.columnnames(cols)
+    :ptype in names &&
+        throw(ArgumentError("the table column :ptype is given by both the particle types and the property :ptype"))
+    ptypes = Symbol[ptype for ptype in keys(pc) for _ in 1:particle_number(pc[ptype])]
+    values = OrderedDict{Symbol,AbstractVector}(:ptype => ptypes)
+    for name in names
+        values[name] = Tables.getcolumn(cols, name)
+    end
+    schema = Tables.Schema([:ptype; collect(names)], [Symbol; collect(Tables.schema(cols).types)])
+    return Tables.DictColumnTable(schema, values)
+end
+
 function Tables.getcolumn(p::AbstractParticles, i::Int)
     _, key, row = _table_columns(p)[i]
     return _table_column(p, key, row)

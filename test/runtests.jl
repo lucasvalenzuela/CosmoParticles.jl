@@ -15,6 +15,7 @@ using StatsBase
 using Tables
 using Test
 using Unitful
+using UnitfulAstro
 
 const CP = CosmoParticles
 
@@ -34,6 +35,10 @@ Random.seed!(42)
         if JET.JET_AVAILABLE
             JET.test_package(CosmoParticles; target_modules=(CosmoParticles,))
         end
+    end
+
+    @testset "Extensions" begin
+        @test !isnothing(Base.get_extension(CosmoParticles, :CosmoParticlesUnitfulAstroExt))
     end
 
     @testset "Public names" begin
@@ -465,6 +470,9 @@ Random.seed!(42)
 
         @test issetequal(keys(p), [:id, :mass, :pos, :temp, :zs, :test])
         @test keys(p) == keys(AllParticles(pcoll))
+        # the properties are in the order of their first appearance
+        @test keys(ParticleCollection(Particles(:a, :x => [1], :y => [1]), Particles(:b, :z => [1], :x => [1])).all) ==
+              [:x, :y, :z]
 
         @test haskey(p, :id) && haskey(AllParticles(pcoll), :id)
         @test !haskey(p, :vel) && !haskey(AllParticles(pcoll), :vel)
@@ -772,6 +780,27 @@ Random.seed!(42)
         end
 
         @testset "Remove particles" begin
+            # like for arrays, the indices are unique and sorted, or a mask
+            pd = Particles(:dm, :id => [1, 2, 3, 4], :pos => [1.0 2.0 3.0 4.0; 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0])
+            @test CP.deleteat(pd, [1, 3]).id == [2, 4]
+            @test CP.deleteat(pd, [true, false, false, true]).id == [2, 3]
+            @test CP.removeind(pd, [true, false, false, true]; affect=[:id]).id == [2, 3]
+            @test CP.deleteat(pd, Int[]) == pd
+            @test_throws "the mask has length 3, but there are 4 particles" CP.deleteat(pd, [true, false, true])
+            @test_throws "indices must be unique and sorted" CP.deleteat(pd, [3, 1])
+            @test_throws "indices must be unique and sorted" CP.deleteat(pd, [1, 1])
+            pdd = deepcopy(pd)
+            @test deleteat!(pdd, [true, false, true, false]) === pdd
+            @test pdd.id == [2, 4] && pdd.pos[1, :] == [2.0, 4.0]
+            @test CP.removeind!(pdd, [false, true]).id == [2]
+            # the indices are checked before any property is changed, also for `Fill` properties
+            pf = Particles(:dm, :id => [1, 2, 3, 4], :mass => Fill(1.0, 4))
+            for (ind, err) in (([4, 2], ArgumentError), ([1, 1], ArgumentError), ([0, 1], BoundsError), ([4, 5], BoundsError))
+                @test_throws err deleteat!(pf, ind)
+                @test_throws err CP.removeind(pf, ind)
+                @test length(pf.id) == length(pf.mass) == 4
+            end
+
             p = Particles(:dm)
             p.id = sample(1:1000, 100; replace=false)
             p.pos = rand(3, 100)
@@ -781,8 +810,8 @@ Random.seed!(42)
             mask = rand(100) .> 0.5
             ind = findall(mask)
 
-            @test_throws "sorted and unique" CP._removeind(p.id, [3, 2])
-            @test_throws "sorted and unique" CP._removeind(p.pos, [2, 2])
+            @test_throws "indices must be unique and sorted" CP._removeind(p.id, [3, 2])
+            @test_throws "indices must be unique and sorted" CP._removeind(p.pos, [2, 2])
             @test_throws BoundsError CP._removeind(p.id, [101])
             @test_throws BoundsError CP._removeind(p.pos, [0, 1])
             @test_throws "offset arrays are not supported" CP._removeind(OffsetArray(p.id, -1), [1])
@@ -2085,6 +2114,50 @@ Random.seed!(42)
             @test_throws ErrorException filter!(ap, sph)
         end
 
+        @testset "Immutable fields" begin
+            for (g, field) in [
+                (CosmoCuboid([0, 0, 0], [1, 2, 3]), :lowerleft),
+                (CosmoSphere(1.0), :center),
+                (CosmoCylinder([0, 0, 0], [1, 0, 0], 0.5), :endpos),
+                (CosmoStandingCylinder([0, 0, 0], 2, 0.5), :center),
+                (translate(CosmoEllipsoid(4.0; q=0.5), [1.0, 0.0, 0.0]), :Δx),
+            ]
+                @test_throws ErrorException getfield(g, field)[1] = 5
+            end
+        end
+
+        @testset "Display" begin
+            e = CosmoEllipsoid(4.0; q=0.5, s=0.25)
+            for (g, str) in [
+                (CosmoCuboid([0, 0, 0], [1, 2, 3]), "CosmoCuboid([0.0, 0.0, 0.0], [1.0, 2.0, 3.0])"),
+                (CosmoRectangle([0, 0], [1, 1]), "CosmoRectangle([0.0, 0.0], [1.0, 1.0])"),
+                (CosmoHyperrectangle(zeros(4), ones(4)), "CosmoHyperrectangle([0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0])"),
+                (CosmoSphere(1.0), "CosmoSphere([0.0, 0.0, 0.0], 1.0)"),
+                (CosmoCircle([1.0, 2.0], 3.0), "CosmoCircle([1.0, 2.0], 3.0)"),
+                (CosmoHypersphere(4, 1.0), "CosmoHypersphere([0.0, 0.0, 0.0, 0.0], 1.0)"),
+                (CosmoCylinder([0, 0, 0], [1, 0, 0], 0.5), "CosmoCylinder([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.5)"),
+                (CosmoStandingCylinder([0, 0, 0], 2, 0.5), "CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 0.5)"),
+                (CosmoEllipse(2.0, 1.0), "CosmoEllipse(2.0; q=0.5)"),
+                (e, "CosmoEllipsoid(4.0; q=0.5, s=0.25)"),
+                (CosmoHomoeoid2D(1.0, 2.0; q=0.5), "CosmoHomoeoid2D(1.0, 2.0; q=0.5)"),
+                (CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25), "CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)"),
+                (
+                    translate(rotate(e, [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]), [1.0, 0.0, 0.0]),
+                    "translate(rotate(CosmoEllipsoid(4.0; q=0.5, s=0.25), [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]), [1.0, 0.0, 0.0])",
+                ),
+                (union(CosmoSphere(1.0), e), "union(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))"),
+                (intersect(CosmoSphere(1.0), e), "intersect(CosmoSphere([0.0, 0.0, 0.0], 1.0), CosmoEllipsoid(4.0; q=0.5, s=0.25))"),
+                (setdiff(CosmoSphere(2.0), CosmoSphere(1.0)), "setdiff(CosmoSphere([0.0, 0.0, 0.0], 2.0), CosmoSphere([0.0, 0.0, 0.0], 1.0))"),
+                (CosmoSphere(Float32[0, 0, 0], 1.0f0), "CosmoSphere(Float32[0.0, 0.0, 0.0], 1.0f0)"),
+                (CosmoSphere([1.0, 0.0, 0.0]u"m", 2.0u"m"), "CosmoSphere([1.0, 0.0, 0.0]u\"m\", 2.0u\"m\")"),
+                (CosmoSphere([1.0, 0.0, 0.0]u"m/s", 2.0u"m/s"), "CosmoSphere([1.0, 0.0, 0.0]u\"m*s^-1\", 2.0u\"m*s^-1\")"),
+            ]
+                @test repr(g) == str
+                @test repr(MIME("text/plain"), g) == str
+                @test eval(Meta.parse(str)) == g # the display is the call that constructs the geometry
+            end
+        end
+
         @testset "Combining geometries" begin
             rect = CosmoHyperrectangle([0, 0, 0] .// 100, [15, 25, 20] .// 100)
             sph = CosmoSphere(zeros(3), 0.5)
@@ -2292,7 +2365,7 @@ Random.seed!(42)
             @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid2D(1.0km, 2.0km; q=0.5)) == [0.0, 0.0]km
             @test CosmoParticles.geometry_enclosing_center(CosmoHomoeoid(1.0km, 2.0km; q=0.5, s=0.5)) == [0.0, 0.0, 0.0]km
             @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0; q=0.5)) == [0.0, 0.0]
-            @test CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0f0; q=0.5f0)) isa Vector{Float32}
+            @test eltype(CosmoParticles.geometry_enclosing_center(CosmoEllipse(2.0f0; q=0.5f0))) === Float32
         end
 
         @testset "Ellipsoid masks" begin
@@ -2959,6 +3032,26 @@ Random.seed!(42)
         q = Particles(:dm, Tables.columntable(Particles(:dm, :a => NamedRowArray([1 2; 3 4], [:b, :c]))))
         @test collect(keys(q)) == [:a_b, :a_c]
         @test_throws "a value of type Int64 is not a table" Particles(:dm, 1)
+
+        # the table of a collection has the particle types and the columns of all particles
+        pc = ParticleCollection(
+            Particles(:dm, :id => [1, 2], :pos => [0.0 1.0; 0.0 0.0; 0.0 0.0]),
+            Particles(:gas, :id => [3], :pos => [2.0; 0.0; 0.0;;], :temp => [1e4]),
+        )
+        @test Tables.istable(typeof(pc))
+        ct = Tables.columntable(pc)
+        @test keys(ct) == (:ptype, :id, :pos_x, :pos_y, :pos_z, :temp)
+        @test ct.ptype == [:dm, :dm, :gas]
+        @test ct.pos_x == [0.0, 1.0, 2.0]
+        @test isequal(ct.temp, [missing, missing, 1e4])
+        @test Tables.schema(Tables.columns(pc)).types == (Symbol, Int, Float64, Float64, Float64, Union{Missing,Float64})
+        @test Tables.rowtable(pc)[3] == (ptype=:gas, id=3, pos_x=2.0, pos_y=0.0, pos_z=0.0, temp=1e4)
+        @test Tables.columntable(ParticleCollection()) == (ptype=Symbol[],)
+        @test Tables.columntable(RedshiftParticleCollection(1.0, :stars_a => Particles(:stars, :id => [1]))).ptype ==
+              [:stars_a]
+        @test_throws "the table column :ptype is given by both the particle types and the property :ptype" Tables.columntable(
+            ParticleCollection(Particles(:dm, :id => [1], :ptype => [1])),
+        )
 
         # column names must be unique
         p = Particles(:dm, :pos => rand(3, 2), :pos_x => [1.0, 2.0])

@@ -28,6 +28,25 @@ CosmoParticles.get_particles
 CosmoParticles.show_properties(io::IO, mime::AbstractString, pc::AbstractParticleCollection)
 ```
 
+## Tables
+
+Particle collections implement the [Tables.jl](https://github.com/JuliaData/Tables.jl) interface like particles, with
+one row per particle. The first column `ptype` holds the particle type of each particle, and the other columns are
+the table columns of all particles as given by [`AllParticles`](@ref). Particles without a property have `missing`
+values in its columns.
+
+```jldoctest
+julia> using CosmoParticles, Tables
+
+julia> pc = ParticleCollection(
+           Particles(:dm, :id => [1, 2], :pos => [0.0 1.0; 0.0 0.0; 0.0 0.0]),
+           Particles(:gas, :id => [3], :pos => [2.0; 0.0; 0.0;;], :temp => [1e4]),
+       );
+
+julia> Tables.columntable(pc)
+(ptype = [:dm, :dm, :gas], id = [1, 2, 3], pos_x = [0.0, 1.0, 2.0], pos_y = [0.0, 0.0, 0.0], pos_z = [0.0, 0.0, 0.0], temp = Union{Missing, Float64}[missing, missing, 10000.0])
+```
+
 # All Particles
 
 ```@docs

@@ -8,6 +8,8 @@ using LinearAlgebra
 using NamedRowArrays
 using NamedRowArrays: rownames
 using OrderedCollections: OrderedDict
+using PrecompileTools: @compile_workload, @setup_workload
+using StaticArrays: SVector
 using Statistics
 using StatsBase
 using Tables
@@ -150,5 +152,7 @@ include("transformations.jl")
 include("miscoperations.jl")
 include("properties.jl")
 include("tables.jl")
+
+include("precompile.jl")
 
 end

@@ -54,7 +54,7 @@ Return the center of the enclosing box of the geometry as a vector.
 julia> c = CosmoCuboid([0.0, 0.0, 0.0], [1.0, 2.0, 3.0]);
 
 julia> CosmoParticles.geometry_enclosing_center(c)
-3-element Vector{Float64}:
+3-element StaticArraysCore.SVector{3, Float64} with indices SOneTo(3):
  0.5
  1.0
  1.5
@@ -199,9 +199,8 @@ Base.union(geos::AbstractCosmoGeometry...) = CosmoUnionGeometry(geos)
 
 function geometry_enclosing_corners(g::CosmoUnionGeometry)
     corners = [geometry_enclosing_corners(geo) for geo in g.geos]
-    ndims = length(corners[1][1])
-    lowerleft = [minimum(ll[i] for (ll, ur) in corners) for i in 1:ndims]
-    upperright = [maximum(ur[i] for (ll, ur) in corners) for i in 1:ndims]
+    lowerleft = reduce((x, y) -> min.(x, y), (ll for (ll, _) in corners))
+    upperright = reduce((x, y) -> max.(x, y), (ur for (_, ur) in corners))
 
     return lowerleft, upperright
 end
@@ -273,9 +272,8 @@ Base.intersect(geos::AbstractCosmoGeometry...) = CosmoIntersectGeometry(geos)
 
 function geometry_enclosing_corners(g::CosmoIntersectGeometry)
     corners = [geometry_enclosing_corners(geo) for geo in g.geos]
-    ndims = length(corners[1][1])
-    lowerleft = [maximum(ll[i] for (ll, ur) in corners) for i in 1:ndims]
-    upperright = [minimum(ur[i] for (ll, ur) in corners) for i in 1:ndims]
+    lowerleft = reduce((x, y) -> max.(x, y), (ll for (ll, _) in corners))
+    upperright = reduce((x, y) -> min.(x, y), (ur for (_, ur) in corners))
 
     if any(lowerleft .≥ upperright)
         return zero.(lowerleft), zero.(upperright)
@@ -465,8 +463,13 @@ function geometry_enclosing_corners(rot::Rotated)
     posrot = rot.rotmat * pos
 
     # extract the extrema along each dimension as the lower left and upper right corners
-    return vec(minimum(posrot; dims=2)), vec(maximum(posrot; dims=2))
+    lowerleft, upperright = vec(minimum(posrot; dims=2)), vec(maximum(posrot; dims=2))
+    return _vector_like(bounding_corners[1], lowerleft), _vector_like(bounding_corners[2], upperright)
 end
+
+# The corners of a geometry are static vectors if those of the geometry it is derived from are.
+_vector_like(::SVector{N}, v::AbstractVector) where {N} = SVector{N}(v)
+_vector_like(_, v::AbstractVector) = v
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, rot::Rotated)
     mask_in!(mask, matrix_rotate(pos, rotation_matrix_inv(rot)), rot.geo)
@@ -516,7 +519,7 @@ julia> t isa CosmoParticles.Translated
 true
 
 julia> CosmoParticles.geometry_enclosing_center(t)
-2-element Vector{Float64}:
+2-element StaticArraysCore.SVector{2, Float64} with indices SOneTo(2):
  1.0
  0.0
 ```
@@ -555,7 +558,7 @@ julia> CosmoParticles.geometry_enclosing_corners(t)
 ([-1.0, -1.0], [3.0, 1.0])
 ```
 """
-translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number}) = Translated(geo, Δx)
+translate(geo::AbstractCosmoGeometry, Δx::AbstractVector{<:Number}) = Translated(geo, SVector{length(Δx)}(Δx))
 translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, tra.Δx .+ Δx)
 
 
@@ -564,8 +567,8 @@ translate(tra::Translated, Δx::AbstractVector{<:Number}) = Translated(tra.geo, 
 
 """
     struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
-        lowerleft::Vector{T}
-        upperright::Vector{T}
+        lowerleft::SVector{N,T}
+        upperright::SVector{N,T}
     end
 
 `N`-dimensional hyperrectangle aligned with the coordinate system axes given by its lower left and upper right corners.
@@ -584,8 +587,8 @@ julia> CosmoParticles.mask_in([0.5 2.0; 1.0 1.0], r)
 ```
 """
 struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
-    lowerleft::Vector{T}
-    upperright::Vector{T}
+    lowerleft::SVector{N,T}
+    upperright::SVector{N,T}
 
     function CosmoHyperrectangle{T,N}(
         lowerleft::AbstractVector{<:Number},
@@ -596,7 +599,7 @@ struct CosmoHyperrectangle{T<:Number,N} <: AbstractCosmoGeometry
                 "the corners must have length $N, got lengths $(length(lowerleft)) and $(length(upperright))",
             ),
         )
-        new{T,N}(convert(Vector{T}, lowerleft), convert(Vector{T}, upperright))
+        new{T,N}(SVector{N,T}(lowerleft), SVector{N,T}(upperright))
     end
 end
 
@@ -612,7 +615,7 @@ The lengths are given in order of the axes, i.e., x, y or x, y, z for 2D and 3D,
 
 ```jldoctest
 julia> CosmoHyperrectangle([0.0, 0.0, 0.0, 0.0], 2, 4, 6, 8)
-CosmoHyperrectangle{Float64, 4}([-1.0, -2.0, -3.0, -4.0], [1.0, 2.0, 3.0, 4.0])
+CosmoHyperrectangle([-1.0, -2.0, -3.0, -4.0], [1.0, 2.0, 3.0, 4.0])
 ```
 """
 function CosmoHyperrectangle(center::AbstractVector{<:Number}, sidelength::Number, sidelengths::Number...)
@@ -662,7 +665,7 @@ Return a `CosmoCuboid` centered around `center`, with the full side lengths `x`,
 
 ```jldoctest
 julia> CosmoCuboid([0.0, 0.0, 0.0], 2, 4, 6)
-CosmoCuboid{Float64}([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0])
+CosmoCuboid([-1.0, -2.0, -3.0], [1.0, 2.0, 3.0])
 ```
 """
 function CosmoCuboid(center::AbstractVector{<:Number}, x::Number, y::Number, z::Number)
@@ -695,7 +698,7 @@ Return a `CosmoRectangle` centered around `center`, with the full side lengths `
 
 ```jldoctest
 julia> CosmoRectangle([0.0, 0.0], 2, 4)
-CosmoRectangle{Float64}([-1.0, -2.0], [1.0, 2.0])
+CosmoRectangle([-1.0, -2.0], [1.0, 2.0])
 ```
 """
 function CosmoRectangle(center::AbstractVector{<:Number}, x::Number, y::Number)
@@ -721,7 +724,7 @@ The number of dimensions is the length of `center`.
 
 ```jldoctest
 julia> CosmoHypercube([0.0, 0.0, 0.0, 0.0], 1.0)
-CosmoHyperrectangle{Float64, 4}([-1.0, -1.0, -1.0, -1.0], [1.0, 1.0, 1.0, 1.0])
+CosmoHyperrectangle([-1.0, -1.0, -1.0, -1.0], [1.0, 1.0, 1.0, 1.0])
 ```
 """
 function CosmoHypercube(center::AbstractVector{<:Number}, radius::Number)
@@ -737,7 +740,7 @@ Return a cubic `CosmoCuboid` centered around `center` whose half side lengths ar
 
 ```jldoctest
 julia> CosmoCube([0.0, 0.0, 0.0], 1.0)
-CosmoCuboid{Float64}([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0])
+CosmoCuboid([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0])
 ```
 """
 function CosmoCube(center::AbstractVector{<:Number}, radius::Number)
@@ -753,7 +756,7 @@ Return a square `CosmoRectangle` centered around `center` whose half side length
 
 ```jldoctest
 julia> CosmoSquare([0.0, 0.0], 1.0)
-CosmoRectangle{Float64}([-1.0, -1.0], [1.0, 1.0])
+CosmoRectangle([-1.0, -1.0], [1.0, 1.0])
 ```
 """
 function CosmoSquare(center::AbstractVector{<:Number}, radius::Number)
@@ -817,7 +820,7 @@ end
 
 """
     struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
-        center::Vector{T}
+        center::SVector{N,T}
         radius::T
     end
 
@@ -837,13 +840,13 @@ julia> CosmoParticles.mask_in([0.5 2.0; 0.5 0.0; 0.0 0.0; 0.0 0.0], s)
 ```
 """
 struct CosmoHypersphere{T<:Number,N} <: AbstractCosmoGeometry
-    center::Vector{T}
+    center::SVector{N,T}
     radius::T
 
     function CosmoHypersphere{T,N}(center::AbstractVector{<:Number}, radius::Number) where {T<:Number,N}
         length(center) == N ||
             throw(DimensionMismatch("the center must have length $N, got length $(length(center))"))
-        new{T,N}(convert(Vector{T}, center), convert(T, radius))
+        new{T,N}(SVector{N,T}(center), convert(T, radius))
     end
 end
 
@@ -881,7 +884,7 @@ Returns an `N`-dimensional hypersphere around the origin.
 
 ```jldoctest
 julia> CosmoHypersphere(4, 1.0)
-CosmoHypersphere{Float64, 4}([0.0, 0.0, 0.0, 0.0], 1.0)
+CosmoHypersphere([0.0, 0.0, 0.0, 0.0], 1.0)
 ```
 """
 function CosmoHypersphere(N::Integer, radius::Number)
@@ -897,7 +900,7 @@ Returns a sphere around the origin.
 
 ```jldoctest
 julia> CosmoSphere(2.0)
-CosmoSphere{Float64}([0.0, 0.0, 0.0], 2.0)
+CosmoSphere([0.0, 0.0, 0.0], 2.0)
 ```
 """
 function CosmoSphere(radius::Number)
@@ -913,7 +916,7 @@ Returns a circle around the origin.
 
 ```jldoctest
 julia> CosmoCircle(2.0)
-CosmoCircle{Float64}([0.0, 0.0], 2.0)
+CosmoCircle([0.0, 0.0], 2.0)
 ```
 """
 function CosmoCircle(radius::Number)
@@ -995,8 +998,8 @@ end
 
 """
     struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
-        startpos::Vector{T}
-        endpos::Vector{T}
+        startpos::SVector{3,T}
+        endpos::SVector{3,T}
         radius::T
     end
 
@@ -1016,8 +1019,8 @@ julia> CosmoParticles.mask_in([0.5 0.5; 0.0 0.0; 1.0 3.0], c)
 ```
 """
 struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
-    startpos::Vector{T}
-    endpos::Vector{T}
+    startpos::SVector{3,T}
+    endpos::SVector{3,T}
     radius::T
 
     function CosmoCylinder{T}(startpos::AbstractVector, endpos::AbstractVector, radius) where {T<:Number}
@@ -1026,7 +1029,7 @@ struct CosmoCylinder{T<:Number} <: AbstractCosmoGeometry
                 "the start and end positions must have length 3, got lengths $(length(startpos)) and $(length(endpos))",
             ),
         )
-        return new{T}(convert(Vector{T}, startpos), convert(Vector{T}, endpos), convert(T, radius))
+        return new{T}(SVector{3,T}(startpos), SVector{3,T}(endpos), convert(T, radius))
     end
 end
 
@@ -1090,7 +1093,7 @@ end
 
 """
     struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
-        center::Vector{T}
+        center::SVector{3,T}
         height::T
         radius::T
     end
@@ -1112,14 +1115,14 @@ julia> CosmoParticles.mask_in([0.5 0.5; 0.0 0.0; 0.5 3.0], c)
 ```
 """
 struct CosmoStandingCylinder{T<:Number} <: AbstractCosmoGeometry
-    center::Vector{T}
+    center::SVector{3,T}
     height::T
     radius::T
 
     function CosmoStandingCylinder{T}(center::AbstractVector, height, radius) where {T<:Number}
         length(center) == 3 ||
             throw(DimensionMismatch("the center must have length 3, got length $(length(center))"))
-        return new{T}(convert(Vector{T}, center), convert(T, height), convert(T, radius))
+        return new{T}(SVector{3,T}(center), convert(T, height), convert(T, radius))
     end
 end
 
@@ -1138,7 +1141,8 @@ end
 
 
 function geometry_enclosing_corners(c::CosmoStandingCylinder)
-    c.center .- [c.radius, c.radius, 1 // 2 * c.height], c.center .+ [c.radius, c.radius, 1 // 2 * c.height]
+    halfsize = SVector(c.radius, c.radius, 1 // 2 * c.height)
+    return c.center .- halfsize, c.center .+ halfsize
 end
 
 geometry_enclosing_center(c::CosmoStandingCylinder) = c.center
@@ -1171,7 +1175,7 @@ Create a cylinder from a standing cylinder.
 
 ```jldoctest
 julia> CosmoCylinder(CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 1.0))
-CosmoCylinder{Float64}([0.0, 0.0, -1.0], [0.0, 0.0, 1.0], 1.0)
+CosmoCylinder([0.0, 0.0, -1.0], [0.0, 0.0, 1.0], 1.0)
 ```
 """
 function CosmoCylinder(c::CosmoStandingCylinder)
@@ -1194,7 +1198,7 @@ The end positions of the cylinder have to have the same x and y coordinates.
 julia> c = CosmoCylinder([0.0, 0.0, -1.0], [0.0, 0.0, 1.0], 1.0);
 
 julia> CosmoStandingCylinder(c)
-CosmoStandingCylinder{Float64}([0.0, 0.0, 0.0], 2.0, 1.0)
+CosmoStandingCylinder([0.0, 0.0, 0.0], 2.0, 1.0)
 ```
 """
 function CosmoStandingCylinder(c::CosmoCylinder)
@@ -1247,3 +1251,40 @@ for G in (CosmoUnionGeometry, CosmoIntersectGeometry, CosmoDiffGeometry, Rotated
     @eval Base.:(==)(g1::$G, g2::$G) = _fields_equal(g1, g2)
     @eval Base.hash(g::$G, h::UInt) = _fields_hash(g, h)
 end
+
+# Geometries are shown as the call that constructs them.
+function _show_call(io::IO, f, args...; kwargs...)
+    print(io, f, "(")
+    join(io, (_repr_arg(io, arg) for arg in args), ", ")
+    if !isempty(kwargs)
+        print(io, "; ")
+        join(io, ("$k=$(_repr_arg(io, v))" for (k, v) in kwargs), ", ")
+    end
+    print(io, ")")
+    return nothing
+end
+
+# Quantities are shown with the string macro of Unitful, e.g. as `[1.0, 2.0]u"m"`.
+_repr_arg(io::IO, x) = repr(x; context=io)
+_repr_arg(io::IO, x::Quantity) = string(repr(ustrip(x); context=io), _unit_string(unit(x)))
+function _repr_arg(io::IO, x::AbstractArray{<:Quantity})
+    isconcretetype(eltype(x)) || return repr(x; context=io)
+    return string(repr(ustrip.(x); context=io), _unit_string(unit(eltype(x))))
+end
+_unit_string(u) = string("u\"", replace(string(u), " " => "*"), "\"")
+
+function Base.show(io::IO, r::CosmoHyperrectangle{T,N}) where {T,N}
+    name = N == 3 ? "CosmoCuboid" : (N == 2 ? "CosmoRectangle" : "CosmoHyperrectangle")
+    _show_call(io, name, r.lowerleft, r.upperright)
+end
+function Base.show(io::IO, s::CosmoHypersphere{T,N}) where {T,N}
+    name = N == 3 ? "CosmoSphere" : (N == 2 ? "CosmoCircle" : "CosmoHypersphere")
+    _show_call(io, name, s.center, s.radius)
+end
+Base.show(io::IO, c::CosmoCylinder) = _show_call(io, "CosmoCylinder", c.startpos, c.endpos, c.radius)
+Base.show(io::IO, c::CosmoStandingCylinder) = _show_call(io, "CosmoStandingCylinder", c.center, c.height, c.radius)
+Base.show(io::IO, g::CosmoUnionGeometry) = _show_call(io, "union", g.geos...)
+Base.show(io::IO, g::CosmoIntersectGeometry) = _show_call(io, "intersect", g.geos...)
+Base.show(io::IO, g::CosmoDiffGeometry) = _show_call(io, "setdiff", g.geo, g.geos...)
+Base.show(io::IO, g::Rotated) = _show_call(io, "rotate", g.geo, g.rotmat)
+Base.show(io::IO, g::Translated) = _show_call(io, "translate", g.geo, g.Δx)

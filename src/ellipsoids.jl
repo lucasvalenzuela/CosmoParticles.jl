@@ -157,7 +157,7 @@ Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to 
 
 ```jldoctest
 julia> e = CosmoEllipse(2.0, 1.0)
-CosmoEllipse{Float64, Float64}(2.0, 0.5)
+CosmoEllipse(2.0; q=0.5)
 
 julia> CosmoParticles.mask_in([1.0 0.0 2.0; 0.0 1.5 0.5], e)
 3-element BitVector:
@@ -191,7 +191,7 @@ The axis ratio `q` has to satisfy `0 < q ≤ 1`.
 
 ```jldoctest
 julia> CosmoEllipse(2.0; q=0.5)
-CosmoEllipse{Float64, Float64}(2.0, 0.5)
+CosmoEllipse(2.0; q=0.5)
 ```
 """
 function CosmoEllipse(a::T; q::U=1, constant_area=false) where {T<:Number,U<:Real}
@@ -215,7 +215,7 @@ The semi-minor axis has to be smaller than the semi-major axis.
 
 ```jldoctest
 julia> CosmoEllipse(2.0, 1.0)
-CosmoEllipse{Float64, Float64}(2.0, 0.5)
+CosmoEllipse(2.0; q=0.5)
 ```
 """
 function CosmoEllipse(a::T1, b::T2) where {T1<:Number,T2<:Number}
@@ -227,10 +227,10 @@ end
 function geometry_enclosing_corners(e::CosmoEllipse)
     a = e.a
     b = a * e.q
-    return [-a, -b], [a, b]
+    return SVector(-a, -b), SVector(a, b)
 end
 
-geometry_enclosing_center(::CosmoEllipse{T}) where {T} = zeros(T, 2)
+geometry_enclosing_center(::CosmoEllipse{T}) where {T} = zero(SVector{2,T})
 
 function mask_in!(mask::BitVector, pos::AbstractMatrix{<:Number}, e::CosmoEllipse{T}) where {T}
     _check_mask_dims(mask, pos, 2)
@@ -268,7 +268,7 @@ as in `translate(rotate(e, R), center)`: this rotates the ellipsoid about its ow
 
 ```jldoctest
 julia> e = CosmoEllipsoid(4.0, 2.0, 1.0)
-CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+CosmoEllipsoid(4.0; q=0.5, s=0.25)
 
 julia> CosmoParticles.mask_in([3.0 0.0 0.0; 0.0 3.0 0.0; 0.0 0.0 0.5], e)
 3-element BitVector:
@@ -315,7 +315,7 @@ and passing only `s` an oblate one.
 
 ```jldoctest
 julia> CosmoEllipsoid(4.0; q=0.5, s=0.25)
-CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+CosmoEllipsoid(4.0; q=0.5, s=0.25)
 ```
 """
 function CosmoEllipsoid(a; q=1, s=q, constant_volume=false)
@@ -343,7 +343,7 @@ If `c` is `nothing`, a [`CosmoEllipse`](@ref) is created instead.
 
 ```jldoctest
 julia> CosmoEllipsoid(4.0, 2.0, 1.0)
-CosmoEllipsoid{Float64, Float64}(4.0, 0.5, 0.25)
+CosmoEllipsoid(4.0; q=0.5, s=0.25)
 ```
 """
 function CosmoEllipsoid(a::T1, b::T2, c::T3) where {T1<:Number,T2<:Number,T3<:Number}
@@ -357,10 +357,10 @@ function geometry_enclosing_corners(e::CosmoEllipsoid)
     a = e.a
     b = a * e.q
     c = a * e.s
-    return [-a, -b, -c], [a, b, c]
+    return SVector(-a, -b, -c), SVector(a, b, c)
 end
 
-geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zeros(T, 3)
+geometry_enclosing_center(::CosmoEllipsoid{T}) where {T} = zero(SVector{3,T})
 
 function mask_in!(
     mask::BitVector,
@@ -405,7 +405,7 @@ Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to 
 
 ```jldoctest
 julia> h = CosmoHomoeoid2D(1.0, 2.0; q=0.5)
-CosmoHomoeoid2D{Float64, Float64}(1.0, 2.0, 0.5)
+CosmoHomoeoid2D(1.0, 2.0; q=0.5)
 
 julia> CosmoParticles.mask_in([0.5 1.5 3.0; 0.0 0.0 0.0], h)
 3-element BitVector:
@@ -445,10 +445,10 @@ correspond to the inner or outer ellipse.
 
 ```jldoctest
 julia> CosmoHomoeoid2D(1.0, 2.0; q=0.5)
-CosmoHomoeoid2D{Float64, Float64}(1.0, 2.0, 0.5)
+CosmoHomoeoid2D(1.0, 2.0; q=0.5)
 
 julia> CosmoHomoeoid2D(2.0, 1.0; a2=4.0)
-CosmoHomoeoid2D{Float64, Float64}(2.0, 4.0, 0.5)
+CosmoHomoeoid2D(2.0, 4.0; q=0.5)
 ```
 """
 function CosmoHomoeoid2D(a1, a2_or_b; a2=nothing, q=1, constant_area=false)
@@ -482,10 +482,10 @@ end
 function geometry_enclosing_corners(e::CosmoHomoeoid2D)
     a = e.a2
     b = a * e.q
-    return [-a, -b], [a, b]
+    return SVector(-a, -b), SVector(a, b)
 end
 
-geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zeros(T, 2)
+geometry_enclosing_center(::CosmoHomoeoid2D{T}) where {T} = zero(SVector{2,T})
 
 function mask_in!(
     mask::BitVector,
@@ -526,7 +526,7 @@ Its axes lie along the coordinate axes; see [`CosmoEllipsoid`](@ref) for how to 
 
 ```jldoctest
 julia> h = CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
-CosmoHomoeoid{Float64, Float64}(1.0, 2.0, 0.5, 0.25)
+CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
 
 julia> CosmoParticles.mask_in([0.5 1.5 3.0; 0.0 0.0 0.0; 0.0 0.0 0.0], h)
 3-element BitVector:
@@ -565,7 +565,7 @@ and passing only `s` an oblate one.
 
 ```jldoctest
 julia> CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
-CosmoHomoeoid{Float64, Float64}(1.0, 2.0, 0.5, 0.25)
+CosmoHomoeoid(1.0, 2.0; q=0.5, s=0.25)
 ```
 """
 function CosmoHomoeoid(a1, a2; q=1, s=q, constant_volume=false)
@@ -606,7 +606,7 @@ If `c` is `nothing`, a [`CosmoHomoeoid2D`](@ref) is created instead.
 
 ```jldoctest
 julia> CosmoHomoeoid(2.0, 1.0, 0.5; a2=4.0)
-CosmoHomoeoid{Float64, Float64}(2.0, 4.0, 0.5, 0.25)
+CosmoHomoeoid(2.0, 4.0; q=0.5, s=0.25)
 ```
 """
 function CosmoHomoeoid(a::T1, b::Number, c::Number; a2::T2) where {T1<:Number,T2<:Number}
@@ -621,10 +621,10 @@ function geometry_enclosing_corners(e::CosmoHomoeoid)
     a = e.a2
     b = a * e.q
     c = a * e.s
-    return [-a, -b, -c], [a, b, c]
+    return SVector(-a, -b, -c), SVector(a, b, c)
 end
 
-geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zeros(T, 3)
+geometry_enclosing_center(::CosmoHomoeoid{T}) where {T} = zero(SVector{3,T})
 
 function mask_in!(
     mask::BitVector,
@@ -753,3 +753,8 @@ for G in (CosmoEllipse, CosmoEllipsoid, CosmoHomoeoid2D, CosmoHomoeoid)
     @eval Base.:(==)(e1::$G, e2::$G) = _fields_equal(e1, e2)
     @eval Base.hash(e::$G, h::UInt) = _fields_hash(e, h)
 end
+
+Base.show(io::IO, e::CosmoEllipse) = _show_call(io, "CosmoEllipse", e.a; e.q)
+Base.show(io::IO, e::CosmoEllipsoid) = _show_call(io, "CosmoEllipsoid", e.a; e.q, e.s)
+Base.show(io::IO, e::CosmoHomoeoid2D) = _show_call(io, "CosmoHomoeoid2D", e.a1, e.a2; e.q)
+Base.show(io::IO, e::CosmoHomoeoid) = _show_call(io, "CosmoHomoeoid", e.a1, e.a2; e.q, e.s)

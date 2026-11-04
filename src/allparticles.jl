@@ -215,7 +215,7 @@ function Base.keys(ap::AllParticles)
     keys_arr = [keys(ap.particle_collection[ptype]) for ptype in ap.ptypes]
     length(keys_arr) == 0 && return Symbol[]
     length(keys_arr) == 1 && return keys_arr[1]
-    return union(keys_arr...) |> collect
+    return unique(Iterators.flatten(keys_arr))
 end
 
 Base.values(p::AllParticles) = Iterators.map(key -> getindex(p, key), keys(p))

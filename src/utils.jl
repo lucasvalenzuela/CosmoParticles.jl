@@ -193,7 +193,7 @@ end
 
 Remove indices of a `Vector` or `Matrix`.
 
-The vector `ind` has to contain sorted and unique indices: `sort!(unique!(ind))`.
+The vector `ind` has to contain unique and sorted indices: `sort!(unique!(ind))`.
 Additionally, all elements in `ind` have to be valid indices in `a`.
 
 The following indexing is applied:
@@ -206,7 +206,7 @@ _removeind(a::AbstractFillVector, ind::AbstractVector) = a[begin:(end - length(i
 # strictly increasing order.
 function _check_removeind(a::AbstractArray, ind::AbstractVector)
     Base.require_one_based_indexing(a, ind)
-    issorted(ind; lt=(≤)) || throw(ArgumentError("the indices to remove must be sorted and unique"))
+    issorted(ind; lt=(≤)) || throw(ArgumentError("indices must be unique and sorted"))
     return nothing
 end
 
@@ -265,10 +265,27 @@ function _removeind(a::AbstractMatrix, ind::AbstractVector)
     end
 end
 
+# The indices are checked once for all properties, before the properties are changed in parallel. A mask of the
+# particles is converted to the indices of the particles to remove.
+function _removal_indices(p::AbstractParticles, mask::AbstractVector{Bool})
+    n = particle_number(p)
+    length(mask) == n ||
+        throw(DimensionMismatch("the mask has length $(length(mask)), but there are $n particles"))
+    return findall(mask)
+end
+function _removal_indices(p::AbstractParticles, ind::AbstractVector)
+    Base.require_one_based_indexing(ind)
+    issorted(ind; lt=(≤)) || throw(ArgumentError("indices must be unique and sorted"))
+    isempty(ind) || (1 ≤ first(ind) && last(ind) ≤ particle_number(p)) || throw(BoundsError(p, ind))
+    return ind
+end
+
 """
     CosmoParticles.removeind!(p::AbstractParticles, ind::AbstractVector)
 
-In-place removal of indices to all particle properties.
+In-place removal of the particles at the indices `ind` from all particle properties.
+
+As for [`Base.deleteat!`](@extref), the indices must be unique and sorted, or `ind` is a `Bool` mask of the particles.
 
 # Examples
 ```jldoctest
@@ -283,6 +300,7 @@ julia> p[:mass]
 ```
 """
 function removeind!(p::AbstractParticles, ind::AbstractVector)
+    ind = _removal_indices(p, ind)
     Threads.@threads for key in keys(p) |> collect # collect used for compatibility with threads
         _setprop!(p, key, _removeind(p[key], ind))
     end
@@ -293,7 +311,9 @@ end
 """
     CosmoParticles.removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
 
-Create new particles without the given indices or mask applied to all particle properties.
+Create new particles without the particles at the indices `ind`.
+
+As for [`Base.deleteat!`](@extref), the indices must be unique and sorted, or `ind` is a `Bool` mask of the particles.
 
 If the keyword argument `affect` is a vector of `Symbol`s, only those properties are indexed into and
 added to the newly created particles object.
@@ -309,6 +329,7 @@ julia> CosmoParticles.removeind(p, [2])[:mass]
 ```
 """
 function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
+    ind = _removal_indices(p, ind)
     affected_keys = intersect(affect, keys(p)) |> collect # collect used for compatibility with threads
 
     # preallocate particles (to avoid threading issues)
