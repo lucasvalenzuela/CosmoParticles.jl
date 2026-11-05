@@ -3,16 +3,20 @@
 
 Abstract supertype for storing data of multiple particle types.
 
-The particles are expected to be stored in a `Dict{Symbol,<:AbstractParticles}`.
+The particles are expected to be stored in an `AbstractDict{Symbol,<:AbstractParticles}`, such as the
+[`OrderedDict`](@extref OrderedCollections.OrderedDict) of [`ParticleCollection`](@ref).
 
 The inbuilt functionality of `AbstractParticleCollection` includes accessing and setting properties
 via the following syntax:
-```julia
-P<:AbstractParticles
-pc::<:AbstractParticleCollection{P}
-p::<:P
-pc.dm = p
-pc[:dm] === p
+```jldoctest
+julia> pc = ParticleCollection();
+
+julia> p = Particles(:dm, :id => [1, 2, 3]);
+
+julia> pc.dm = p;
+
+julia> pc[:dm] === p
+true
 ```
 
 In addition, the following syntax is equivalent to creating an [`AllParticles`](@ref) object: `pc.all`.
@@ -22,28 +26,46 @@ If the struct has additional fields, these can also be accessed by `pc.field`, b
 `pc[:field]`. The latter syntax can only be used to access the particles.
 
 # Methods
-The methods `Base.keys`, `Base.values`, `Base.haskey`, `Base.empty`, `Base.empty!`, `Base.isempty`, and
-`Base.copy!` are forwarded to the particle `Dict`.
+The methods [`Base.keys`](@extref), [`Base.values`](@extref), [`Base.haskey`](@extref),
+[`Base.empty!`](@extref), [`Base.isempty`](@extref), and [`Base.copy!`](@extref) are forwarded to the particle
+dictionary.
 
 Concrete types of `AbstractParticleCollection` should have the following methods implemented
 (also see the implementation of [`ParticleCollection`](@ref)):
-- `Base.copy`: returns new object containing a copy of the `Dict`
-- `Base.empty`: returns an identical object, but with an empty `Dict`
-- `Base.:(==)`
+- [`Base.copy`](@extref): returns new object containing a copy of the dictionary, with the same particle objects
+- [`Base.empty`](@extref): returns an identical object, but with an empty dictionary
+- [`Base.:(==)`](@extref)
+- [`Base.hash`](@extref): equal objects must have equal hashes
 - [`redshift`](@ref): implement this if the redshift of the particle collection is non-zero
-- `Base.propertynames`: implement this if there are additional struct fields
-- `Base.show(io, mime, pc)`
+- [`Base.propertynames`](@extref): implement this if there are additional struct fields
+- [`Base.show(io, mime, pc)`](@extref Base.show-Tuple{IO, Any, Any})
+
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]));
+
+julia> collect(keys(pc))
+2-element Vector{Symbol}:
+ :dm
+ :gas
+```
 """
 abstract type AbstractParticleCollection{AP} end
 
 """
-    get_particles(pc::AbstractParticleCollection)
+    CosmoParticles.get_particles(pc::AbstractParticleCollection)
 
-Return the particles `Dict` belonging to the particle collection.
+Return the particles dictionary belonging to the particle collection.
 
 This returns `pc.particles` by default if not overridden.
 
-This is not exported.
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]));
+
+julia> CosmoParticles.get_particles(pc) === pc.particles
+true
+```
 """
 get_particles(pc::AbstractParticleCollection) = pc.particles
 
@@ -82,18 +104,22 @@ Base.isempty(pc::AbstractParticleCollection) = isempty(get_particles(pc))
 Base.copy!(dst::AbstractParticleCollection, src::AbstractParticleCollection) =
     (copy!(get_particles(dst), get_particles(src)); dst)
 
-# to implement:
-# Base.copy(pc::AbstractParticleCollection) = AbstractParticleCollection(copy(pc.particles))
-# Base.empty(pc::AbstractParticleCollection) = AbstractParticleCollection(empty(pc.particles))
-# Base.:(==)(pc1::AbstractParticleCollection, pc2::AbstractParticleCollection) = pc1.particles == pc2.particles
-
 """
     redshift(pc::AbstractParticleCollection) = 0
 
 Returns the redshift at which the particles are located.
 
-By default, 0 is returned. This method should be overridden for concrete types of `AbstractParticleCollection`
+By default, 0 is returned. This method should be overridden for concrete types of [`AbstractParticleCollection`](@ref)
 for which the redshift differs.
+
+# Examples
+```jldoctest
+julia> redshift(ParticleCollection())
+0
+
+julia> redshift(RedshiftParticleCollection(0.5))
+0.5
+```
 """
 redshift(pc::AbstractParticleCollection) = 0
 
@@ -102,10 +128,19 @@ redshift(pc::AbstractParticleCollection) = 0
 
 Prints the properties of the particles in the collection.
 
-Should be used internally when overriding `Base.show` for concrete implementations of
-`AbstractParticleCollection`.
+Should be used internally when overriding [`Base.show`](@extref Base.show-Tuple{IO, Any, Any}) for concrete
+implementations of [`AbstractParticleCollection`](@ref).
 
-This is not exported.
+# Examples
+```jldoctest
+julia> pc = ParticleCollection(Particles(:dm, :id => [1, 2]), Particles(:gas, :id => [3]));
+
+julia> CosmoParticles.show_properties(stdout, "text/plain", pc)
+dm: 2 Particles
+ id
+gas: 1 Particles
+ id
+```
 """
 show_properties(io::IO, mime::AbstractString, p::AbstractParticleCollection) =
     show_properties(io, MIME(mime), p)

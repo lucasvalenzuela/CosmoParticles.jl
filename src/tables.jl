@@ -1,123 +1,196 @@
 Tables.istable(::Type{<:AbstractParticles}) = true
-
-function Tables.schema(p::AbstractParticles)
-    t = _get_eltype.(values(p))
-    return Tables.Schema(Tables.columnnames(p), t)
-end
-
-_get_eltype(::T) where {T} = T
-_get_eltype(::AbstractVector{T}) where {T} = T
-_get_eltype(::AbstractMatrix{T}) where {T} = Vector{T}
-
 Tables.columnaccess(::Type{<:AbstractParticles}) = true
-Tables.columns(p::AbstractParticles) = p
 
-function Tables.getcolumn(p::AbstractParticles, ::Type{T}, col::Int, nm::Symbol) where {T}
-    val = p[nm]
-    return val isa AbstractVector ? val : fill(val, nrow(p))
+# The columns are determined once for a table conversion, so that consumers that read the columns one by one do
+# not determine them again for each column.
+function Tables.columns(p::AbstractParticles)
+    cols = _table_columns(p)
+    values =
+        OrderedDict{Symbol,AbstractVector}(name => _table_column(p, key, row) for (name, key, row) in cols)
+    return Tables.DictColumnTable(_table_schema(p, cols), values)
 end
 
-function Tables.getcolumn(p::AbstractParticles, ::Type{<:Vector}, col::Int, nm::Symbol)
-    eachcol(p[nm])
+# The table has one column per vector property and per row of a matrix property. The rows of a matrix are named as
+# in the underscore access of `getindex`: by their row names for a `NamedRowMatrix`, by `x`, `y`, `z` for two or
+# three rows, and by their numbers otherwise. The column names must be unique, which fails, e.g., for a vector
+# property `:pos_x` next to the matrix property `:pos`, whose first row is also named `pos_x`.
+function _table_columns(p::AbstractParticles)
+    cols = Tuple{Symbol,Symbol,Int}[] # column name, property, and row of a matrix property (0 for others)
+    for key in keys(p)
+        vals = p[key]
+        if vals isa AbstractMatrix
+            for (row, suffix) in zip(1:size(vals, 1), _row_suffixes(vals))
+                push!(cols, (Symbol(key, "_", suffix), key, row))
+            end
+        else
+            push!(cols, (key, key, 0))
+        end
+    end
+    _check_unique_columns(cols)
+    return cols
+end
+
+function _check_unique_columns(cols)
+    allunique(name for (name, _, _) in cols) && return nothing
+    sources = Dict{Symbol,Tuple{Symbol,Int}}()
+    for (name, key, row) in cols
+        haskey(sources, name) && throw(
+            ArgumentError(
+                "the table column :$name is given by both $(_column_source(sources[name]...)) and " *
+                _column_source(key, row),
+            ),
+        )
+        sources[name] = (key, row)
+    end
+end
+
+_column_source(key, row) = row == 0 ? "the property :$key" : "row $row of the matrix property :$key"
+
+_row_suffixes(vals::NamedRowMatrix) = rownames(vals)
+_row_suffixes(vals::AbstractMatrix) = 2 ≤ size(vals, 1) ≤ 3 ? (:x, :y, :z) : 1:size(vals, 1)
+
+function _table_column(p::AbstractParticles, key::Symbol, row::Int)
+    vals = p[key]
+    row == 0 || return @view vals[row, :]
+    return vals
+end
+
+
+Tables.columnnames(p::AbstractParticles) = [name for (name, _, _) in _table_columns(p)]
+
+Tables.schema(p::AbstractParticles) = _table_schema(p, _table_columns(p))
+
+function _table_schema(p::AbstractParticles, cols)
+    names = [name for (name, _, _) in cols]
+    types = [eltype(p[key]) for (_, key, _) in cols]
+    return Tables.Schema(names, types)
 end
 
 function Tables.getcolumn(p::AbstractParticles, nm::Symbol)
-    val = p[nm]
-    T = _get_eltype(val)
-    if T <: Vector
-        return eachcol(val)
-    else
-        return val isa AbstractVector ? val : fill(val, nrow(p))
+    cols = _table_columns(p)
+    i = findfirst(col -> col[1] === nm, cols)
+    if isnothing(i)
+        matrix_cols = [name for (name, key, row) in cols if key === nm && row > 0]
+        isempty(matrix_cols) || throw(
+            ArgumentError(
+                "the matrix property :$nm is not a table column, its rows are the columns " *
+                join(repr.(matrix_cols), ", "),
+            ),
+        )
+        throw(ArgumentError("there is no table column :$nm"))
     end
+    _, key, row = cols[i]
+    return _table_column(p, key, row)
+end
+
+Tables.istable(::Type{<:AbstractParticleCollection}) = true
+Tables.columnaccess(::Type{<:AbstractParticleCollection}) = true
+
+# The table of a collection has a first column `ptype` with the particle type of each particle, followed by the
+# columns of all particles, as given by `pc.all`, with `missing` values for the properties of other particle types.
+function Tables.columns(pc::AbstractParticleCollection)
+    cols = Tables.columns(AllParticles(pc))
+    names = Tables.columnnames(cols)
+    :ptype in names && throw(
+        ArgumentError("the table column :ptype is given by both the particle types and the property :ptype"),
+    )
+    ptypes = Symbol[ptype for ptype in keys(pc) for _ in 1:particle_number(pc[ptype])]
+    values = OrderedDict{Symbol,AbstractVector}(:ptype => ptypes)
+    for name in names
+        values[name] = Tables.getcolumn(cols, name)
+    end
+    schema = Tables.Schema([:ptype; collect(names)], [Symbol; collect(Tables.schema(cols).types)])
+    return Tables.DictColumnTable(schema, values)
 end
 
 function Tables.getcolumn(p::AbstractParticles, i::Int)
-    j = 0
-    for key in Tables.columnnames(p)
-        j += 1
-        i == j && return Tables.getcolumn(p, key)
-    end
-
-    error("Column $(i) is out of bounds, only $j columns available.")
+    _, key, row = _table_columns(p)[i]
+    return _table_column(p, key, row)
 end
 
-Tables.columnnames(p::AbstractParticles) = ParticlesColumnKeySet(p)
+Tables.getcolumn(p::AbstractParticles, ::Type, i::Int, ::Symbol) = Tables.getcolumn(p, i)
 
-Tables.DataAPI.ncol(p::AbstractParticles) = length(Tables.columnnames(p))
+Tables.DataAPI.ncol(p::AbstractParticles) = length(_table_columns(p))
 Tables.DataAPI.nrow(p::AbstractParticles) = particle_number(p)
 
+"""
+    Particles(type::Symbol, table)
 
-# iterate columns as vector accessors
-struct ParticlesColumnKeySet{P<:AbstractParticles} <: AbstractSet{Symbol}
-    particles::P
+Create particles of the given `type` from a table that implements the
+[Tables.jl](https://github.com/JuliaData/Tables.jl) interface.
+
+Consecutive columns that share the name before their last underscore become the rows of a matrix property if their
+suffixes are `x`, `y`, and possibly `z`, or `1`, `2`, ..., in this order. For example, the columns `pos_x`, `pos_y`,
+and `pos_z` become the ``3×N`` matrix `pos`, but the columns `pos_y` and `pos_x` stay vectors. Only the suffix after the last underscore is considered, so the columns `pos_x_1` and
+`pos_x_2` become the ``2×N`` matrix `pos_x`. Columns are not combined if another column has the name of the matrix.
+All other columns become vector properties, which includes the rows of a
+[`NamedRowMatrix`](@extref NamedRowArrays.NamedRowMatrix) in the table of particles.
+
+# Examples
+```jldoctest
+julia> using Tables
+
+julia> p = Particles(:dm, :id => [1, 2], :pos => [1.0 2.0; 3.0 4.0; 5.0 6.0]);
+
+julia> t = Tables.columntable(p);
+
+julia> keys(t)
+(:id, :pos_x, :pos_y, :pos_z)
+
+julia> Particles(:dm, t) == p
+true
+```
+"""
+function Particles(type::Symbol, table)
+    Tables.istable(table) || throw(ArgumentError("a value of type $(typeof(table)) is not a table"))
+    cols = Tables.columns(table)
+    props = OrderedDict{Symbol,Any}()
+    for (key, colnames) in _table_props(collect(Symbol, Tables.columnnames(cols)))
+        if length(colnames) == 1 && colnames[1] === key
+            props[key] = Tables.getcolumn(cols, key)
+        else
+            props[key] = stack((Tables.getcolumn(cols, name) for name in colnames); dims=1)
+        end
+    end
+    return Particles(type, props)
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", pk::ParticlesColumnKeySet)
-    print(io, "ParticlesColumnKeySet for a ")
-    summary(io, pk.particles)
+# Pairs of the property name and its column names. Consecutive columns that share the name before their last underscore
+# form the rows of a matrix if their suffixes are `x`, `y`, and possibly `z`, or `1`, `2`, ..., in this order.
+function _table_props(names::Vector{Symbol})
+    props = Pair{Symbol,Vector{Symbol}}[]
+    i = firstindex(names)
+    while i ≤ lastindex(names)
+        key, suffix = _split_suffix(names[i])
+        n = 1 # number of matrix rows
+        if !isnothing(suffix) && !(key in names)
+            while i + n ≤ lastindex(names)
+                expected = _row_suffix(suffix, n + 1)
+                (!isnothing(expected) && _split_suffix(names[i + n]) == (key, expected)) || break
+                n += 1
+            end
+        end
+        if n ≥ 2
+            push!(props, key => names[i:(i + n - 1)])
+        else
+            push!(props, names[i] => [names[i]])
+        end
+        i += n
+    end
+    return props
 end
 
-function Base.length(pk::ParticlesColumnKeySet)
-    i = 0
-    for _ in pk
-        i += 1
-    end
-    return i
+# The name before the last underscore and the suffix after it, or `nothing`s if there is no such underscore.
+function _split_suffix(name::Symbol)
+    str = String(name)
+    i = findlast('_', str)
+    (isnothing(i) || i == firstindex(str) || i == lastindex(str)) && return nothing, nothing
+    return Symbol(str[begin:prevind(str, i)]), str[nextind(str, i):end]
 end
 
-Base.isempty(pk::ParticlesColumnKeySet) = isempty(pk.particles)
-
-function Base.iterate(pk::ParticlesColumnKeySet)
-    isempty(pk) && return nothing
-
-    p = pk.particles
-    dkey, dkey_state = iterate(keys(p))
-
-    vals = p[dkey]
-    if vals isa AbstractMatrix
-        dims = size(vals, 1)
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, dims)
-        return key_col, (dkey, dkey_state, dims)
-    end
-
-    return dkey, (dkey, dkey_state, 1) # 1 is how many dimensions the dkey has
-end
-
-function Base.iterate(pk::ParticlesColumnKeySet, (dkey, dkey_state, state))
-    p = pk.particles
-
-    if state > 1
-        vals = p[dkey]
-        dims = size(vals, 1)
-        state -= 1
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, state)
-        return key_col, (dkey, dkey_state, state)
-    end
-
-
-    it = iterate(keys(p), dkey_state)
-    isnothing(it) && return nothing
-
-    dkey, dkey_state = it
-
-    vals = p[dkey]
-    if vals isa AbstractMatrix
-        dims = size(vals, 1)
-        key_col = _get_current_matrix_column_key(vals, dkey, dims, dims)
-        return key_col, (dkey, dkey_state, dims)
-    end
-
-    return dkey, (dkey, dkey_state, 1) # 1 is how many dimensions the dkey has
-end
-
-function _get_current_matrix_column_key(vals::AbstractMatrix, dkey, dims, i)
-    ind = dims - i + 1
-
-    if vals isa NamedRowMatrix
-        postfix = string("_", rownames(vals)[ind])
-    else
-        postfix = dims ≤ 3 ? ("_x", "_y", "_z")[ind] : "_$ind"
-    end
-
-    return Symbol(dkey, postfix)
+# The suffix of row `k` of a matrix whose first row has the suffix `first`, or `nothing` if there is no such row.
+function _row_suffix(first::AbstractString, k::Integer)
+    first == "x" && return k ≤ 3 ? ("x", "y", "z")[k] : nothing
+    first == "1" && return string(k)
+    return nothing
 end

@@ -7,6 +7,9 @@ using LazyArrays
 using LinearAlgebra
 using NamedRowArrays
 using NamedRowArrays: rownames
+using OrderedCollections: OrderedDict
+using PrecompileTools: @compile_workload, @setup_workload
+using StaticArrays: SVector
 using Statistics
 using StatsBase
 using Tables
@@ -75,16 +78,65 @@ export
     coldot,
     angmom,
     angmomtot,
-    angmomtot_stable,
 
     # ellipsoids
     triaxiality,
     ellipticity,
     eccentricity,
+    axis_lengths,
 
     # tables
     nrow,
     ncol
+
+public
+    # interface for particle types and collections
+    get_props,
+    get_particles,
+    particle_name,
+    particle_number,
+    particle_collection,
+    show_properties,
+
+    # geometry
+    geometry_enclosing_corners,
+    geometry_enclosing_center,
+    mask_in,
+    mask_in!,
+    CosmoUnionGeometry,
+    CosmoIntersectGeometry,
+    CosmoDiffGeometry,
+    Rotated,
+    Translated,
+    rotation_matrix,
+    rotation_matrix_inv,
+
+    # indexing
+    applyind,
+    applyind!,
+    removeind,
+    removeind!,
+    deleteat,
+    findall_in,
+    findall_in_sorted,
+
+    # projections
+    get_dims,
+    get_losdim,
+
+    # transformations
+    matrix_rotate,
+    matrix_rotate!,
+    factor_to_comoving,
+    factor_to_physical,
+
+    # units
+    product_preserve_type,
+    product_preserve_type!,
+    ustrip_lazy,
+    ustrip_lazy!,
+    uconvert_lazy,
+    uconvert_lazy!
 
 
 include("abstractparticles.jl")
@@ -100,5 +152,7 @@ include("transformations.jl")
 include("miscoperations.jl")
 include("properties.jl")
 include("tables.jl")
+
+include("precompile.jl")
 
 end

@@ -1,9 +1,20 @@
 """
-    meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted::Bool=true)
+    meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted=true)
 
 Returns the mean of the specified property over all particles.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 3.0], :temp => [1.0, 5.0]);
+
+julia> meanprop(p, :temp)
+4.0
+
+julia> meanprop(p, :temp; massweighted=false)
+3.0
+```
 """
 function meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweighted=true)
     if massweighted
@@ -13,8 +24,6 @@ function meanprop(p::AbstractParticles, prop::Symbol; massprop=:mass, massweight
     end
 end
 
-_meanprop(a::Number) = a
-_meanprop(a::Number, ::Any) = a
 _meanprop(a::AbstractFillVector) = a[1]
 _meanprop(a::AbstractFillVector, ::AbstractVector) = a[1]
 _meanprop(a::AbstractFillVector, ::AbstractFillVector) = a[1]
@@ -32,7 +41,7 @@ function _meanprop(a::AbstractMatrix, m::AbstractVector)
 end
 _meanprop(a::AbstractFillMatrix) = Fill(a[1, 1], size(a, 1))
 _meanprop(a::AbstractFillMatrix, ::AbstractVector) = _meanprop(a)
-_meanprop(a::AbstractArray, ::Number) = _meanprop(a)
+_meanprop(a::AbstractFillMatrix, ::AbstractFillVector) = _meanprop(a)
 _meanprop(a::AbstractVector, ::AbstractFillVector) = _meanprop(a)
 _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
 
@@ -41,13 +50,21 @@ _meanprop(a::AbstractMatrix, ::AbstractFillVector) = _meanprop(a)
     sumprop(p::AbstractParticles, prop::Symbol)
 
 Returns the sum of the specified property over all particles.
-"""
-sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p, p[prop])
 
-_sumprop(p::AbstractParticles, a::Number) = particle_number(p) * a
-_sumprop(::AbstractParticles, a::AbstractVecOrMat) = _sumprop(a)
+For a matrix property, the sums of its rows are returned as a `Vector`.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :mass => [1.0, 2.0, 3.0]);
+
+julia> sumprop(p, :mass)
+6.0
+```
+"""
+sumprop(p::AbstractParticles, prop::Symbol) = _sumprop(p[prop])
+
 _sumprop(a::AbstractVector) = sum(a)
-_sumprop(a::AbstractMatrix) = sum(a; dims=2)
+_sumprop(a::AbstractMatrix) = [sum(@view a[i, :]) for i in axes(a, 1)]
 
 
 """
@@ -55,36 +72,73 @@ _sumprop(a::AbstractMatrix) = sum(a; dims=2)
 
 Returns the mean of the particles' positions.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :pos => [0.0 2.0; 0.0 4.0; 0.0 6.0], :mass => [1.0, 1.0]);
+
+julia> meanpos(p)
+3-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+```
 """
 meanpos(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true) =
     meanprop(p, prop; massprop, massweighted)
 
 """
-    meanvel(p::AbstractParticles, prop::Symbol=:pos; massprop=:mass, massweighted=true)
+    meanvel(p::AbstractParticles, prop::Symbol=:vel; massprop=:mass, massweighted=true)
 
 Returns the mean of the particles' velocities.
 
-The mean can be weighted by the mass.
+The mean is weighted by the mass by default.
+
+# Examples
+```jldoctest
+julia> p = Particles(:dm, :vel => [0.0 2.0; 0.0 4.0; 0.0 6.0], :mass => [1.0, 1.0]);
+
+julia> meanvel(p)
+3-element Vector{Float64}:
+ 1.0
+ 2.0
+ 3.0
+```
 """
 meanvel(p::AbstractParticles, prop::Symbol=:vel; massprop=:mass, massweighted=true) =
     meanprop(p, prop; massprop, massweighted)
 
 
 """
-    angmom(p::AbstractParticles)
+    angmom(p::AbstractParticles; kwargs...)
 
 Returns the individual angular momenta of the particles.
 
 If `angmomprop` is a `Symbol`, the already computed angular momenta are returned directly if they exist.
 
 # Keyword Arguments
-- `origin=Nothing`: origin of the coordinate system for the computation of the angular momentum
-- `velorigin=Nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
+- `origin=nothing`: origin of the coordinate system for the computation of the angular momentum
+- `velorigin=nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
 - `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
+
+julia> angmom(p)
+3×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.0   0.0
+ 1.0  -2.0
+```
 """
 function angmom(
     p::AbstractParticles;
@@ -100,19 +154,35 @@ function angmom(
 end
 
 """
-    angmomtot(p::AbstractParticles)
+    angmomtot(p::AbstractParticles; kwargs...)
 
 Returns the total angular momentum of the particles.
 
 If `angmomprop` is a `Symbol`, the total angular momentum is computed from the already existing angular momenta.
 
 # Keyword Arguments
-- `origin=Nothing`: origin of the coordinate system for the computation of the angular momentum
-- `velorigin=Nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
+- `origin=nothing`: origin of the coordinate system for the computation of the angular momentum
+- `velorigin=nothing`: relative velocity zero-point, oftentimes the velocity of the center of mass
 - `posprop=:pos`: property name of the position
 - `velprop=:vel`: property name of the velocity
 - `massprop=:mass`: property name of the mass
 - `angmomprop=nothing`: property name of the angular momentum - the method checks whether it already exists or not. Warning: The method assumes the already saved property to have used the same `origin` and `velorigin`.
+- `stable=false`: whether to sum pairwise, see the method for arrays below
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> p = Particles(:dm, :pos => pos, :vel => vel, :mass => [1.0, 2.0]);
+
+julia> angmomtot(p)
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+```
 """
 function angmomtot(
     p::AbstractParticles;
@@ -122,32 +192,10 @@ function angmomtot(
     velprop=:vel,
     massprop=:mass,
     angmomprop=nothing,
+    stable=false,
 )
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
-    return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin)
-end
-
-"""
-    angmomtot_stable(p::AbstractParticles)
-
-Returns the total angular momentum of the particles, like [`angmomtot`](@ref).
-
-Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
-[`angmomtot`](@ref).
-
-See [`angmomtot`](@ref) for the available keyword arguments.
-"""
-function angmomtot_stable(
-    p::AbstractParticles;
-    origin=nothing,
-    velorigin=nothing,
-    posprop=:pos,
-    velprop=:vel,
-    massprop=:mass,
-    angmomprop=nothing,
-)
-    !isnothing(angmomprop) && haskey(p, angmomprop) && return dropdims(sumprop(p, angmomprop); dims=2)
-    return angmomtot_stable(p[posprop], p[velprop], p[massprop]; origin, velorigin)
+    !isnothing(angmomprop) && haskey(p, angmomprop) && return sumprop(p, angmomprop)
+    return angmomtot(p[posprop], p[velprop], p[massprop]; origin, velorigin, stable)
 end
 
 
@@ -158,68 +206,84 @@ end
 Returns a new `Vector` with the columnwise norms of `a` around `origin`.
 
 This method does not check for overflow of the squared norm.
+
+# Examples
+```jldoctest
+julia> a = [3.0 0.0 0.0; 4.0 5.0 1.0];
+
+julia> colnorm(a)
+3-element Vector{Float64}:
+ 5.0
+ 5.0
+ 1.0
+
+julia> colnorm(a, [3.0, 1.0])
+3-element Vector{Float64}:
+ 3.0
+ 5.0
+ 3.0
+```
 """
 function colnorm(a::AbstractMatrix{T}) where {T}
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a)
 end
 
 function colnorm(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
-    @assert size(a, 1) == length(origin)
+    _check_origin_length(a, origin)
     T === T0 || (origin = convert(Vector{T}, origin))
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(float, T)}(undef, size(a, 2))
     return _colnorm_unsafe!(dst, a, origin)
 end
 
 """
-    colnorm2(a::AbstractMatrix[, origin:AbstractVector])
+    colnorm2(a::AbstractMatrix[, origin::AbstractVector])
 
 Returns a new `Vector` with the columnwise squared norms of `a` around `origin`.
+
+# Examples
+```jldoctest
+julia> a = [3.0 0.0 0.0; 4.0 5.0 1.0];
+
+julia> colnorm2(a)
+3-element Vector{Float64}:
+ 25.0
+ 25.0
+  1.0
+
+julia> colnorm2(a, [0.0, 1.0])
+3-element Vector{Float64}:
+ 18.0
+ 16.0
+  0.0
+```
 """
 function colnorm2(a::AbstractMatrix{T}) where {T}
-    dst = Vector{T}(undef, size(a, 2))
+    dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
     return _colnorm2_unsafe!(dst, a)
 end
 
-function colnorm2(a::AbstractMatrix{Q}) where {T,Q<:Quantity{T}}
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a)
+function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector) where {T}
+    _check_origin_length(a, origin)
+    dst = Vector{Base.promote_op(abs2, T)}(undef, size(a, 2))
+    return _colnorm2_unsafe!(dst, a, _help_convert_origin(T, origin))
 end
 
-function colnorm2(a::AbstractMatrix{Union{Missing,Q}}) where {T,Q<:Quantity{T}}
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a)
+
+function _check_origin_length(a::AbstractMatrix, origin::AbstractVector)
+    size(a, 1) == length(origin) || throw(
+        DimensionMismatch(
+            "the origin must have length $(size(a, 1)) like the matrix rows, got length $(length(origin))",
+        ),
+    )
+    return nothing
 end
 
-function colnorm2(a::AbstractMatrix{T}, origin::AbstractVector{T0}) where {T,T0}
-    @assert size(a, 1) == length(origin)
-    T === T0 || (origin = convert(Vector{T}, origin))
-    dst = Vector{T}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
+function _check_same_size(a::AbstractMatrix, b::AbstractMatrix)
+    size(a) == size(b) ||
+        throw(DimensionMismatch("the matrices must have the same size, got $(size(a)) and $(size(b))"))
+    return nothing
 end
-
-function colnorm2(a::AbstractMatrix{Q}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
-    @assert size(a, 1) == length(origin)
-    Q === Q0 || (origin = convert(Vector{Q}, origin))
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Q²}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
-end
-
-function colnorm2(a::AbstractMatrix{Union{Missing,Q}}, origin::AbstractVector{Q0}) where {T,Q<:Quantity{T},Q0}
-    @assert size(a, 1) == length(origin)
-    Q === Q0 || (origin = convert(Vector{Q}, origin))
-    u = unit(Q)^2
-    Q² = Quantity{T,dimension(u),typeof(u)}
-    dst = Vector{Union{Missing,Q²}}(undef, size(a, 2))
-    return _colnorm2_unsafe!(dst, a, origin)
-end
-
 
 function _colnorm_unsafe! end
 function _colnorm2_unsafe! end
@@ -227,6 +291,7 @@ function _colnorm2_unsafe! end
 for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2), :(zero(T))])
     quote
         function $(Symbol(name, "!"))(dst::AbstractVector{T}, a::AbstractMatrix) where {T}
+            Base.require_one_based_indexing(dst, a)
             dims = size(a, 1)
             if dims == 2
                 return $(Symbol(name, "_2D!"))(dst, a)
@@ -242,6 +307,7 @@ for (name, zeroT2) in zip(["_colnorm_unsafe", "_colnorm2_unsafe"], [:(zero(T)^2)
             a::AbstractMatrix,
             origin::AbstractVector,
         ) where {T}
+            Base.require_one_based_indexing(dst, a, origin)
             dims = size(a, 1)
             if dims == 2
                 return $(Symbol(name, "_2D!"))(dst, a, origin)
@@ -369,54 +435,32 @@ end
 """
     coldot(a::AbstractMatrix, b::AbstractMatrix)
 
-Returns the dot products of the matrix columns as a new matrix.
+Returns the dot products of the matrix columns as a new vector.
 
 Both input matrices need to have the same dimensions ``d × N``, representing ``N`` ``d``-dimensional vectors.
+
+# Examples
+```jldoctest
+julia> coldot([1.0 2.0 3.0; 4.0 5.0 6.0], [1.0 0.0 1.0; 0.0 1.0 1.0])
+3-element Vector{Float64}:
+ 1.0
+ 5.0
+ 9.0
+```
 """
 function coldot(a::AbstractMatrix, b::AbstractMatrix)
-    @assert size(a) == size(b)
+    _check_same_size(a, b)
     return _coldot_unsafe(a, b)
 end
 
 function _coldot_unsafe(a::AbstractMatrix, b::AbstractMatrix)
-    dst = similar(a, Any, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
+    T = Base.promote_op((x, y) -> x * y + x * y, eltype(a), eltype(b))
     dst = similar(a, T, size(a, 2))
     return _coldot_unsafe!(dst, a, b)
 end
 
-function _coldot_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{T2},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(
-    a::AbstractMatrix{T1},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
-function _coldot_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing}, size(a, 2))
-    return _coldot_unsafe!(dst, a, b)
-end
-
 function _coldot_unsafe!(dst::AbstractVector, a::AbstractMatrix, b::AbstractMatrix)
+    Base.require_one_based_indexing(dst, a, b)
     dims = size(a, 1)
     if dims == 2
         return _coldot_unsafe_2D!(dst, a, b)
@@ -460,52 +504,34 @@ end
 Returns the cross products of the matrix columns as a new matrix.
 
 Both input matrices need to have the same dimensions ``3 × N``.
+
+# Examples
+```jldoctest
+julia> a = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> b = [0.0 0.0; 1.0 0.0; 0.0 1.0];
+
+julia> colcross(a, b)
+3×2 Matrix{Float64}:
+ 0.0  1.0
+ 0.0  0.0
+ 1.0  0.0
+```
 """
 function colcross(a::AbstractMatrix, b::AbstractMatrix)
-    @assert size(a) == size(b)
-    @assert size(a, 1) == 3
+    _check_same_size(a, b)
+    size(a, 1) == 3 || throw(DimensionMismatch("the matrices must have 3 rows, got $(size(a, 1))"))
     return _colcross_unsafe(a, b)
 end
 
 function _colcross_unsafe(a::AbstractMatrix, b::AbstractMatrix)
-    dst = similar(a, Any)
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(a::AbstractMatrix{T1}, b::AbstractMatrix{T2}) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
+    T = Base.promote_op((x, y) -> x * y - x * y, eltype(a), eltype(b))
     dst = similar(a, T)
     return _colcross_unsafe!(dst, a, b)
 end
 
-function _colcross_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{T2},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(
-    a::AbstractMatrix{T1},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
-    return _colcross_unsafe!(dst, a, b)
-end
-
-function _colcross_unsafe(
-    a::AbstractMatrix{Union{T1,Missing}},
-    b::AbstractMatrix{Union{T2,Missing}},
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2))
-    dst = similar(a, Union{T,Missing})
-    return _colcross_unsafe!(dst, a, b)
-end
-
 function _colcross_unsafe!(dst::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix)
+    Base.require_one_based_indexing(dst, a, b)
     @inbounds @simd for i in axes(dst, 2)
         dst[1, i] = a[2, i] * b[3, i] - a[3, i] * b[2, i]
         dst[2, i] = a[3, i] * b[1, i] - a[1, i] * b[3, i]
@@ -527,6 +553,19 @@ The mass can be a vector or a scalar value (useful if all particles have the sam
 The coordinate system's origin can be passed as a vector of length 3, as well as the velocity origin, which
 determines the relative velocity at which the angular momentum should be determined. Typically, this will be the
 velocity of the center of mass.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> angmom(pos, vel, [1.0, 2.0])
+3×2 Matrix{Float64}:
+ 0.0   0.0
+ 0.0   0.0
+ 1.0  -2.0
+```
 """
 function angmom(
     pos::AbstractMatrix,
@@ -535,80 +574,64 @@ function angmom(
     origin=nothing,
     velorigin=nothing,
 )
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
 function angmom(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
     return _angmom_unsafe(pos, vel, mass, origin, velorigin)
 end
 
-function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass, origin, velorigin)
-    dst = similar(pos, Any)
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
+
+# The angular momentum kernels index the rows of the positions, velocities, and origins as 1 to 3, and the
+# particles from 1.
+function _check_angmom_args(pos, vel, mass, origin, velorigin)
+    size(pos, 1) == 3 || throw(DimensionMismatch("the positions must have 3 rows, got $(size(pos, 1))"))
+    size(pos) == size(vel) || throw(
+        DimensionMismatch(
+            "the positions and velocities must have the same size, got $(size(pos)) and $(size(vel))",
+        ),
+    )
+    mass isa AbstractVector &&
+        length(mass) != size(pos, 2) &&
+        throw(
+            DimensionMismatch(
+                "the masses must have length $(size(pos, 2)) like the positions, got length $(length(mass))",
+            ),
+        )
+    Base.require_one_based_indexing(pos, vel)
+    mass isa AbstractArray && Base.require_one_based_indexing(mass)
+    _check_origin(origin, "origin")
+    _check_origin(velorigin, "velorigin")
+    return nothing
 end
 
+_check_origin(::Nothing, _) = nothing
+function _check_origin(origin::AbstractVector, name)
+    Base.require_one_based_indexing(origin)
+    length(origin) == 3 ||
+        throw(DimensionMismatch("`$name` must have length 3, got length $(length(origin))"))
+    return nothing
+end
 
-_help_convert_origin(::Type{T}, origin::AbstractVector) where {T} = convert(Vector{T}, origin)
-_help_convert_origin(::Type{T}, origin::Nothing) where {T} = nothing
+# An origin takes the element type of the positions or velocities, without `Missing`.
+_help_convert_origin(::Type{T}, origin::AbstractVector) where {T} = convert(Vector{nonmissingtype(T)}, origin)
+_help_convert_origin(::Type{Missing}, origin::AbstractVector) = origin
+_help_convert_origin(::Type, ::Nothing) = nothing
 
 
-function _angmom_unsafe(
-    pos::AbstractMatrix{T1},
-    vel::AbstractMatrix{T2},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
+function _angmom_unsafe(pos::AbstractMatrix, vel::AbstractMatrix, mass, origin, velorigin)
+    T = Base.promote_op((x, y, m) -> m * (x * y - x * y), eltype(pos), eltype(vel), _eltype_of(mass))
     dst = similar(pos, T)
     return _angmom_unsafe!(
         dst,
         pos,
         vel,
         mass,
-        _help_convert_origin(T1, origin),
-        _help_convert_origin(T2, velorigin),
+        _help_convert_origin(eltype(pos), origin),
+        _help_convert_origin(eltype(vel), velorigin),
     )
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{Union{T1,Missing}},
-    vel::AbstractMatrix{T2},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{T1},
-    vel::AbstractMatrix{Union{T2,Missing}},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
-end
-
-function _angmom_unsafe(
-    pos::AbstractMatrix{Union{T1,Missing}},
-    vel::AbstractMatrix{Union{T2,Missing}},
-    mass,
-    origin,
-    velorigin,
-) where {T1<:Number,T2<:Number}
-    T = typeof(zero(T1) * zero(T2) * _zero_of(mass))
-    dst = similar(pos, Union{T,Missing})
-    return _angmom_unsafe!(dst, pos, vel, mass, origin, velorigin)
 end
 
 for (T1, T2) in zip(
@@ -661,13 +684,13 @@ for (T1, T2) in zip(
 end
 
 
-_zero_of(::T) where {T<:Number} = zero(T)
-_zero_of(::AbstractArray{T}) where {T<:Number} = zero(T)
+_eltype_of(m::AbstractArray) = eltype(m)
+_eltype_of(m) = typeof(m)
 
 
 
 """
-    angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing)
+    angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing, stable=false)
 
 Returns the total angular momentum based on the positions, velocities, and masses.
 
@@ -680,6 +703,28 @@ velocity of the center of mass.
 
 This method never allocates the full angular momentum matrix for all particles like [`angmom`](@ref) does.
 Use this when the individual particle angular momenta are not needed.
+
+By default, the terms are added in a running sum. With `stable=true`, they are summed with [`Base.sum`](@extref),
+which adds them pairwise and accumulates less rounding error, but is almost three times slower.
+
+# Examples
+```jldoctest
+julia> pos = [1.0 0.0; 0.0 1.0; 0.0 0.0];
+
+julia> vel = [0.0 1.0; 1.0 0.0; 0.0 0.0];
+
+julia> angmomtot(pos, vel, [1.0, 2.0])
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+
+julia> angmomtot(pos, vel, [1.0, 2.0]; stable=true)
+3-element Vector{Float64}:
+  0.0
+  0.0
+ -1.0
+```
 """
 function angmomtot(
     pos::AbstractMatrix,
@@ -687,15 +732,27 @@ function angmomtot(
     mass::AbstractVector;
     origin=nothing,
     velorigin=nothing,
+    stable=false,
 )
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
-    return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
+    return _angmomtot(pos, vel, mass, origin, velorigin, stable)
 end
 
-function angmomtot(pos::AbstractMatrix, vel::AbstractMatrix, mass::Number; origin=nothing, velorigin=nothing)
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
+function angmomtot(
+    pos::AbstractMatrix,
+    vel::AbstractMatrix,
+    mass::Number;
+    origin=nothing,
+    velorigin=nothing,
+    stable=false,
+)
+    _check_angmom_args(pos, vel, mass, origin, velorigin)
+    return _angmomtot(pos, vel, mass, origin, velorigin, stable)
+end
+
+function _angmomtot(pos, vel, mass, origin, velorigin, stable::Bool)
+    # `sum` throws for no particles, and passing it `init` would make it a running sum.
+    stable && size(pos, 2) > 0 && return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
     return _angmomtot_unsafe(pos, vel, mass, origin, velorigin)
 end
 
@@ -723,44 +780,14 @@ function _type_and_zero_of_summed_angmomtot(
     return typeof(z), z
 end
 
-
-"""
-    angmomtot_stable(pos::AbstractMatrix, vel::AbstractMatrix, mass; origin=nothing, velorigin=nothing)
-
-Returns the total angular momentum based on the positions, velocities, and masses, like [`angmomtot`](@ref).
-
-Uses the stable summation algorithm `Base.sum` for the summation, but is almost three times slower than
-[`angmomtot`](@ref).
-
-See [`angmomtot`](@ref) for the available keyword arguments.
-"""
-function angmomtot_stable end
-
-function angmomtot_stable(
-    pos::AbstractMatrix,
-    vel::AbstractMatrix,
-    mass::AbstractVector;
-    origin=nothing,
-    velorigin=nothing,
-)
-    @assert size(pos, 2) == size(vel, 2) == length(mass)
-    @assert size(pos, 1) == size(vel, 1) == 3
-    return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
-end
-
-function angmomtot_stable(
-    pos::AbstractMatrix,
-    vel::AbstractMatrix,
-    mass::Number;
-    origin=nothing,
-    velorigin=nothing,
-)
-    @assert size(pos, 2) == size(vel, 2)
-    @assert size(pos, 1) == size(vel, 1) == 3
-    return _angmomtot_stable_unsafe(pos, vel, mass, origin, velorigin)
+# The kernels for a `Fill` mass, like those for a scalar mass, sum without the mass and multiply by it at the end.
+function _type_and_zero_of_summed_angmomtot(p::AbstractMatrix, v::AbstractMatrix, m::AbstractFillVector)
+    return _type_and_zero_of_summed_angmomtot(p, v, zero(eltype(m)))
 end
 
 
+# The value of a `Fill` mass; an empty `Fill` has none, and its sums are zero.
+_fill_value(m::AbstractFillVector) = isempty(m) ? zero(eltype(m)) : m[1]
 
 for (T1, T2) in zip(
     [:Nothing, :AbstractVector, :Nothing, :AbstractVector],
@@ -820,7 +847,7 @@ for (T1, T2) in zip(
                 d2 += $p3 * $v1 - $p1 * $v3
                 d3 += $p1 * $v2 - $p2 * $v1
             end
-            mval = m[1]
+            mval = _fill_value(m)
             dst .= mval * d1, mval * d2, mval * d3
             return dst
         end
@@ -851,9 +878,9 @@ for (T1, T2) in zip(
             velorigin::$T2,
         )
             return [
-                m * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
-                m * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
-                m * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
+                m * sum(i -> $p2 * $v3 - $p3 * $v2, axes(p, 2))
+                m * sum(i -> $p3 * $v1 - $p1 * $v3, axes(p, 2))
+                m * sum(i -> $p1 * $v2 - $p2 * $v1, axes(p, 2))
             ]
         end
 
@@ -866,9 +893,9 @@ for (T1, T2) in zip(
         )
             mval = m[1]
             return [
-                mval * sum($p2 * $v3 - $p3 * $v2 for i in axes(p, 2))
-                mval * sum($p3 * $v1 - $p1 * $v3 for i in axes(p, 2))
-                mval * sum($p1 * $v2 - $p2 * $v1 for i in axes(p, 2))
+                mval * sum(i -> $p2 * $v3 - $p3 * $v2, axes(p, 2))
+                mval * sum(i -> $p3 * $v1 - $p1 * $v3, axes(p, 2))
+                mval * sum(i -> $p1 * $v2 - $p2 * $v1, axes(p, 2))
             ]
         end
 
@@ -880,9 +907,9 @@ for (T1, T2) in zip(
             velorigin::$T2,
         )
             return [
-                sum(m[i] * ($p2 * $v3 - $p3 * $v2) for i in axes(p, 2))
-                sum(m[i] * ($p3 * $v1 - $p1 * $v3) for i in axes(p, 2))
-                sum(m[i] * ($p1 * $v2 - $p2 * $v1) for i in axes(p, 2))
+                sum(i -> m[i] * ($p2 * $v3 - $p3 * $v2), axes(p, 2))
+                sum(i -> m[i] * ($p3 * $v1 - $p1 * $v3), axes(p, 2))
+                sum(i -> m[i] * ($p1 * $v2 - $p2 * $v1), axes(p, 2))
             ]
         end
     end |> eval
