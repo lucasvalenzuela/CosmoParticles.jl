@@ -1,6 +1,6 @@
 name = "CosmoParticles"
 uuid = "b2fead7a-f6ae-4e5b-9c3d-9b85ace3042d"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Lucas Valenzuela"]
 
 [workspace]
