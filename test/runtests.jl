@@ -2214,6 +2214,7 @@ Random.seed!(42)
             ]
                 @test repr(g) == str
                 @test repr(MIME("text/plain"), g) == str
+                @test repr(g; context=:fancy_exponent => true) == str # the default of Unitful on macOS
                 @test eval(Meta.parse(str)) == g # the display is the call that constructs the geometry
             end
         end

@@ -212,12 +212,8 @@ function Base.getindex(::AllParticles, ::AbstractVector{Symbol})
     )
 end
 
-function Base.keys(ap::AllParticles)
-    keys_arr = [keys(ap.particle_collection[ptype]) for ptype in ap.ptypes]
-    length(keys_arr) == 0 && return Symbol[]
-    length(keys_arr) == 1 && return keys_arr[1]
-    return unique(Iterators.flatten(keys_arr))
-end
+Base.keys(ap::AllParticles) =
+    unique!(Symbol[key for ptype in ap.ptypes for key in keys(ap.particle_collection[ptype])])
 
 Base.values(p::AllParticles) = Iterators.map(key -> getindex(p, key), keys(p))
 

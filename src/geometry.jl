@@ -1284,7 +1284,8 @@ function _repr_arg(io::IO, x::AbstractArray{<:Quantity})
     isconcretetype(eltype(x)) || return repr(x; context=io)
     return string(repr(ustrip.(x); context=io), _unit_string(unit(eltype(x))))
 end
-_unit_string(u) = string("u\"", replace(string(u), " " => "*"), "\"")
+# Unitful writes exponents as superscripts on macOS by default, which the string macro cannot parse.
+_unit_string(u) = string("u\"", replace(sprint(show, u; context=:fancy_exponent => false), " " => "*"), "\"")
 
 function Base.show(io::IO, r::CosmoHyperrectangle{T,N}) where {T,N}
     name = N == 3 ? "CosmoCuboid" : (N == 2 ? "CosmoRectangle" : "CosmoHyperrectangle")

@@ -175,6 +175,7 @@ function applyind(p::AbstractParticles, ind::Union{AbstractVector,Colon}; affect
     # preallocate particles (to avoid threading issues)
     pnew = empty(p)
     for key in affected_keys
+        key::Symbol # the element type of `affect` is not known
         pnew[key] = p[key]
     end
 
@@ -335,6 +336,7 @@ function removeind(p::AbstractParticles, ind::AbstractVector; affect=keys(p))
     # preallocate particles (to avoid threading issues)
     pnew = empty(p)
     for key in affected_keys
+        key::Symbol # the element type of `affect` is not known
         pnew[key] = p[key]
     end
 

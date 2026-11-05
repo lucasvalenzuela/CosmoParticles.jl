@@ -249,6 +249,7 @@ Base.delete!(p::AbstractParticles, sym::Symbol) = (delete!(get_props(p), sym); p
 function Base.getindex(p::AbstractParticles, props::AbstractVector{Symbol})
     pnew = empty(p)
     for key in props
+        key::Symbol # the elements of an `AbstractVector{Symbol}` are not inferred as `Symbol`
         _setprop!(pnew, key, p[key])
     end
     return pnew
